@@ -32,7 +32,7 @@ The current authoritative instructions are at <https://create.roblox.com/docs/st
 
 Start a new client session after installation or configuration changes. Confirm exactly one ForgeGUI connection is loaded and, when Studio work is intended, that the official Studio connection is listed separately.
 
-1. List or discover ForgeGUI tools. Loading the definition alone does not prove authentication.
+1. List or discover ForgeGUI tools. Loading the definition alone does not prove authentication. If the ForgeGUI server is absent from `/mcp` entirely, with no failure listed, the `forgegui_api_key` configuration is unset and the client skipped the server silently; run `/plugin configure` and start a new session before concluding anything about the backend.
 2. With a `library:read` key, call `library_search` using a harmless query such as `tree`.
 3. Treat an HTTP 401 as an authentication failure: re-enter or re-export the key and start another new session.
 4. If a tool reports a missing scope, deliberately mint or select an appropriately scoped replacement key. Do not broaden permissions by default.
@@ -52,7 +52,7 @@ Proceed only after the free check succeeds and the account owner authorizes a bo
 - Import only through a verified route, inspect the saved Edit-mode instance, and run a focused playtest if gameplay changed.
 - Record the job ID, imported Roblox asset ID or instance path, and checks actually performed. Keep “generated,” “imported,” and “gameplay verified” distinct.
 
-Known tested limits remain in the bundled skill: direct ForgeGUI image links were rejected by Studio upload in issue #52, and issue #53 had no verified audio import route. Disclose those limits before spending; use a manual handoff only with the user's agreement.
+Check the bundled skill for import findings and live-tool requirements. Personal-account Open Cloud tests reported image, audio and GLB uploads, but do not establish that the connected MCP exposes publishing or that the target experience has access. Verify that route before spending; use a manual handoff only with the user's agreement.
 
 ## Rollback
 

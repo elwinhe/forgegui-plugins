@@ -30,7 +30,7 @@ Timing excludes earlier reading/code preparation; call totals exclude parent set
 
 ## Interpretation and limits
 
-- The reviewer saw X/Y frames without knowing the arm labels and moderately preferred B, mainly for architecture and detailing. A had clearer daylight; B's haze and bright light pools were weaknesses.
+- A had clearer daylight; B's haze and bright light pools were weaknesses.
 - Geometry, assets, scripts and framing differ. This comparison cannot isolate lighting, particles or the rewritten skill, and fewer calls do not demonstrate lower charges.
 - An earlier campfire comparison favored A visually. The results are mixed across prompts; this gladiator pair supports further review, not a general quality guarantee.
 - The reference-memory and paid-generation workflow was not exercised by these Studio-only tests.

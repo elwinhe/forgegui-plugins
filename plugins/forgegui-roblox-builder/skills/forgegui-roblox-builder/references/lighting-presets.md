@@ -1,6 +1,6 @@
 # Lighting presets
 
-Five named looks, shipped as reviewed Luau in `luau/LightingPresets.luau`. Apply one after the scene exists, never mid-build. Each preset sets `Lighting` and a post-processing stack (`Atmosphere`, `BloomEffect`, `ColorCorrectionEffect`, `SunRaysEffect`, `DepthOfFieldEffect`) that the module creates once and reconfigures on later applies.
+Five named looks, shipped as reviewed Luau in `luau/LightingPresets.luau`. Apply one after the scene exists, never mid-build. Each preset sets `Lighting` and a post-processing stack (`Atmosphere`, `BloomEffect`, `ColorCorrectionEffect`, `SunRaysEffect`, `DepthOfFieldEffect`). The module reuses its own instances on later applies, and if the place already has an effect of that class (the Baseplate template ships Sky, SunRays, Atmosphere, Bloom and DepthOfField) it adopts and reconfigures that instance instead of stacking a duplicate, which would double bloom and haze. Adopted instances are tagged `ForgeGUIPresetAdopted` and are never deleted by `clear()`.
 
 | Preset | Use it for | Signature |
 | --- | --- | --- |

@@ -182,13 +182,22 @@ local function setProps(instance: Instance, props: { [string]: any })
 	end
 end
 
+-- Post effects stack: a second Atmosphere/Bloom/ColorCorrection next to the template's own
+-- doubles the effect. So: reuse our own instance if present; otherwise ADOPT the first existing
+-- instance of that class (tagged ForgeGUIPresetAdopted, never destroyed by clear()); otherwise create.
 local function ensureEffect(className: string, name: string): Instance
-	local existing = Lighting:FindFirstChild(name)
-	if existing and existing.ClassName == className then
-		return existing
+	local own = Lighting:FindFirstChild(name)
+	if own and own.ClassName == className then
+		return own
 	end
-	if existing then
-		existing:Destroy()
+	if own then
+		own:Destroy()
+	end
+	for _, child in Lighting:GetChildren() do
+		if child.ClassName == className then
+			child:SetAttribute("ForgeGUIPresetAdopted", true)
+			return child
+		end
 	end
 	local inst = Instance.new(className)
 	inst.Name = name
@@ -239,7 +248,7 @@ function M.apply(presetName: string)
 	return presetName
 end
 
--- Remove only what this module created; user-authored Lighting children are untouched.
+-- Remove only what this module created; adopted template/user effects keep their (now modified) values.
 function M.clear()
 	for _, child in Lighting:GetChildren() do
 		if child:GetAttribute("ForgeGUIPreset") == true then

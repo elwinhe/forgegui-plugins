@@ -1,10 +1,10 @@
 # ForgeGUI MCP for Claude Code
 
-Install ID: `mcp@forgegui`. This package targets production at `azyjlkhpdgafuobyxoax.supabase.co`.
+Install ID: `mcp@forgegui`. Version `1.0.1` targets staging at `vzzqjekupwutoaasswwd.supabase.co`.
 
-**Launch status (September 15, 2026):** the plugin is published in preparation for backend rollout. Production MCP functions and migrations are not yet deployed; production connection verification is pending. Staging testing verified generation and authentication, not a complete Studio import workflow. `enhance_prompt` failed and `auto_separate` was not verified in the supplied test report. See the setup checklist and bundled skill for image, 3D, and audio import limitations.
+**Launch status (September 16, 2026):** this package intentionally uses the staging MCP while the backend and Studio import workflow are validated. Staging testing verified generation and authentication, not a complete Studio import workflow. `enhance_prompt` failed and `auto_separate` was not verified in the supplied test report. See the setup checklist and bundled skill for image, 3D, and audio import limitations.
 
-This repository is a Claude Code marketplace. It targets the production ForgeGUI endpoint recorded in `plugins/forgegui-roblox-builder/.mcp.json`. It asks for the ForgeGUI account API key as sensitive user configuration. Read the [shared setup checklist](./SETUP.md) for key scopes, the exact Studio Quick Connect flow, free verification, the bounded end-to-end checklist, limitations, and rollback.
+This repository is a Claude Code marketplace. It targets the staging ForgeGUI endpoint recorded in `plugins/forgegui-roblox-builder/.mcp.json`. It asks for the ForgeGUI account API key as sensitive user configuration. Staging keys and data are separate from production. Read the [shared setup checklist](./SETUP.md) for key scopes, the exact Studio Quick Connect flow, free verification, the bounded end-to-end checklist, limitations, and rollback.
 
 Create the key in ForgeGUI **Profile → MCP API keys**. Use `library:read` for free discovery, add `generation:read` only to inspect account-owned jobs, and add `generation:write` only when paid generation is intended and authorized. Generation write access requires a paid Starter-or-higher entitlement. The key is separate from the Claude subscription and from the Roblox Studio connection.
 

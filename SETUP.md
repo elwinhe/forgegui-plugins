@@ -12,7 +12,7 @@ In ForgeGUI, open **Profile → MCP API keys** and create an expiring, revocable
 
 The ForgeGUI account key is separate from a Claude or Codex subscription and from the Roblox Studio connection. Never put the key in chat, command arguments, shell history, logs, screenshots, source files, or archives.
 
-The ForgeGUI project this package targets is baked in when the archive is built, so confirm it before you install: open `plugins/forgegui-roblox-builder/.mcp.json` and read the `url`. A staging project's keys, data, and behavior are not production. Do not hand-edit that URL to repoint the bundle; a package for a different environment must be rebuilt from source against a reviewed endpoint.
+This package targets the ForgeGUI staging project at `vzzqjekupwutoaasswwd.supabase.co`; confirm it before installation by opening `plugins/forgegui-roblox-builder/.mcp.json` and reading the `url`. Staging keys, data, and behavior are not production. Do not hand-edit that URL to repoint the bundle; a package for a different environment must be rebuilt from source against a reviewed endpoint.
 
 Before installing, disable or remove any manually configured ForgeGUI MCP connection in the client. Record its name and settings first so you can roll back. Running the bundled and manual definitions together can produce duplicate connections or ambiguous tool names.
 

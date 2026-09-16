@@ -1,6 +1,6 @@
 {
   "name": "mcp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Build Roblox experiences with ForgeGUI assets and the official Roblox Studio MCP.",
   "author": {
     "name": "ForgeGUI"

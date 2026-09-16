@@ -2,7 +2,7 @@
   "mcpServers": {
     "forgegui": {
       "type": "http",
-      "url": "https://azyjlkhpdgafuobyxoax.supabase.co/functions/v1/forgegui-mcp",
+      "url": "https://vzzqjekupwutoaasswwd.supabase.co/functions/v1/forgegui-mcp",
       "headers": {
         "Authorization": "Bearer ${user_config.forgegui_api_key}"
       }

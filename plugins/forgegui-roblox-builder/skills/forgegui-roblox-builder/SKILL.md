@@ -12,7 +12,7 @@ Every asset follows one loop, in order: **reference → generate → import or p
 
 - Discover the live tools and input schemas of both servers. Aliases may differ from `forgegui` and `Roblox_Studio`; identify them by capability. An empty resource listing does not mean tools are missing.
 - List Studio instances and select the intended place. Ask if more than one plausible target remains. Carry its `studio_id` through every Studio call.
-- **Load project memory first.** Look for `forgegui-project.json` in the working directory (see `references/project-manifest.md`). If it exists, read `game_style`, `palette`, `material_language`, and the `assets` ledger before planning. If it does not exist and the task will generate more than one asset, create it from the brief before the first paid call.
+- **Load project memory first.** Look for `forgegui-project.json` in the working directory (see `references/project-manifest.md`). If it exists, read `game_style` (routing type), `art_direction`, `palette`, `material_language`, and the `assets` ledger before planning. If it does not exist and the task will generate more than one asset, create it from the brief before the first paid call.
 - Inspect the existing scene and relevant scripts before planning additions. Reuse existing objects for ordinary geometry.
 
 ## 2. Plan assets before spending
@@ -38,10 +38,11 @@ Rules:
 **Reuse relevant prior artifacts when the live tool supports them.** Do not regenerate an existing asset merely to match the project's style.
 
 - Content references: the ledger's `artifact_ref` or owned asset ids for *this object* (the same sword, the same panel family). Pass them in `reference_asset_ids` when that field is supported.
-- Style references: the project's relevant `style_refs` (a theme pack or hero asset), plus the same `game_style` string on calls that accept one. Do not add unsupported fields.
+- Style references: the project's relevant `style_refs` (a theme pack or hero asset), plus the manifest's `art_direction` words written into the prompt. Do not add unsupported fields.
+- `game_style` is a routing type, not a place for descriptive styling. Pass the manifest's value on calls that accept it: `roblox` (default) or `general` for non-Roblox looks; the `fortnite` and `minecraft` routes are not fully built out, so use them only when asked. Keep every descriptive word ("low-poly", "cel shaded", "warm glow") in the prompt instead.
 - Keep the two separate in your prompt: style refs describe the world; content refs describe the thing.
 - `reference_asset_ids` accepts owned UUIDs and `mcp-artifact:<job>:<index>` references only. Chat images, local files, and external URLs are not references until they have been uploaded into ForgeGUI's ID space; if no upload route is available, say so and proceed with text plus existing refs.
-- Prompt densely: silhouette, materials, palette words from the manifest, intended use, approximate scale, lighting mood. `enhance_prompt` has been unreliable; do not depend on it. Write the dense brief yourself.
+- Prompt densely: `art_direction`, silhouette, materials, palette words from the manifest, intended use, approximate scale, lighting mood. `enhance_prompt` has been unreliable; do not depend on it. Write the dense brief yourself.
 
 ## 4. Check the import route before generating
 

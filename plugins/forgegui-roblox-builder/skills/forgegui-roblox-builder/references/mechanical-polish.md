@@ -1,6 +1,6 @@
 # Mechanical polish
 
-The small details that make a build read as finished. Each snippet is self-contained Luau for `multi_edit` into the right script type. Apply after the scene and gameplay exist; order: UI transitions → hit feedback → camera → prompts → onboarding.
+The small details that make a build read as finished. Each snippet is self-contained Luau for `multi_edit` into the right script type; resolve placeholder names such as `chest` to inspected instances in your place before pasting. Apply after the scene and gameplay exist; order: UI transitions → hit feedback → camera → prompts → onboarding.
 
 ## UI tween-in (LocalScript under the ScreenGui)
 

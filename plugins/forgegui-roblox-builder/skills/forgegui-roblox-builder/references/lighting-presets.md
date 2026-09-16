@@ -1,6 +1,6 @@
 # Lighting presets
 
-Five named looks, shipped as reviewed Luau in `luau/LightingPresets.luau`. Apply one after the scene exists, never mid-build. Each preset sets `Lighting` and a post-processing stack (`Atmosphere`, `BloomEffect`, `ColorCorrectionEffect`, `SunRaysEffect`, `DepthOfFieldEffect`). The module reuses its own instances on later applies, and if the place already has an effect of that class (the Baseplate template ships Sky, SunRays, Atmosphere, Bloom and DepthOfField) it adopts and reconfigures that instance instead of stacking a duplicate, which would double bloom and haze. Adopted instances are tagged `ForgeGUIPresetAdopted` and are never deleted by `clear()`.
+Five named looks, shipped as reviewed Luau in `luau/LightingPresets.luau`. Apply one after the scene exists, never mid-build. Each preset sets `Lighting` and a post-processing stack (`Atmosphere`, `BloomEffect`, `ColorCorrectionEffect`, `SunRaysEffect`, `DepthOfFieldEffect`). The module reuses its own instances on later applies, and if the place already has an effect of that class (the Baseplate template ships Sky, SunRays, Atmosphere, Bloom and DepthOfField) it adopts and reconfigures that instance instead of stacking a duplicate, which would double bloom and haze. Ownership is decided by attribute, never by name: instances the module created carry `ForgeGUIPreset = true`, adopted ones carry `ForgeGUIPresetAdopted = true`, and an instance that merely shares a `ForgeGUI_*` name is never destroyed; it is adopted only if it is of a class the preset configures, and otherwise ignored. Adopted effects are explicitly set `Enabled = true` when a preset configures them, since templates often ship them disabled; a preset that wants an effect off (`depthOfField.Enabled = false`) still wins.
 
 | Preset | Use it for | Signature |
 | --- | --- | --- |
@@ -12,7 +12,7 @@ Five named looks, shipped as reviewed Luau in `luau/LightingPresets.luau`. Apply
 
 ## Choosing without being told
 
-If the request names a genre and no lighting instruction, pick via `GenreHints` (`simulator → bright_stylized`, `dungeon → dungeon_torchlit`, `hub → sunset`, ...). State which preset you chose and why in one line. If the place already has a deliberate `Lighting` setup (non-default `ClockTime`, existing post effects without the `ForgeGUIPreset` attribute), ask before replacing it.
+If the request names a genre and no lighting instruction, pick via `GenreHints` (`simulator → bright_stylized`, `dungeon → dungeon_torchlit`, `hub → sunset`, ...). State which preset you chose and why in one line. If the place already has a deliberate `Lighting` setup (non-default `ClockTime`, or post effects beyond the Baseplate template's default set that carry neither `ForgeGUIPreset` nor `ForgeGUIPresetAdopted`), ask before replacing it. After an apply, `Lighting` itself carries `ForgeGUIPreset = <presetName>`; treat that as a prior preset, not a hand-made setup.
 
 ## Applying through Studio MCP
 
@@ -47,4 +47,4 @@ Presets set the global mood only. `dungeon_torchlit` expects the scene to carry 
 
 ## Removing
 
-`Presets.clear()` deletes only children tagged with the `ForgeGUIPreset` attribute. Adopted effects remain with their modified values; it does not restore their settings or previous `Lighting` property values. Record those values with `inspect_instance` before applying if the user may want them back.
+`Presets.clear()` deletes only children whose `ForgeGUIPreset` attribute is `true`; a matching name is not enough. Adopted effects remain with their modified values and only lose the `ForgeGUIPresetAdopted` tag; it does not restore their settings, their previous `Enabled` state, or previous `Lighting` property values. Record those values with `inspect_instance` before applying if the user may want them back.

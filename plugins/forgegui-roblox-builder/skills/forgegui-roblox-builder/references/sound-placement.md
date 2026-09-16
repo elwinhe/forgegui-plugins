@@ -32,7 +32,7 @@ sound.Parent = emittingPart
 
 ## Generated audio
 
-`generation_sound_effect` and `generation_music` return downloadable files. They are not Roblox audio ids until published through a verified route. Until a publish tool exists (#53, #63): disclose the manual upload step before spending, keep the job id in the manifest, and fall back to `search_asset` on the Creator Store for placeholders. Roblox audio moderation is asynchronous; a freshly uploaded id can be silent for minutes and must be checked in a playtest, not assumed.
+`generation_sound_effect` and `generation_music` return downloadable files. They are not Roblox audio ids until published through a verified route (see SKILL.md §4). If the connected server exposes no publishing tool (#53, #63), disclose the manual upload step before spending, keep the job id in the manifest, and fall back to `search_asset` on the Creator Store for placeholders. Roblox audio moderation is asynchronous; a freshly uploaded id can be silent for minutes and must be checked in a playtest, not assumed.
 
 ## Verify
 

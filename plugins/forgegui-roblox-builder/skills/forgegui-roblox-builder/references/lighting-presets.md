@@ -12,7 +12,7 @@ Five named looks, shipped as reviewed Luau in `luau/LightingPresets.luau`. Apply
 
 ## Choosing without being told
 
-If the request names a genre and no lighting instruction, pick via `GenreHints` (`simulator → bright_stylized`, `dungeon → dungeon_torchlit`, `hub → sunset`, ...). State which preset you chose and why in one line. If the place already has a deliberate `Lighting` setup (non-default `ClockTime`, existing post effects without the `ForgeGUIPreset` attribute), ask before replacing it.
+If the request names a genre and no lighting instruction, pick via `GenreHints` (`simulator → bright_stylized`, `dungeon → dungeon_torchlit`, `hub → sunset`, ...). State which preset you chose and why in one line. If the place already has a deliberate `Lighting` setup (non-default `ClockTime`, or post effects beyond the Baseplate template's default set that carry neither `ForgeGUIPreset` nor `ForgeGUIPresetAdopted`), ask before replacing it. After an apply, `Lighting` itself carries `ForgeGUIPreset = <presetName>`; treat that as a prior preset, not a hand-made setup.
 
 ## Applying through Studio MCP
 

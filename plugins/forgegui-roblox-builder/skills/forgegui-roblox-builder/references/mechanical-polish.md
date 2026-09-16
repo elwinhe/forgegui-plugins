@@ -30,7 +30,7 @@ end
 
 Rules: 150–250 ms, `Back`/`Quad` out for entrances, `Quad` in for exits, never bounce the whole HUD. Respect the art's transparency (do not tween an `ImageLabel` background that should stay transparent).
 
-## Hit feedback (Script on the server, effect on the victim)
+## Hit feedback (Script on the server, effect on the victim; knockback for server-owned models only)
 
 ```lua
 local TweenService = game:GetService("TweenService")
@@ -52,7 +52,7 @@ local function hitFeedback(model: Model, fromPosition: Vector3, force: number)
 end
 ```
 
-Pair with `ParticleRecipes.burstAt("hit_impact", contactPosition)` fired on the client (send the contact position through the same RemoteEvent used for camera shake; `Emit()` does not replicate from the server) and a `Sound` with `PlayOnRemove`. Keep the flash under 200 ms; longer reads as a bug.
+Pair with `ParticleRecipes.burstAt("hit_impact", contactPosition)` fired on the client (send the contact position through the same RemoteEvent used for camera shake; `Emit()` does not replicate from the server) and a `Sound` with `PlayOnRemove`. `ApplyImpulse` only acts on the machine that owns the part: it works for server-owned NPCs; for a player victim send the impulse through that same RemoteEvent and apply it in the client handler. Keep the flash under 200 ms; longer reads as a bug.
 
 ## Camera shake (LocalScript in StarterPlayerScripts)
 

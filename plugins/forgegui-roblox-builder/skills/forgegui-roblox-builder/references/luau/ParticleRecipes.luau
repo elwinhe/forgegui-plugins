@@ -314,7 +314,7 @@ end
 -- Merge per-emitter overrides, e.g. { texture = "rbxassetid://123", rate = 5 } applied to every emitter,
 -- or { emitters = { sparks = { rate = 2 } } } for one emitter.
 local function mergedSpec(base: EmitterSpec, emitterName: string, overrides: { [string]: any }?): EmitterSpec
-	local out: { [string]: any } = table.clone(base)
+	local out: { [string]: any } = table.clone(base :: any)
 	if overrides then
 		for k, v in overrides do
 			if k ~= "emitters" then

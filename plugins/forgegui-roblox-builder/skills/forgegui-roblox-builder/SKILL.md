@@ -12,7 +12,7 @@ Every asset follows one loop, in order: **reference → generate → import or p
 
 - Discover the live tools and input schemas of both servers. Aliases may differ from `forgegui` and `Roblox_Studio`; identify them by capability. An empty resource listing does not mean tools are missing.
 - List Studio instances and select the intended place. Ask if more than one plausible target remains. Carry its `studio_id` through every Studio call.
-- **Load project memory first.** Look for `forgegui-project.json` in the working directory (see `references/project-manifest.md`). If it exists, read `game_style`, `palette`, `material_language`, and the `assets` ledger before planning. If it does not exist and the task will generate more than one asset, create it from the brief before the first paid call.
+- **Load project memory first.** Look for `forgegui-project.json` in the working directory (see `references/project-manifest.md`). If it exists, read `game_style` (routing type), `art_direction`, `palette`, `material_language`, and the `assets` ledger before planning. If it does not exist and the task will generate more than one asset, create it from the brief before the first paid call.
 - Inspect the existing scene and relevant scripts before planning additions. Reuse existing objects for ordinary geometry.
 
 ## 2. Plan assets before spending
@@ -38,10 +38,11 @@ Rules:
 **Reuse relevant prior artifacts when the live tool supports them.** Do not regenerate an existing asset merely to match the project's style.
 
 - Content references: the ledger's `artifact_ref` or owned asset ids for *this object* (the same sword, the same panel family). Pass them in `reference_asset_ids` when that field is supported.
-- Style references: the project's relevant `style_refs` (a theme pack or hero asset), plus the same `game_style` string on calls that accept one. Do not add unsupported fields.
+- Style references: the project's relevant `style_refs` (a theme pack or hero asset), plus the manifest's `art_direction` words written into the prompt. Do not add unsupported fields.
+- `game_style` is a routing type, not a place for descriptive styling. Pass the manifest's value on calls that accept it: `roblox` (default) or `general` for non-Roblox looks; the `fortnite` and `minecraft` routes are not fully built out, so use them only when asked. Keep every descriptive word ("low-poly", "cel shaded", "warm glow") in the prompt instead.
 - Keep the two separate in your prompt: style refs describe the world; content refs describe the thing.
 - `reference_asset_ids` accepts owned UUIDs and `mcp-artifact:<job>:<index>` references only. Chat images, local files, and external URLs are not references until they have been uploaded into ForgeGUI's ID space; if no upload route is available, say so and proceed with text plus existing refs.
-- Prompt densely: silhouette, materials, palette words from the manifest, intended use, approximate scale, lighting mood. `enhance_prompt` has been unreliable; do not depend on it. Write the dense brief yourself.
+- Prompt densely: `art_direction`, silhouette, materials, palette words from the manifest, intended use, approximate scale, lighting mood. `enhance_prompt` has been unreliable; do not depend on it. Write the dense brief yourself.
 
 ## 4. Check the import route before generating
 
@@ -56,7 +57,7 @@ Establish a supported route from the expected output format into Studio before s
 
 ## 5. Generate and follow the job
 
-1. Choose one stable `request_id` per output and parameter set. Record it with the returned `job_id` in the ledger immediately.
+1. Choose one stable `request_id` per output and parameter set. Record it in the ledger before the call and add the returned `job_id` immediately. Reuse the request ID only with identical parameters; never change it just because a response timed out.
 2. Set only fields the live schema supports. Do not invent options, prices, or quality controls.
 3. Read tool-level errors as well as transport status. Poll `generation_status` with the job id, respecting its retry interval, otherwise capped backoff. Accepted or queued is not success. Require terminal success and a usable artifact; if a bounded wait expires, retain the pending job ID and report it instead of regenerating.
 4. On `outcome_unknown`, retain identifiers and check status later. Never regenerate. Use `generation_retry` only when the job state permits it and the budget allows.
@@ -106,7 +107,7 @@ Observed in the tested workflow; confirm against the live schema before applying
 
 ## Reference basis
 
-Based on the connected tool inventory of September 14–15, 2026, the ForgeGUI contract v1, the Roblox Studio MCP documentation, and reports in `elwinhe/lime-tool` issues #52, #53, #63, #66, #67, #68. Import observations are attributed to the separate [PR #1 report](https://github.com/elwinhe/forgegui-plugins/pull/1), not independently re-tested by this skill change. Live schemas and actual results take precedence over this snapshot.
+Based on the connected tool inventory of September 14–15, 2026, the ForgeGUI contract v1, the Roblox Studio MCP documentation, and internal testing reports on image upload, audio import, and the asset import bridge. Import observations are attributed to the separate [PR #1 report](https://github.com/elwinhe/forgegui-plugins/pull/1), not independently re-tested by this skill change. Live schemas and actual results take precedence over this snapshot.
 
 - [Roblox Studio MCP tools](https://create.roblox.com/docs/studio/mcp)
 - `references/project-manifest.md` — per-project style memory and asset ledger

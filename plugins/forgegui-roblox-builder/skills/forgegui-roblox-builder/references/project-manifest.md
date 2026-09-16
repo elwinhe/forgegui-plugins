@@ -56,7 +56,7 @@ Fields:
 ## Rules
 
 1. Read the manifest before planning. If `assets` already has the item with a `roblox_asset_id` or `artifact_ref`, reuse it; do not generate again. Entries that are `planned`, `generating`, or `failed` carry no reusable output; check job status before generating.
-2. Write the ledger entry when the job is accepted, not after it succeeds, so a lost session can still recover the job.
+2. Write the planned ledger entry and stable `request_id` before the paid call; add the returned `job_id` immediately on acceptance and update the same entry on completion, so an interrupted session can reconcile the request instead of duplicating it.
 3. Keep `style_refs` short (one to three). A style reference is not a content reference; do not put every generated asset in `style_refs`.
 4. Never store keys, tokens, headers, or account ids in the manifest.
 5. When a ForgeGUI listing tool becomes available, the server record wins over the manifest; reconcile and keep the manifest as a cache.

@@ -58,36 +58,52 @@ Pair with `ParticleRecipes.burstAt("hit_impact", contactPosition)` fired on the 
 
 ```lua
 local RunService = game:GetService("RunService")
-local shake = 0 -- current amplitude in studs
-local lastWritten: CFrame? = nil -- the CFrame this script wrote last frame
-local lastBase = CFrame.identity -- the controller's transform that write was based on
+local shake = 0
+local lastCamera: Camera? = nil
+local lastWritten: CFrame? = nil
+local lastBase = CFrame.identity
 
--- Runs after the camera controller (RenderPriority.Camera) has written this frame's CFrame.
--- If the camera still holds what we wrote last frame, nothing else moved it (Scriptable), so
--- reuse the base we shook from. Otherwise the controller rewrote it (Custom) and that is the
--- base. Either way the offset is applied to a clean transform and never compounds.
+local function restoreOwnedOffset()
+	-- Restore only our most recent write to the SAME camera. Preserve newer controller writes.
+	if lastCamera and lastWritten and lastCamera.CFrame == lastWritten then
+		lastCamera.CFrame = lastBase
+	end
+	lastCamera = nil
+	lastWritten = nil
+	lastBase = CFrame.identity
+end
+
 RunService:BindToRenderStep("ForgeGUICameraShake", Enum.RenderPriority.Camera.Value + 1, function(dt)
 	local camera = workspace.CurrentCamera
+	if camera ~= lastCamera then restoreOwnedOffset() end
 	if not camera then return end
 	local current = camera.CFrame
 	local base = if current == lastWritten then lastBase else current
 	local offset = CFrame.identity
 	if shake > 0.01 then
 		offset = CFrame.new((math.random() - 0.5) * shake, (math.random() - 0.5) * shake, 0)
-		shake = math.max(0, shake - dt * 4) -- decay in ~0.25 s per stud
+		shake = math.max(0, shake - dt * 4)
 	else
 		shake = 0
 	end
+	lastCamera = camera
 	lastBase = base
 	lastWritten = base * offset
 	camera.CFrame = lastWritten
 end)
 
--- call from a RemoteEvent handler: shake = math.min(shake + 0.35, 1)
--- on teardown: RunService:UnbindFromRenderStep("ForgeGUICameraShake")
+local function stopShake()
+	RunService:UnbindFromRenderStep("ForgeGUICameraShake")
+	restoreOwnedOffset()
+	shake = 0
+end
+
+-- RemoteEvent handler: shake = math.min(shake + 0.35, 1)
+-- On teardown call stopShake(). Call explicitly before removing/replacing this script.
+-- Ownership assumption: no other script uses the same render binding name.
 ```
 
-Cap amplitude at 1 stud and decay fast. The offset is applied to the controller's transform for that frame, not to last frame's shaken result, so displacement stays within ±half the amplitude and the camera lands exactly where the controller put it when the shake ends. Never shake on every hit for ranged spam; gate to hits on the local player or large explosions.
+Cap amplitude at 1 stud and decay fast. The offset is bounded to ±half the amplitude per local X/Y axis when the controller supplies a clean transform each frame, or when a stationary Scriptable camera retains this callback's previous write. A controller that builds its next transform from the already shaken camera needs its own separate base transform; this snippet cannot infer that base. Call `stopShake()` before removing or replacing the script: it unbinds and restores only its own remaining offset, preserving any newer controller write. Never shake on every hit for ranged spam; gate to hits on the local player or large explosions.
 
 ## Smooth camera follow (for third-person or vehicle cameras)
 

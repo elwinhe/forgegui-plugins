@@ -33,6 +33,10 @@ Option B, one-off: paste the module body into `execute_luau`, replacing the fina
 
 Both are Edit-mode changes and persist with the place. Verify with `screen_capture` from a representative camera before and after, and once in a playtest, because `Technology = Future` and depth of field read differently at runtime.
 
+## `require` from the Studio MCP code runner
+
+A ModuleScript created through `multi_edit` carries extra `Capabilities` (`LoadUnownedAsset` and others), and `execute_luau` in Edit mode may refuse to `require` it: `The current thread cannot require 'LightingPresets' since 'LightingPresets' has additional values for the Capabilities property`. Observed 2026-09-16 with the installed plugin. Workarounds that worked: run the module body through `loadstring` in the same `execute_luau` call, or apply the preset from a server Script in Play, where `require` succeeds. Keep the ModuleScript for gameplay scripts; use `loadstring` only for the one-off Edit-mode apply.
+
 ## `Lighting.Technology` is manual
 
 `Lighting.Technology` cannot be read or written by scripts, `execute_luau` included (the engine reports a missing `RobloxScript` capability). Each preset carries a recommended `technology` string (`ShadowMap` for the daylight looks, `Future` for `night_neon`, `dungeon_torchlit`, `sunset`). Tell the user to set it once in the Properties panel of `Lighting`; do not claim the preset set it.

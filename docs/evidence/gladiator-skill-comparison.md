@@ -41,6 +41,21 @@ The corrected module passed **30 ownership/cleanup assertions** through Studio M
 
 To reproduce in an authorized test place, read the current `ParticleRecipes.luau`, replace its final `return M` with the contents of [particle-ownership-regression.luau](particle-ownership-regression.luau), and submit that combined source through Edit-mode `execute_luau`. The returned JSON should report `passed: 30`, `failed: 0` and `temporaryInstancesRemoved: true`. The test creates and removes only its own temporary objects; no persistent ModuleScript installation is needed.
 
+## Follow-up on 2026-09-16: source-specific regressions and a real Play run
+
+The screenshots above predate the ownership fixes to the lighting module and the camera lifecycle change to the mechanical-polish snippet, so they do not qualify the current source. The following were run against the candidate reviewed on 2026-09-16 (PR #4 head `1e31c0e0` plus the uncommitted `SKILL.md`, `references/project-manifest.md` and `references/mechanical-polish.md` revisions); receipts live outside the repository in the private review packet.
+
+| Check | Mode | Result | Limit |
+| --- | --- | --- | --- |
+| Lighting presets regression (ownership, name collisions, adoption/enabling, repeated apply/clear, restoration) | Studio MCP, Edit | 415 passed / 0 failed | assertion counts, not visual/device qualification |
+| Particle ownership regression | Studio MCP, Edit | 30 passed / 0 failed | not every recipe visually tested |
+| Camera snippet as published in this PR | simulated scheduler | 719 passed / 1 failed | the failure: mid-shake teardown leaves a stationary Scriptable camera offset |
+| Camera snippet with the `stopShake()` lifecycle revision | simulated scheduler | 732 passed / 0 failed | not a live controller integration |
+| Modules + candidate camera snippet in a fresh place | Studio Play, one client | trap contact fired `hit_impact` burst and a 0.6 shake on the client; no Output errors; transient burst removed after its lifetime; `dungeon_torchlit` visibly active | `stopShake()` teardown not exercised live; single client; no device profile |
+| Same place after Play, saved, reopened from disk | Studio Edit | modules, scripts, 5 parts, 5 emitters, preset attribute and adopted/owned effect tags all present after reopen | — |
+
+No ForgeGUI generation, artifact publishing, or installed Claude Code skill run was part of this follow-up; those remain blocked by the production endpoint (HTTP 404 on 2026-09-16) and were not attempted against another environment.
+
 ## Overview
 
 Arm A:

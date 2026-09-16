@@ -45,6 +45,10 @@ In the two recorded Studio MCP trials, freshly created owned modules initially f
 
 Overrides: `FX.attach("embers", part, { texture = "rbxassetid://<published sprite>", rate = 6 })` applies to every emitter in the recipe; `{ emitters = { smoke = { rate = 2 } } }` targets one emitter. Rates are clamped to the recipe's `maxRate`.
 
+## `require` from the Studio MCP code runner
+
+Same caveat as the lighting guide: a ModuleScript created through `multi_edit` may not be `require`-able from `execute_luau` in Edit mode because of its `Capabilities` values. Use `loadstring` on the module body for one-off Edit-mode attaches; server and client scripts `require` it normally in Play (verified 2026-09-16).
+
 ## Cleanup rules
 
 - Looping emitters live under an `Attachment` on the owning part. Destroying the part destroys the effect. Never parent an emitter to `workspace` or a folder that outlives the object.

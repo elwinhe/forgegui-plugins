@@ -9,7 +9,7 @@ Exploratory test on September 15, 2026 (America/Chicago), Studio **0.739.0.73906
 - A used its own judgment; B read the rewritten skill, lighting/sound/particle/mechanical-polish references and both modules. Separate fresh agent contexts and Baseplates; A finished before B read the drafts.
 - Both used official Studio MCP and could use free Creator Store assets. No ForgeGUI generation or publishing was exercised. A used primitives; B also used column asset `5264991027` and crowd audio `9119562843`.
 - B installed both modules verbatim. Source readback matched after newline normalization. Owned-module capability configuration was needed for `require`; Future was recommended, not set. The parent supplied the known script-creation workaround and capability recovery after B encountered it.
-- Tested source snapshot: builder `7624a02`, lighting `e28a4e6`, particles `79a85d2`. Review preparation later corrected documentation and particle ownership/cleanup; the lighting settings and particle numerical recipe values remain unchanged. The screenshots show the original test, not a rerun of the cleanup correction.
+- Tested source snapshot: builder `7624a02`, lighting `e28a4e6`, particles `79a85d2` (pre-squash draft commits, not in this repository). Review preparation later corrected documentation and particle ownership/cleanup; the lighting settings and particle numerical recipe values remain unchanged. The screenshots show the original test, not a rerun of the cleanup correction.
 
 ## Recorded results
 

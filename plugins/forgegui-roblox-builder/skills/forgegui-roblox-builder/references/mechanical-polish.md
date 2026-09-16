@@ -52,7 +52,7 @@ local function hitFeedback(model: Model, fromPosition: Vector3, force: number)
 end
 ```
 
-Pair with `ParticleRecipes.burstAt("hit_impact", contactPosition)` and a `Sound` with `PlayOnRemove`. Keep the flash under 200 ms; longer reads as a bug.
+Pair with `ParticleRecipes.burstAt("hit_impact", contactPosition)` fired on the client (send the contact position through the same RemoteEvent used for camera shake; `Emit()` does not replicate from the server) and a `Sound` with `PlayOnRemove`. Keep the flash under 200 ms; longer reads as a bug.
 
 ## Camera shake (LocalScript in StarterPlayerScripts)
 

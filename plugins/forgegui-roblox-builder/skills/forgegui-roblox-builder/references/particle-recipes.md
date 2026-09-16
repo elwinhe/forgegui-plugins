@@ -14,6 +14,8 @@ Seven declarative recipes built by one reviewed constructor in `luau/ParticleRec
 
 ## Using it
 
+`burst` and `burstAt` call `ParticleEmitter:Emit()`, which renders only on the machine that calls it. Fire bursts from a LocalScript, sending the position through a RemoteEvent when the server decides the hit; looping recipes attached in Edit mode or on the server replicate normally.
+
 Persistent module: create `ReplicatedStorage.ParticleRecipes` with the file contents, then from a server or client script. Resolve the example's object paths to inspected instances in your place:
 
 ```lua

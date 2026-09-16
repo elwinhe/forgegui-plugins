@@ -55,7 +55,7 @@ Fields:
 
 ## Rules
 
-1. Read the manifest before planning. If `assets` already has the item, reuse its `roblox_asset_id` or `artifact_ref`; do not generate again.
+1. Read the manifest before planning. If `assets` already has the item with a `roblox_asset_id` or `artifact_ref`, reuse it; do not generate again. Entries that are `planned`, `generating`, or `failed` carry no reusable output; check job status before generating.
 2. Write the ledger entry when the job is accepted, not after it succeeds, so a lost session can still recover the job.
 3. Keep `style_refs` short (one to three). A style reference is not a content reference; do not put every generated asset in `style_refs`.
 4. Never store keys, tokens, headers, or account ids in the manifest.

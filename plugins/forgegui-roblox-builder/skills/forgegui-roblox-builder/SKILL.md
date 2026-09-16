@@ -57,7 +57,7 @@ Establish a supported route from the expected output format into Studio before s
 
 ## 5. Generate and follow the job
 
-1. Choose one stable `request_id` per output and parameter set. Record it with the returned `job_id` in the ledger immediately.
+1. Choose one stable `request_id` per output and parameter set. Record it in the ledger before the call and add the returned `job_id` immediately. Reuse the request ID only with identical parameters; never change it just because a response timed out.
 2. Set only fields the live schema supports. Do not invent options, prices, or quality controls.
 3. Read tool-level errors as well as transport status. Poll `generation_status` with the job id, respecting its retry interval, otherwise capped backoff. Accepted or queued is not success. Require terminal success and a usable artifact; if a bounded wait expires, retain the pending job ID and report it instead of regenerating.
 4. On `outcome_unknown`, retain identifiers and check status later. Never regenerate. Use `generation_retry` only when the job state permits it and the budget allows.

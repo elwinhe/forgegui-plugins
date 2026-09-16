@@ -6,7 +6,7 @@ description: Build or extend Roblox Studio experiences with ForgeGUI assets and 
 
 ForgeGUI MCP generates and searches. Roblox Studio MCP inspects the place, edits scripts, inserts assets, and playtests. You coordinate both. Neither replaces the other. Explicit user choices override these defaults.
 
-Every asset follows one loop, in order: **reference → generate → import or preflight → assemble → verify**. Skipping the reference step causes style drift and duplicate spend. Skipping verification turns a generation success into an unproven claim.
+For assets destined for Studio, follow this loop in order: **reference → import preflight → generate → publish → assemble → verify**. Reuse existing assets and Roblox IDs where suitable; a standalone downloadable asset needs no Studio import route. Skipping the reference step causes style drift and duplicate spend. Skipping verification turns a generation success into an unproven claim.
 
 ## 1. Establish the task
 
@@ -66,6 +66,8 @@ Establish a supported route from the expected output format into Studio before s
 7. Update the ledger entry written in step 1 with the finished artifact: `job_id`, `artifact_ref`, kind, prompt summary, and later the Roblox asset id or instance path.
 
 ## 6. Assemble in Studio
+
+- Before retrying a timed-out insertion, inspect the selected Studio place and the asset ledger for the already imported instance. Reuse and verify it if present; retry only after confirming the intended insertion did not complete. If the outcome remains unknown, report it rather than inserting again. Upload deduplication prevents duplicate publication, not duplicate Studio instances.
 
 **Read the UI before decorating it.** Before generating any background, frame, or button art, inspect the existing GUI tree (`search_game_tree`, `inspect_instance`) and list what already has a background. Generate for the gaps only. Stacked backgrounds and nested borders are sequencing failures, not model failures.
 

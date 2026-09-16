@@ -8,20 +8,22 @@ The small details that make a build read as finished. Each snippet is self-conta
 local TweenService = game:GetService("TweenService")
 local panel = script.Parent:WaitForChild("Panel")
 local scale = panel:FindFirstChildOfClass("UIScale") or Instance.new("UIScale", panel)
+local backgroundAlpha = { [panel] = panel.BackgroundTransparency }
 
 local function show()
 	panel.Visible = true
 	scale.Scale = 0.9
-	panel.BackgroundTransparency = 1
-	for _, d in panel:GetDescendants() do
-		if d:IsA("GuiObject") then d:SetAttribute("t0", d.BackgroundTransparency) d.BackgroundTransparency = 1 end
-	end
-	TweenService:Create(scale, TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
-	TweenService:Create(panel, TweenInfo.new(0.18), { BackgroundTransparency = 0 }):Play()
+	local objects = { panel }
 	for _, d in panel:GetDescendants() do
 		if d:IsA("GuiObject") then
-			TweenService:Create(d, TweenInfo.new(0.18), { BackgroundTransparency = d:GetAttribute("t0") or 0 }):Play()
+			if backgroundAlpha[d] == nil then backgroundAlpha[d] = d.BackgroundTransparency end
+			table.insert(objects, d)
 		end
+	end
+	TweenService:Create(scale, TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+	for _, object in objects do
+		object.BackgroundTransparency = 1
+		TweenService:Create(object, TweenInfo.new(0.18), { BackgroundTransparency = backgroundAlpha[object] }):Play()
 	end
 end
 ```

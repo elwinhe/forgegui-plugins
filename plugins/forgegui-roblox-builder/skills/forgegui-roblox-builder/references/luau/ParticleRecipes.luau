@@ -3,9 +3,9 @@
 -- Ship as ReplicatedStorage.ParticleRecipes or paste into execute_luau.
 --
 -- attach(name, target, overrides?)  -> Attachment holding the emitters, parented to target
--- burst(handle, count?)             -> one-shot Emit on every emitter in the handle
+-- burst(handle, count?)             -> one-shot Emit on recipe-owned emitters in the handle
 -- burstAt(name, position, lifetime?) -> transient burst at a world position, auto-cleaned
--- detach(target)                    -> removes only attachments this module created
+-- detach(target)                    -> removes recipe emitters and empty owned attachments
 --
 -- Cleanup contract: emitters live under an Attachment on the target, so destroying the
 -- target destroys them. Transient bursts are parented to workspace.Terrain and removed
@@ -104,7 +104,7 @@ local Recipes: { [string]: Recipe } = {
 		},
 	},
 	muzzle_flash = {
-		description = "Gun or wand discharge: one-frame flash plus forward sparks. Attach to the barrel tip, +Z forward.",
+		description = "Gun or wand discharge: short flash plus sparks. Orient the barrel-tip attachment's local +Y along the barrel.",
 		burst = true,
 		burstCount = 6,
 		maxRate = 0,
@@ -159,7 +159,7 @@ local Recipes: { [string]: Recipe } = {
 		},
 	},
 	ambient_dust = {
-		description = "Slow drifting motes for interiors, caves and shafts of light. Attach to a large invisible part; uses its volume.",
+		description = "Slow drifting motes from one attachment position for interiors, caves and shafts of light; does not fill a part's volume.",
 		burst = false,
 		burstCount = 0,
 		maxRate = 6,
@@ -272,6 +272,7 @@ local Recipes: { [string]: Recipe } = {
 }
 
 local ATTR = "ForgeGUIRecipe"
+local OWNED_ATTR = "ForgeGUIRecipeOwned"
 
 local function applySpec(emitter: ParticleEmitter, spec: EmitterSpec, rateCap: number)
 	emitter.Texture = spec.texture or TEX_SPARK
@@ -340,9 +341,10 @@ function M.attach(name: string, target: BasePart | Attachment, overrides: { [str
 	else
 		holder = Instance.new("Attachment")
 		holder.Name = "FX_" .. name
+		holder:SetAttribute(ATTR, name)
+		holder:SetAttribute(OWNED_ATTR, true)
 		holder.Parent = target
 	end
-	holder:SetAttribute(ATTR, name)
 
 	local rateCap = recipe.burst and 0 or recipe.maxRate
 	for emitterName, spec in recipe.emitters do
@@ -353,17 +355,18 @@ function M.attach(name: string, target: BasePart | Attachment, overrides: { [str
 			emitter.Enabled = false
 		end
 		emitter:SetAttribute(ATTR, name)
+		emitter:SetAttribute(OWNED_ATTR, true)
 		emitter.Parent = holder
 	end
 	return holder
 end
 
 function M.burst(holder: Instance, count: number?)
-	local recipeName = holder:GetAttribute(ATTR)
-	local recipe = recipeName and Recipes[recipeName]
-	local n = count or (recipe and recipe.burstCount) or 8
 	for _, child in holder:GetChildren() do
-		if child:IsA("ParticleEmitter") then
+		if child:IsA("ParticleEmitter") and child:GetAttribute(OWNED_ATTR) == true then
+			local recipeName = child:GetAttribute(ATTR)
+			local recipe = if typeof(recipeName) == "string" then Recipes[recipeName] else nil
+			local n = count or (recipe and recipe.burstCount) or 8
 			child:Emit(n)
 		end
 	end
@@ -373,6 +376,8 @@ end
 function M.burstAt(name: string, position: Vector3, lifetime: number?): Attachment
 	local holder = Instance.new("Attachment")
 	holder.Name = "FX_" .. name .. "_transient"
+	holder:SetAttribute(ATTR, name)
+	holder:SetAttribute(OWNED_ATTR, true)
 	holder.WorldPosition = position
 	holder.Parent = workspace.Terrain
 	local built = M.attach(name, holder)
@@ -381,10 +386,19 @@ function M.burstAt(name: string, position: Vector3, lifetime: number?): Attachme
 	return holder
 end
 
--- Remove only attachments and emitters this module created under `target`.
+-- Include the target itself, but never destroy a borrowed attachment or unrelated children.
+-- A module-owned holder with unrelated children is retained until it is empty.
 function M.detach(target: Instance)
-	for _, d in target:GetDescendants() do
-		if d:IsA("Attachment") and d:GetAttribute(ATTR) ~= nil then
+	local instances = target:GetDescendants()
+	table.insert(instances, 1, target)
+	for _, d in instances do
+		if d:IsA("ParticleEmitter") and d:GetAttribute(OWNED_ATTR) == true then
+			d:Destroy()
+		end
+	end
+	for index = #instances, 1, -1 do
+		local d = instances[index]
+		if d:IsA("Attachment") and d:GetAttribute(OWNED_ATTR) == true and #d:GetChildren() == 0 then
 			d:Destroy()
 		end
 	end

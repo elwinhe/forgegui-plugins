@@ -58,21 +58,36 @@ Pair with `ParticleRecipes.burstAt("hit_impact", contactPosition)` and a `Sound`
 
 ```lua
 local RunService = game:GetService("RunService")
-local camera = workspace.CurrentCamera
 local shake = 0 -- current amplitude in studs
+local lastWritten: CFrame? = nil -- the CFrame this script wrote last frame
+local lastBase = CFrame.identity -- the controller's transform that write was based on
 
-RunService.RenderStepped:Connect(function(dt)
+-- Runs after the camera controller (RenderPriority.Camera) has written this frame's CFrame.
+-- If the camera still holds what we wrote last frame, nothing else moved it (Scriptable), so
+-- reuse the base we shook from. Otherwise the controller rewrote it (Custom) and that is the
+-- base. Either way the offset is applied to a clean transform and never compounds.
+RunService:BindToRenderStep("ForgeGUICameraShake", Enum.RenderPriority.Camera.Value + 1, function(dt)
+	local camera = workspace.CurrentCamera
+	if not camera then return end
+	local current = camera.CFrame
+	local base = if current == lastWritten then lastBase else current
+	local offset = CFrame.identity
 	if shake > 0.01 then
-		local offset = Vector3.new((math.random() - 0.5), (math.random() - 0.5), 0) * shake
-		camera.CFrame = camera.CFrame * CFrame.new(offset)
+		offset = CFrame.new((math.random() - 0.5) * shake, (math.random() - 0.5) * shake, 0)
 		shake = math.max(0, shake - dt * 4) -- decay in ~0.25 s per stud
+	else
+		shake = 0
 	end
+	lastBase = base
+	lastWritten = base * offset
+	camera.CFrame = lastWritten
 end)
 
 -- call from a RemoteEvent handler: shake = math.min(shake + 0.35, 1)
+-- on teardown: RunService:UnbindFromRenderStep("ForgeGUICameraShake")
 ```
 
-Cap amplitude at 1 stud and decay fast. Never shake on every hit for ranged spam; gate to hits on the local player or large explosions.
+Cap amplitude at 1 stud and decay fast. The offset is applied to the controller's transform for that frame, not to last frame's shaken result, so displacement stays within ±half the amplitude and the camera lands exactly where the controller put it when the shake ends. Never shake on every hit for ranged spam; gate to hits on the local player or large explosions.
 
 ## Smooth camera follow (for third-person or vehicle cameras)
 

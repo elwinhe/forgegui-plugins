@@ -86,7 +86,7 @@ Moss Louvan's September 15, 2026 [PR #1 findings](https://github.com/elwinhe/for
 - Check scale, pivot and anchoring after import rather than trusting authored defaults. PR #1's sample arrived at one stud per authored metre, with a centred pivot, unanchored MeshParts and preserved prop names; those measurements are a reason to inspect, not universal transform rules. Match scale to the target scene, check anchoring before Play, and verify the imported names used by the asset ledger.
 - Integrate gameplay using existing project conventions and the live `multi_edit` / `execute_luau` schemas. Do not replace unrelated content.
 
-Detail flows: after the scene exists, apply polish in this order: lighting mood → sound placement → particles and feedback → UI transitions. Pick a lighting preset from the requested genre without being asked. Recipes live in `references/` when shipped with this plugin; use only shipped, reviewed code, never downloaded scripts or executable asset descendants.
+Detail flows: after the scene exists, apply polish in this order: lighting mood → sound placement → particles and feedback → UI transitions. Pick a lighting preset from the requested genre without being asked (`references/lighting-presets.md`, code in `references/luau/LightingPresets.luau`). Place sounds by the conventions in `references/sound-placement.md`. Add VFX from `references/particle-recipes.md` (code in `references/luau/ParticleRecipes.luau`) and finishing touches from `references/mechanical-polish.md`. Use only shipped, reviewed code, never downloaded scripts or executable asset descendants. `Lighting.Technology` is not scriptable; report the recommended value for the user to set in Properties.
 
 ## 7. Verify, then report
 

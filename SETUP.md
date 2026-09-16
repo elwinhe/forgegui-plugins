@@ -52,7 +52,7 @@ Proceed only after the free check succeeds and the account owner authorizes a bo
 - Import only through a verified route, inspect the saved Edit-mode instance, and run a focused playtest if gameplay changed.
 - Record the job ID, imported Roblox asset ID or instance path, and checks actually performed. Keep “generated,” “imported,” and “gameplay verified” distinct.
 
-Known tested limits remain in the bundled skill: direct ForgeGUI image links were rejected by Studio upload in issue #52, and issue #53 had no verified audio import route. Disclose those limits before spending; use a manual handoff only with the user's agreement.
+Check the bundled skill for import findings and live-tool requirements. Personal-account Open Cloud tests reported image, audio and GLB uploads, but do not establish that the connected MCP exposes publishing or that the target experience has access. Verify that route before spending; use a manual handoff only with the user's agreement.
 
 ## Rollback
 

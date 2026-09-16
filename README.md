@@ -29,7 +29,7 @@ Invoke the workflow with the namespaced skill shown by Claude Code, for example:
 
 Enable the separate official Roblox Studio MCP server with the exact Quick Connect steps in [SETUP.md](./SETUP.md), then restart the session. This package does not configure Studio.
 
-Before a manual paid end-to-end test, select the intended Studio place, confirm a bounded asset count and budget, and verify an import route for the expected format. Generate one asset with a stable `request_id`, retain its `job_id`, poll `generation_status` to a terminal result, and never automatically retry `outcome_unknown`. Verify the artifact before import, then record the imported asset ID or instance path and inspect the saved Edit-mode result. Image issue #52 and audio issue #53 remain documented limitations in the bundled skill; do not claim generation proves import or gameplay.
+Before a manual paid end-to-end test, select the intended Studio place, confirm a bounded asset count and budget, and verify an import route for the expected format. Generate one asset with a stable `request_id`, retain its `job_id`, poll `generation_status` to a terminal result, and never automatically retry `outcome_unknown`. Verify the artifact before import, then record the imported asset ID or instance path and inspect the saved Edit-mode result. The bundled skill distinguishes reported import routes from tools actually exposed by the connected server; do not claim generation proves import or gameplay.
 
 ## Update or uninstall
 

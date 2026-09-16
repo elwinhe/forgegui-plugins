@@ -52,7 +52,7 @@ Establish a supported route from the expected output format into Studio before s
 - **Images and GUI.** Prefer an exposed publishing route that returns a Roblox image ID. For Open Cloud GUI uploads, use `assetType: "Image"`; do not assign a Decal container ID as an image texture. Verify the rendered GUI. If using Studio `store_image` / `upload_image` instead, validate the download and accepted input URI; do not assume a remote fetcher can read a local path or localhost. Do not pass a ForgeGUI artifact URL to `upload_image`: Studio rejects it as untrusted ("Image Url is not trusted"). Serve only the intended file if an authorized HTTP handoff is necessary.
 - **Audio.** The personal-account Open Cloud tests reported in [PR #1](https://github.com/elwinhe/forgegui-plugins/pull/1) obtained playable audio IDs, with moderation clearing asynchronously. Re-read moderation and verify access for the target experience before claiming readiness; confirm playback in Play. An external audio URL is not a Roblox audio ID.
 - **3D.** The same report uploaded GLB directly as a Model. Its reported 20 MB file / 20k-triangle-per-mesh limits should inform preflight; confirm current limits for the chosen route. Inspect output complexity before deciding whether remeshing is needed. A personal-account API test does not prove the live MCP exposes publishing or that production group permissions are configured.
-- If no publishing bridge is exposed, explain the native importer or manual handoff needed before spending. These import findings are separate from the Studio-only scene comparison; that comparison exercised no ForgeGUI generation or publishing.
+- If no publishing bridge is exposed, explain the native importer or manual handoff needed before spending. These import findings are separate from the Studio-only scene comparison recorded under docs/evidence in a later change; that comparison exercised no ForgeGUI generation or publishing.
 - If insertion is blocked and the user has not accepted a handoff, do not spend on that asset. Continue authorized scene and scripting work.
 
 ## 5. Generate and follow the job
@@ -63,7 +63,7 @@ Establish a supported route from the expected output format into Studio before s
 4. On `outcome_unknown`, retain identifiers and check status later. Never regenerate. Use `generation_retry` only when the job state permits it and the budget allows.
 5. Stop paid actions on insufficient credits, missing scope, or entitlement rejection. Report the returned failure; never attempt a bypass. Never infer a refund from an error.
 6. For dependent 3D work pass the owner-scoped `source_job_id` the schema requires. Never forward a provider task id. Rig only compatible characters; animate only from a completed rig.
-7. Write the finished artifact into the ledger: `job_id`, `artifact_ref`, kind, prompt summary, and later the Roblox asset id or instance path.
+7. Update the ledger entry written in step 1 with the finished artifact: `job_id`, `artifact_ref`, kind, prompt summary, and later the Roblox asset id or instance path.
 
 ## 6. Assemble in Studio
 

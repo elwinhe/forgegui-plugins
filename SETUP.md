@@ -32,7 +32,7 @@ The current authoritative instructions are at <https://create.roblox.com/docs/st
 
 Start a new client session after installation or configuration changes. Confirm exactly one ForgeGUI connection is loaded and, when Studio work is intended, that the official Studio connection is listed separately.
 
-1. List or discover ForgeGUI tools. Loading the definition alone does not prove authentication.
+1. List or discover ForgeGUI tools. Loading the definition alone does not prove authentication. If the ForgeGUI server is absent from `/mcp` entirely, with no failure listed, the `forgegui_api_key` configuration is unset and the client skipped the server silently; run `/plugin configure` and start a new session before concluding anything about the backend.
 2. With a `library:read` key, call `library_search` using a harmless query such as `tree`.
 3. Treat an HTTP 401 as an authentication failure: re-enter or re-export the key and start another new session.
 4. If a tool reports a missing scope, deliberately mint or select an appropriately scoped replacement key. Do not broaden permissions by default.

@@ -5,6 +5,9 @@
 --
 -- Idempotent: post-processing instances are created once and tagged with the
 -- attribute ForgeGUIPreset = true; later applies reconfigure them instead of stacking.
+-- Ownership: the module only ever destroys instances carrying ForgeGUIPreset = true.
+-- A name match alone is never treated as ownership. Existing effects it reuses are
+-- tagged ForgeGUIPresetAdopted = true and explicitly enabled when a preset needs them.
 -- Nothing here downloads code or inserts assets.
 -- Lighting.Technology is NOT scriptable (Studio Properties panel only); presets record a
 -- recommended technology in `technology` for the agent to report, never to set.
@@ -182,28 +185,58 @@ local function setProps(instance: Instance, props: { [string]: any })
 	end
 end
 
+local OWNED_ATTR = "ForgeGUIPreset"
+local ADOPTED_ATTR = "ForgeGUIPresetAdopted"
+
+local function isOwned(inst: Instance): boolean
+	return inst:GetAttribute(OWNED_ATTR) == true
+end
+
 -- Post effects stack: a second Atmosphere/Bloom/ColorCorrection next to the template's own
--- doubles the effect. So: reuse our own instance if present; otherwise ADOPT the first existing
--- instance of that class (tagged ForgeGUIPresetAdopted, never destroyed by clear()); otherwise create.
+-- doubles the effect. Resolution order, by ownership rather than by name:
+--   1. an instance of this class that this module created (ForgeGUIPreset = true);
+--   2. an instance of this class this module adopted on an earlier apply (ForgeGUIPresetAdopted);
+--   3. the first existing instance of this class, which becomes adopted;
+--   4. otherwise create one.
+-- An instance that merely shares our name is never destroyed; it is adopted only if its class is
+-- one the preset configures, and otherwise ignored.
 local function ensureEffect(className: string, name: string): Instance
-	local own = Lighting:FindFirstChild(name)
-	if own and own.ClassName == className then
-		return own
-	end
-	if own then
-		own:Destroy()
-	end
+	local adopted: Instance? = nil
+	local candidate: Instance? = nil
 	for _, child in Lighting:GetChildren() do
-		if child.ClassName == className then
-			child:SetAttribute("ForgeGUIPresetAdopted", true)
+		if child.ClassName ~= className then
+			continue
+		end
+		if isOwned(child) then
 			return child
 		end
+		if adopted == nil and child:GetAttribute(ADOPTED_ATTR) == true then
+			adopted = child
+		elseif candidate == nil then
+			candidate = child
+		end
+	end
+	local existing = adopted or candidate
+	if existing then
+		existing:SetAttribute(ADOPTED_ATTR, true)
+		return existing
 	end
 	local inst = Instance.new(className)
 	inst.Name = name
-	inst:SetAttribute("ForgeGUIPreset", true)
+	inst:SetAttribute(OWNED_ATTR, true)
 	inst.Parent = Lighting
 	return inst
+end
+
+-- Presets are written for an effect that is on. An adopted instance may have been left
+-- disabled by the template or the user, so enable it explicitly unless the preset says otherwise.
+local function applyEffect(className: string, name: string, props: { [string]: any })
+	local inst = ensureEffect(className, name)
+	local merged: { [string]: any } = { Enabled = true }
+	for key, value in props do
+		merged[key] = value
+	end
+	setProps(inst, merged)
 end
 
 local M = {}
@@ -228,34 +261,39 @@ function M.apply(presetName: string)
 	assert(preset, ("LightingPresets: unknown preset '%s'. Known: %s"):format(presetName, table.concat(M.list(), ", ")))
 
 	setProps(Lighting, preset.lighting)
-	Lighting:SetAttribute("ForgeGUIPreset", presetName)
+	Lighting:SetAttribute(OWNED_ATTR, presetName)
 
+	-- Atmosphere has no Enabled property; setProps warns and skips unknown keys, so pass it as-is.
 	if preset.atmosphere then
 		setProps(ensureEffect("Atmosphere", "ForgeGUI_Atmosphere"), preset.atmosphere)
 	end
 	if preset.bloom then
-		setProps(ensureEffect("BloomEffect", "ForgeGUI_Bloom"), preset.bloom)
+		applyEffect("BloomEffect", "ForgeGUI_Bloom", preset.bloom)
 	end
 	if preset.colorCorrection then
-		setProps(ensureEffect("ColorCorrectionEffect", "ForgeGUI_ColorCorrection"), preset.colorCorrection)
+		applyEffect("ColorCorrectionEffect", "ForgeGUI_ColorCorrection", preset.colorCorrection)
 	end
 	if preset.sunRays then
-		setProps(ensureEffect("SunRaysEffect", "ForgeGUI_SunRays"), preset.sunRays)
+		applyEffect("SunRaysEffect", "ForgeGUI_SunRays", preset.sunRays)
 	end
 	if preset.depthOfField then
-		setProps(ensureEffect("DepthOfFieldEffect", "ForgeGUI_DepthOfField"), preset.depthOfField)
+		applyEffect("DepthOfFieldEffect", "ForgeGUI_DepthOfField", preset.depthOfField)
 	end
 	return presetName
 end
 
--- Remove only what this module created; adopted template/user effects keep their (now modified) values.
+-- Remove only what this module created, decided by the ownership attribute, never by name.
+-- Adopted template/user effects are kept with their (now modified) values and lose only the
+-- adoption tag, so a later apply treats them like any other pre-existing effect.
 function M.clear()
 	for _, child in Lighting:GetChildren() do
-		if child:GetAttribute("ForgeGUIPreset") == true then
+		if isOwned(child) then
 			child:Destroy()
+		elseif child:GetAttribute(ADOPTED_ATTR) == true then
+			child:SetAttribute(ADOPTED_ATTR, nil)
 		end
 	end
-	Lighting:SetAttribute("ForgeGUIPreset", nil)
+	Lighting:SetAttribute(OWNED_ATTR, nil)
 end
 
 return M

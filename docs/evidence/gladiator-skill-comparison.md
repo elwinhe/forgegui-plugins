@@ -54,7 +54,14 @@ The screenshots above predate the ownership fixes to the lighting module and the
 | Modules + candidate camera snippet in a fresh place | Studio Play, one client | trap contact fired `hit_impact` burst and a 0.6 shake on the client; no Output errors; transient burst removed after its lifetime; `dungeon_torchlit` visibly active | `stopShake()` teardown not exercised live; single client; no device profile |
 | Same place after Play, saved, reopened from disk | Studio Edit | modules, scripts, 5 parts, 5 emitters, preset attribute and adopted/owned effect tags all present after reopen | — |
 
-No ForgeGUI generation, artifact publishing, or installed Claude Code skill run was part of this follow-up; those remain blocked by the production endpoint (HTTP 404 on 2026-09-16) and were not attempted against another environment.
+The Edit-mode and Play checks above used no ForgeGUI generation. The production endpoint returned HTTP 404 on 2026-09-16; the generation run below used the staging project instead and is labelled as such.
+
+### Installed-package run with ForgeGUI generation (staging), 2026-09-16 18:03–18:16 UTC
+
+Run through the installed plugin in Claude Code with the Roblox Studio MCP and a **private test copy of the plugin pointed at the ForgeGUI staging project** (the shipped production endpoint returned HTTP 404 that day). One standard-quality `generation_model_3d` job (`request_id roman-camp-lantern-staging-v1`, job `b1ed5244-1782-4a0b-9369-89dc78aaa8f6`) succeeded; the GLB (1,084,752 bytes) was imported with Studio's native 3D importer as the skill's documented handoff, then a second agent session moved it to `ServerStorage.ImportSources`, placed a ×20 anchored clone beside spawn, installed the modules, applied `sunset` reusing the template's effects, attached embers and a PointLight, added a ProximityPrompt with a server handler, and playtested with a real key press (console line confirmed, no errors, no leftover transients). The place was saved manually.
+
+Findings kept as-is: the generated mesh did not read as the requested lantern (a single MeshPart, reported honestly by the agent, not regenerated); it arrived at real-world size (0.3 studs) with a centred, unanchored pivot, which is the placement-metadata gap tracked in Epic #67; a headless `claude -p` session ends if the agent backgrounds a wait between status polls; `execute_luau` in Edit mode cannot `require` `multi_edit`-created ModuleScripts (`loadstring` works). No token or credit telemetry supports any savings claim.
+
 
 ## Overview
 

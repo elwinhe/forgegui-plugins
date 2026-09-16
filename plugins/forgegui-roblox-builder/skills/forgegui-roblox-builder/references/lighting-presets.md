@@ -16,12 +16,18 @@ If the request names a genre and no lighting instruction, pick via `GenreHints` 
 
 ## Applying through Studio MCP
 
-Option A, persistent module: create `ReplicatedStorage.LightingPresets` as a ModuleScript with the file contents via `multi_edit`, then in `execute_luau` (Edit datamodel):
+Option A, persistent module: this path was tested in **Roblox Studio 0.739.0.7390687**. The settings below record the working sandbox configuration for that test, not a universal requirement or a proven minimum capability set.
+
+1. Create a `ReplicatedStorage.LightingPresets` ModuleScript for this setup, containing the shipped `luau/LightingPresets.luau` source via the live `multi_edit` schema. If that path already contains an unrelated module, use a fresh name and update the `require` path below.
+2. On that module only, set `Sandboxed = true` and configure these tested capabilities: `Basic`, `CreateInstances`, `AccessOutsideWrite`, `Environment`, `RunServerScript`, and `RunClientScript`. Use supported Studio tooling for the properties; do not broaden the caller's permissions, change unrelated scripts, or change global Studio security settings.
+3. Require the configured module through `execute_luau` in the Edit datamodel:
 
 ```lua
 local Presets = require(game:GetService("ReplicatedStorage").LightingPresets)
 print(Presets.apply("sunset"))
 ```
+
+If `require` reports a missing capability, inspect the error and that module's sandbox/capability settings before retrying. A failed module load can remain cached after its source is edited. Recreate only the module created for this setup (or use a fresh module name), restore the same reviewed source and scoped settings, and require that fresh instance. If the current execution context cannot configure those properties, report the restriction rather than adding broader capabilities or weakening Studio security. These module settings do not make `Lighting.Technology` scriptable.
 
 Option B, one-off: paste the module body into `execute_luau`, replacing the final `return M` with `M.apply("sunset")`.
 

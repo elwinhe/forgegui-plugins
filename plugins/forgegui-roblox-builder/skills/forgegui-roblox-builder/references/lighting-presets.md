@@ -47,4 +47,4 @@ Presets set the global mood only. `dungeon_torchlit` expects the scene to carry 
 
 ## Removing
 
-`Presets.clear()` deletes only children tagged with the `ForgeGUIPreset` attribute and leaves user-authored lighting alone. It does not restore previous `Lighting` property values; record them with `inspect_instance` first if the user may want them back.
+`Presets.clear()` deletes only children tagged with the `ForgeGUIPreset` attribute. Adopted effects remain with their modified values; it does not restore their settings or previous `Lighting` property values. Record those values with `inspect_instance` before applying if the user may want them back.

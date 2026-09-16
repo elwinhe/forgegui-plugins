@@ -107,7 +107,7 @@ Observed in the tested workflow; confirm against the live schema before applying
 
 ## Reference basis
 
-Based on the connected tool inventory of September 14–15, 2026, the ForgeGUI contract v1, the Roblox Studio MCP documentation, and reports in `elwinhe/lime-tool` issues #52, #53, #63, #66, #67, #68. Import observations are attributed to the separate [PR #1 report](https://github.com/elwinhe/forgegui-plugins/pull/1), not independently re-tested by this skill change. Live schemas and actual results take precedence over this snapshot.
+Based on the connected tool inventory of September 14–15, 2026, the ForgeGUI contract v1, the Roblox Studio MCP documentation, and internal testing reports on image upload, audio import, and the asset import bridge. Import observations are attributed to the separate [PR #1 report](https://github.com/elwinhe/forgegui-plugins/pull/1), not independently re-tested by this skill change. Live schemas and actual results take precedence over this snapshot.
 
 - [Roblox Studio MCP tools](https://create.roblox.com/docs/studio/mcp)
 - `references/project-manifest.md` — per-project style memory and asset ledger

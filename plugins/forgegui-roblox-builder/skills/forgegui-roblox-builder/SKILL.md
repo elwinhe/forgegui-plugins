@@ -6,12 +6,32 @@ description: Build or extend Roblox Studio experiences with ForgeGUI assets and 
 
 ForgeGUI MCP generates and searches. Roblox Studio MCP inspects the place, edits scripts, inserts assets, and playtests. You coordinate both. Neither replaces the other. Explicit user choices override these defaults.
 
-For assets destined for Studio, follow this loop in order: **reference → import preflight → generate → publish → assemble → verify**. Reuse existing assets and Roblox IDs where suitable; a standalone downloadable asset needs no Studio import route. Skipping the reference step causes style drift and duplicate spend. Skipping verification turns a generation success into an unproven claim.
+For assets destined for Studio, follow this loop in order: **intake → reference → import preflight → generate → publish → assemble → verify**. Reuse existing assets and Roblox IDs where suitable; a standalone downloadable asset needs no Studio import route. Skipping the reference step causes style drift and duplicate spend. Skipping verification turns a generation success into an unproven claim.
+
+## 0. Intake: one short round of questions
+
+For a new game or a large feature, ask one round of questions before planning. Skip intake when the request already settles every decision below, or for a small, fully specified change.
+
+- Ask only decisions that change what gets built or what gets spent: at most five from the list below. Ask only the ones still open after reading the request; fewer is better, and five is a ceiling, not a target.
+- Never ask for facts you can check yourself: connected tools, Studio state, the import route, an existing `forgegui-project.json`.
+- Number each question, give the likely options, and end it with your recommended answer, so "defaults" is a complete reply: `❓ **Q1** - **<title>**: <options>` then `➡️ <recommended answer>`.
+
+Pick from these, in order of importance:
+
+1. **Reference.** A game, video, or screenshots to match? Pasted images and links are welcome; none is fine. You cannot watch a video: ask for a few screenshots (menus, gameplay camera, HUD, win screen) when a link alone would decide the look.
+2. **Scope.** Which screens and systems are in (menus, shop, progression, economy) and which are out.
+3. **Players.** Solo against AI bots, or multiplayer?
+4. **Spend.** How many paid generations, and is paid generation authorized? Recommend a specific number (0 is a valid recommendation) so a "defaults" reply sets a real ceiling. Say the cost is unknown unless billing evidence gives a number.
+5. **Finish.** Quick prototype or polished build.
+
+After the answers, play back a brief of three to five lines: what you will build, the reference, and the planned generation count. If the answers authorized paid generation and named a count, and the plan stays within it, post the brief and start building — the brief is notice, not a second gate. Wait for a go-ahead only when paid generation was never authorized, no count was given, or the plan needs more paid calls than were approved; then say the new number and what it buys. Record the art direction in the manifest. Do not re-ask a settled decision later.
 
 ## 1. Establish the task
 
 - Discover the live tools and input schemas of both servers. Aliases may differ from `forgegui` and `Roblox_Studio`; identify them by capability. An empty resource listing does not mean tools are missing. If no ForgeGUI tools appear at all and the server is not in the failed-connection list, the plugin's `forgegui_api_key` user config is probably unset and the client skipped the server silently; report that as a configuration blocker, distinct from an endpoint or authentication failure, and do not substitute another endpoint or key.
 - List Studio instances and select the intended place. Ask if more than one plausible target remains. Carry its `studio_id` through every Studio call.
+- **Check Studio before planning**, because a misconfigured Studio makes calls hang with no error rather than fail: exactly one place open (a second splits calls between them), Edit mode, and a call that returns. If nothing answers, say what the user must do — open a place, connect the Studio MCP — instead of waiting.
+- **Look for leftovers from an interrupted session** before building: test scripts, temporary GUI, teleport or currency helpers, an unfinished `.forgegui-fidelity`. A run that was cut short never cleaned up after itself. Report what you find; remove only what is clearly test scaffolding.
 - **Load project memory first.** Look for `forgegui-project.json` in the working directory (see `references/project-manifest.md`). If it exists, read `game_style` (routing type), `art_direction`, `palette`, `material_language`, and the `assets` ledger before planning. If it does not exist and the task will generate more than one asset, create it from the brief before the first paid call.
 - Inspect the existing scene and relevant scripts before planning additions. Reuse existing objects for ordinary geometry.
 
@@ -29,7 +49,7 @@ Rules:
 
 - Decide reuse vs Roblox primitive vs Toolbox vs generate for every item. Generating every scene object is the expensive failure. Duplicating one good asset across placements is the cheap right answer.
 - Show the planned generation count and the credit estimate only when billing evidence supports a number; otherwise show the count and say the cost is unknown.
-- Honor authorization already given; do not re-ask. If paid generation is not clearly authorized, clarify before spending.
+- Honor authorization already given, including the count it named; do not re-ask while the plan stays within it. Clarify before spending if paid generation was never authorized, no count was given, or the plan has grown past the approved count.
 - Do not assume every tool costs one credit. Provider credentials and account IDs are never tool arguments.
 - Use ForgeGUI for requested custom generation; do not silently substitute another generator after a failure. Use `library_search`, `library_details`, or `toolbox_search` for reuse when available. Keep library IDs, job IDs, artifact references and Roblox asset IDs distinct.
 
@@ -98,6 +118,7 @@ Detail flows: after the scene exists, apply polish in this order: lighting mood 
 
 Observed in the tested workflow; confirm against the live schema before applying elsewhere.
 
+- A Studio call that runs past about three minutes is hung, not slow. Stop waiting where the client supports it and treat the outcome as **unknown**, never as failed: inspect Studio before retrying anything that changes the place, retry only after confirming it did not already happen (§6), and report the blocker if you cannot inspect.
 - Mouse input targets GUI elements only by instance path. Resolve the real GUI path first.
 - Screen clicks carried a 58 px top-bar offset: subtract 58 from a full-window screenshot Y before using it as a viewport coordinate. Do not apply it to already viewport-relative or path-targeted input.
 - Non-colliding parts can still intercept clicks. Check `CanQuery` and decorative descendants, not just `CanCollide`.

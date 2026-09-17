@@ -1,6 +1,6 @@
 ---
 name: forgegui-roblox-builder
-description: Build or extend Roblox Studio experiences with ForgeGUI assets and official Roblox Studio MCP tools. Use for 3D models, GUI and UI work, 2D art and icons, audio, asset reuse and placement, lighting, particles, sound placement, and in-game verification. Enforces reference reuse, per-project style memory, asset planning before spending, and Studio verification after every insertion.
+description: Build or extend Roblox Studio experiences with ForgeGUI assets and official Roblox Studio MCP tools. Use for 3D models, GUI and UI work, 2D art and icons, icon sheets and 9-slice panels, audio, asset reuse and placement, lighting, particles, sound placement, UI motion, and in-game verification. Enforces reference reuse, per-project style memory, asset planning before spending, and Studio verification after every insertion.
 ---
 # ForgeGUI assets → Roblox Studio
 
@@ -73,11 +73,13 @@ Moss Louvan's September 15, 2026 [PR #1 findings](https://github.com/elwinhe/for
 
 **Read the UI before decorating it.** Before generating any background, frame, or button art, inspect the existing GUI tree (`search_game_tree`, `inspect_instance`) and list what already has a background. Generate for the gaps only. Stacked backgrounds and nested borders are sequencing failures, not model failures.
 
-2D art and GUI:
+2D art and GUI — prompts, tools and placement in `references/gui-art.md`, code in `references/luau/GuiArt.luau`:
 
-- Let the art supply its own silhouette. Make the backing frame transparent (`BackgroundTransparency = 1`), remove its `UICorner` and `UIStroke`, disable its border. Make the image element's background transparent too. Preserve intentionally separate chrome.
-- Crop empty padding while preserving alpha. Size elements to the cropped art's aspect ratio; never stretch.
-- For stretchable panels use `ScaleType = Slice` with a `SliceCenter` that keeps corners intact. If the artifact carries its own border, do not add another.
+- Prompt from the templates in `references/gui-art.md`. Their closing clauses ("fully transparent background", "no surrounding frame or border around the artwork") are what make output import-ready; art that arrives inside its own drawn border is a prompt failure, not a placement one.
+- Split packed sheets before use: `python references/tools/separate_sheet.py sheet.png --out-dir pieces/` writes one trimmed PNG per object and prints its native aspect. A sheet applied as a single `ImageLabel` stretches everything on it.
+- Measure 9-slice metadata instead of guessing it: `python references/tools/slice_metadata.py panel.png --preview 720x400`. Roblox stores an upload at no more than 1024 px on the longer side and reads `SliceCenter` in stored pixels, so metadata measured on the original file slices the wrong pixels in game.
+- Place art through `GuiArt`: it makes the backing frame transparent and strips its border, `UICorner`, `UIStroke` and `UIGradient`, locks plain art to its native aspect so it cannot be stretched, and drives `SliceScale` from the measured centre. Preserve intentionally separate chrome; text and progress bars sit beside or on top of art, never under it.
+- `GuiArt.conflicts(element)` lists what already draws on an element (background, decoration, existing image). Call it before decorating, and replace what it reports rather than layering over it.
 - Check at the target viewport with `screen_capture`, including a phone-sized viewport for HUDs.
 
 3D and scene:
@@ -86,7 +88,7 @@ Moss Louvan's September 15, 2026 [PR #1 findings](https://github.com/elwinhe/for
 - Check scale, pivot and anchoring after import rather than trusting authored defaults. PR #1's sample arrived at one stud per authored metre, with a centred pivot, unanchored MeshParts and preserved prop names; those measurements are a reason to inspect, not universal transform rules. Match scale to the target scene, check anchoring before Play, and verify the imported names used by the asset ledger.
 - Integrate gameplay using existing project conventions and the live `multi_edit` / `execute_luau` schemas. Do not replace unrelated content.
 
-Detail flows: after the scene exists, apply polish in this order: lighting mood → sound placement → particles and feedback → UI transitions. Pick a lighting preset from the requested genre without being asked (`references/lighting-presets.md`, code in `references/luau/LightingPresets.luau`). Place sounds by the conventions in `references/sound-placement.md`. Add VFX from `references/particle-recipes.md` (code in `references/luau/ParticleRecipes.luau`) and finishing touches from `references/mechanical-polish.md`. Use only shipped, reviewed code, never downloaded scripts or executable asset descendants. `Lighting.Technology` is not scriptable; report the recommended value for the user to set in Properties.
+Detail flows: after the scene exists, apply polish in this order: lighting mood → sound placement → particles and feedback → UI motion. Pick a lighting preset from the requested genre without being asked (`references/lighting-presets.md`, code in `references/luau/LightingPresets.luau`); fit it to the place with the `glow` and `haze` dials rather than by editing the preset, use `{ reduced = true }` for low-end targets, and read the returned report's `failed` list before claiming the look applied. Place sounds by the conventions in `references/sound-placement.md`. Add VFX from `references/particle-recipes.md` (code in `references/luau/ParticleRecipes.luau`) and finishing touches from `references/mechanical-polish.md`. Animate the UI from `references/ui-motion.md` (code in `references/luau/Motion.luau`): panels reveal and dismiss, art buttons respond by scale, totals count up, and a modal's backdrop dims and sinks input but never closes the modal. Use only shipped, reviewed code, never downloaded scripts or executable asset descendants. `Lighting.Technology` is not scriptable; report the recommended value for the user to set in Properties. `clear()` restores what a preset borrowed, so say so when you apply one to a place you did not build.
 
 ## 7. Verify, then report
 
@@ -102,6 +104,8 @@ Observed in the tested workflow; confirm against the live schema before applying
 - Screen clicks carried a 58 px top-bar offset: subtract 58 from a full-window screenshot Y before using it as a viewport coordinate. Do not apply it to already viewport-relative or path-targeted input.
 - Non-colliding parts can still intercept clicks. Check `CanQuery` and decorative descendants, not just `CanCollide`.
 - Studio caches a module that failed to load. Replace the test ModuleScript with a fresh instance before requiring it again.
+- Test the clicks that are not on buttons. A backdrop wired to close means every missed click closes the panel the player was reading, and a panel's empty space lets clicks fall through to it.
+- `Tween.Completed` fires for a cancelled tween as well as a finished one, so reopening a menu mid-close can hide it again. Check `PlaybackState.Completed` before hiding or destroying anything.
 
 ## Example invocations
 
@@ -115,3 +119,7 @@ Based on the connected tool inventory of September 14–15, 2026, the ForgeGUI c
 
 - [Roblox Studio MCP tools](https://create.roblox.com/docs/studio/mcp)
 - `references/project-manifest.md` — per-project style memory and asset ledger
+- `references/gui-art.md` — GUI prompt templates, sheet splitting, 9-slice measurement, placement rules (`luau/GuiArt.luau`, `tools/separate_sheet.py`, `tools/slice_metadata.py`)
+- `references/ui-motion.md` — reveals, presses, counters and modals (`luau/Motion.luau`)
+- `references/lighting-presets.md` — six looks, the `glow`/`haze`/`reduced` dials and reversible apply (`luau/LightingPresets.luau`)
+- `references/particle-recipes.md`, `references/sound-placement.md`, `references/mechanical-polish.md` — VFX, audio placement and game feel

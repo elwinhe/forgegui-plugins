@@ -10,9 +10,9 @@ For assets destined for Studio, follow this loop in order: **intake → referenc
 
 ## 0. Intake: one short round of questions
 
-For a new game or a large feature, ask one round of questions before planning. Skip intake when the request already settles every decision below, or for a small, fully specified change.
+For a new game or a large feature, ask one round of questions before planning. Skip intake for a small, fully specified change, or when the request already settles every decision below — including the fidelity pass, which "polished" does not settle.
 
-- Ask only decisions that change what gets built or what gets spent: at most five from the list below. Ask only the ones still open after reading the request; fewer is better, and five is a ceiling, not a target.
+- Ask only decisions that change what gets built or what gets spent: at most five from the list below, plus the fidelity pass question when a reference exists. Ask only the ones still open after reading the request; fewer is better, and five is a ceiling, not a target.
 - Never ask for facts you can check yourself: connected tools, Studio state, the import route, an existing `forgegui-project.json`.
 - Number each question, give the likely options, and end it with your recommended answer, so "defaults" is a complete reply: `❓ **Q1** - **<title>**: <options>` then `➡️ <recommended answer>`.
 
@@ -23,6 +23,8 @@ Pick from these, in order of importance:
 3. **Players.** Solo against AI bots, or multiplayer?
 4. **Spend.** How many paid generations, and is paid generation authorized? Recommend a specific number (0 is a valid recommendation) so a "defaults" reply sets a real ceiling. Say the cost is unknown unless billing evidence gives a number.
 5. **Finish.** Quick prototype or polished build.
+
+6. **Fidelity pass.** Ask this one only when a reference exists, and never folded into the question above, because "polished build" does not answer it. After the build, compare the game against the reference and fix the biggest differences? In the single A/B run behind this (`docs/evidence/fidelity-pass-ab.md`) it took about twice as long as a plain polish pass and can use extra generations. If the user says yes, write `opted_in` to `.forgegui-fidelity` in the working directory; that file is what starts the pass later (see step 7).
 
 After the answers, play back a brief of three to five lines: what you will build, the reference, and the planned generation count. If the answers authorized paid generation and named a count, and the plan stays within it, post the brief and start building — the brief is notice, not a second gate. Wait for a go-ahead only when paid generation was never authorized, no count was given, or the plan needs more paid calls than were approved; then say the new number and what it buys. Record the art direction in the manifest. Do not re-ask a settled decision later.
 
@@ -112,6 +114,7 @@ Detail flows: after the scene exists, apply polish in this order: lighting mood 
 
 - Verify every insertion in Studio: `inspect_instance` on the new path, `screen_capture` of the result, and a focused playtest when gameplay changed. Stop any playtest you started. A ForgeGUI success is not a Studio success.
 - Update the ledger with the Roblox asset id or instance path and the verification performed.
+- **Fidelity pass.** If `.forgegui-fidelity` says `opted_in`, finish verifying the build, write `ready` to that file, then run `references/fidelity-pass.md` in this turn — do not end the turn waiting for a hook to hand it to you. Write `running` when you start and `done` when it is verified. A pass left at `running` was interrupted: resume it from the same file. Suggest saving a copy of the place (File → Save to File As) before the pass so the user can compare. The whole mechanism is off unless that file exists.
 - Report: selected place, job ids, asset ids or paths, checks actually performed, pending jobs, manual steps, and credit amounts only when backed by billing evidence. Keep generated, imported, and gameplay-verified distinct. Never expose keys or headers.
 
 ## Studio testing gotchas
@@ -123,6 +126,15 @@ Observed in the tested workflow; confirm against the live schema before applying
 - Screen clicks carried a 58 px top-bar offset: subtract 58 from a full-window screenshot Y before using it as a viewport coordinate. Do not apply it to already viewport-relative or path-targeted input.
 - Non-colliding parts can still intercept clicks. Check `CanQuery` and decorative descendants, not just `CanCollide`.
 - Studio caches a module that failed to load. Replace the test ModuleScript with a fresh instance before requiring it again.
+
+Found in the September 16, 2026 fidelity A/B test (`docs/evidence/fidelity-pass-ab.md`):
+
+- Keep one Studio place open per MCP connection. A second open place split calls between the two and stalled every Studio call for about 30 minutes.
+- Do not start a playtest while one is already running; the call hung for 30 minutes.
+- `generation_model_3d` returned the wrong object in one of two runs (a crate for a lantern). Look at the thumbnail before importing.
+- `toolbox_search` with `asset_type: Audio` returned nothing, even for "fire". Do not plan placeholder audio around it.
+- Billing returned `commitDeferred` with no amount, so cost stayed unknown; do not estimate it.
+- Images still `Reviewing` rendered for the uploading account in Studio Play. That does not show they load for other players.
 
 ## Example invocations
 

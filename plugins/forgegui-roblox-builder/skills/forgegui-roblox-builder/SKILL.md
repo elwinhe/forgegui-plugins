@@ -81,6 +81,7 @@ Moss Louvan's September 15, 2026 [PR #1 findings](https://github.com/elwinhe/for
 - Place art through `GuiArt`: it makes the backing frame transparent and strips its border, `UICorner`, `UIStroke` and `UIGradient`, locks plain art to its native aspect so it cannot be stretched, and drives `SliceScale` from the measured centre. Preserve intentionally separate chrome; text and progress bars sit beside or on top of art, never under it.
 - `GuiArt.conflicts(element)` lists what already draws on an element (background, decoration, existing image). Call it before decorating, and replace what it reports rather than layering over it.
 - Check at the target viewport with `screen_capture`, including a phone-sized viewport for HUDs.
+- For HUDs, modals, shops and settings, follow `references/ui-pass.md` and build from the Screen templates in `references/gui-art.md`.
 
 3D and scene:
 
@@ -93,6 +94,7 @@ Detail flows: after the scene exists, apply polish in this order: lighting mood 
 ## 7. Verify, then report
 
 - Verify every insertion in Studio: `inspect_instance` on the new path, `screen_capture` of the result, and a focused playtest when gameplay changed. Stop any playtest you started. A ForgeGUI success is not a Studio success.
+- After a visual pass on the world or the UI, run `WorldCheck` and `UiCheck` before reporting (`references/world-and-ui-checks.md`; paste them into `execute_luau` with `references/tools/paste_module.py`). A screenshot does not show a buried spawn or a backdrop wired to close. An `error` finding means the pass is not done; include the check output in the report.
 - Update the ledger with the Roblox asset id or instance path and the verification performed.
 - Report: selected place, job ids, asset ids or paths, checks actually performed, pending jobs, manual steps, and credit amounts only when backed by billing evidence. Keep generated, imported, and gameplay-verified distinct. Never expose keys or headers.
 
@@ -119,7 +121,9 @@ Based on the connected tool inventory of September 14–15, 2026, the ForgeGUI c
 
 - [Roblox Studio MCP tools](https://create.roblox.com/docs/studio/mcp)
 - `references/project-manifest.md` — per-project style memory and asset ledger
-- `references/gui-art.md` — GUI prompt templates, sheet splitting, 9-slice measurement, placement rules (`luau/GuiArt.luau`, `tools/separate_sheet.py`, `tools/slice_metadata.py`)
+- `references/gui-art.md` — GUI prompt templates, sheet splitting, 9-slice measurement, placement rules and screen templates (`luau/GuiArt.luau`, `tools/separate_sheet.py`, `tools/slice_metadata.py`)
+- `references/ui-pass.md` — the UI pass procedure: overlay classes, hard rules and PASS/FAIL gates
+- `references/world-and-ui-checks.md` — spawn, floor and UI structure checks, how to run them through `execute_luau` and their known false positives (`luau/WorldCheck.luau`, `luau/UiCheck.luau`, `tools/paste_module.py`, `tests/qa.luau`)
 - `references/ui-motion.md` — reveals, presses, counters and modals (`luau/Motion.luau`)
 - `references/lighting-presets.md` — six looks, the `glow`/`haze`/`reduced` dials and reversible apply (`luau/LightingPresets.luau`)
 - `references/particle-recipes.md`, `references/sound-placement.md`, `references/mechanical-polish.md` — VFX, audio placement and game feel

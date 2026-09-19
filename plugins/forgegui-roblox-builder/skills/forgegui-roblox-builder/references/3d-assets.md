@@ -34,9 +34,15 @@ Generate a small kit and place it many times:
 - Typical first pass for a map-based game: 1-5 weapons or held items, 1 character
   set, 8-20 kit props, 1-3 landmarks. State the count and ask for the budget if
   it isn't already authorised.
-- Generate one hero asset first, check it in Studio (scale, look, triangle
-  count), then pass it as a style reference (`reference_asset_ids`) for the rest
-  of the kit so the set matches.
+- Generate one hero asset first per category (a weapon, a piece of gear, a
+  prop) and check it: the `thumbnail` in `generation_status`, then the triangle
+  count. Carry its look to the rest of the kit through the prompt: repeat the
+  same art-direction and material sentence word for word.
+- Don't pass a finished model in `reference_asset_ids`. In a 2026-09-19 run,
+  `generation_model_3d` rejected model artifacts there ("An input asset was not
+  found for this account") and every such job failed at once; resubmitting
+  without the reference worked. Image artifacts (a concept image from
+  `generation_image`) are the reference type to try.
 
 ## Prompting `generation_model_3d`
 
@@ -56,8 +62,9 @@ owned UUIDs or `mcp-artifact:` refs), `game_style` (routing type), `request_id`.
 - **Moving parts are separate generations.** `generation_model_3d` has no
   option to split a model into parts, and ForgeGUI's `auto_separate` works on
   images, not meshes. Generate the rifle body and, separately, its magazine (and
-  a pistol's slide, a shotgun's pump), each with the body as a content reference,
-  so reload and fire animations can move them. Alternatively try Studio's
+  a pistol's slide, a shotgun's pump), each described to match the body in the
+  prompt, so reload and fire animations can move them. Say in the body's prompt
+  that the part is missing ("magazine well empty, no magazine inserted"). Alternatively try Studio's
   `segment_mesh` on the imported mesh (up to five named parts, returned as a new
   Model beside the source) and verify the split; don't assume it cuts where you
   need.
@@ -69,8 +76,10 @@ owned UUIDs or `mcp-artifact:` refs), `game_style` (routing type), `request_id`.
 
 ## Triangle and size budgets
 
-Remesh with `generation_remesh_3d` (`source_job_id`, `target_polycount`,
-`topology`) when an output is heavier than it needs to be. Keep `topology:
+Outputs arrived at about 100,000 triangles each, five times Roblox's per-mesh
+limit, so plan a remesh for every model. Remesh with `generation_remesh_3d`
+(`source_job_id`, `target_polycount`, `topology`); it kept all three texture maps
+in testing and took about 20 seconds. Keep `topology:
 "triangle"` (the default) so the target reads as a triangle count. Starting
 points:
 

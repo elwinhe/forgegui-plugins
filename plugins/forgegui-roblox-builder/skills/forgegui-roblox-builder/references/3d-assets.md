@@ -43,6 +43,11 @@ Generate a small kit and place it many times:
   found for this account") and every such job failed at once; resubmitting
   without the reference worked. Image artifacts (a concept image from
   `generation_image`) are the reference type to try.
+- Submit in small batches and check status between them. In the same run, 26
+  model jobs sent within about two minutes: 14 succeeded, and 12 of the later ones
+  came back `outcome_unknown` within seconds of submission. An `outcome_unknown`
+  job can't be retried or regenerated without risking a double charge, so a burst
+  can cost you those items. Remeshes sent three or four at a time all succeeded.
 
 ## Prompting `generation_model_3d`
 
@@ -68,6 +73,10 @@ owned UUIDs or `mcp-artifact:` refs), `game_style` (routing type), `request_id`.
   `segment_mesh` on the imported mesh (up to five named parts, returned as a new
   Model beside the source) and verify the split; don't assume it cuts where you
   need.
+- Check the body's thumbnail for the part anyway. In testing, a pistol frame
+  prompted on its own still came back with its slide modelled on, so the separate
+  slide would overlap it. Then either use the body whole (and animate the whole
+  item) or cut the part away with `segment_mesh` after import.
 - Characters for rigging: `pose_mode: "a-pose"`, then `generation_rig_3d` with the
   model's job id as `source_job_id`, then `generation_animate_3d` with the rig's
   job id as `source_job_id` and the `action_id` the live schema requires.
@@ -76,8 +85,9 @@ owned UUIDs or `mcp-artifact:` refs), `game_style` (routing type), `request_id`.
 
 ## Triangle and size budgets
 
-Outputs arrived at about 100,000 triangles each, five times Roblox's per-mesh
-limit, so plan a remesh for every model. Remesh with `generation_remesh_3d`
+Most outputs arrived at about 100,000 triangles, five times Roblox's per-mesh
+limit, so plan a remesh for every model, but read the count first: two kit props
+in the same run came back at 5,500 and 6,500 triangles, already near budget. Remesh with `generation_remesh_3d`
 (`source_job_id`, `target_polycount`, `topology`); it kept all three texture maps
 in testing and took about 20 seconds. Keep `topology:
 "triangle"` (the default) so the target reads as a triangle count. Starting

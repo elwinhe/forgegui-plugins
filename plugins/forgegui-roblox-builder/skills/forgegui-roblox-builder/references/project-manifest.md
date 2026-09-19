@@ -51,7 +51,7 @@ Fields:
 | `assets[].key` | Stable human name (`hud.panel`, `prop.tree.pine`). |
 | `assets[].artifact_ref` | The content reference to pass when regenerating or deriving *this object*. |
 | `assets[].roblox_asset_id` / `studio_path` | Filled after import; a URL is never written here. |
-| `assets[].status` | `planned`, `generating`, `generated`, `handoff`, `inserted`, `verified`, `failed`. |
+| `assets[].status` | `planned`, `generating`, `generated`, `handoff`, `inserted`, `verified`, `failed`, or `blockout` for a part-built stand-in that a generated model will replace (`references/3d-assets.md`). |
 
 ## Rules
 

@@ -138,7 +138,8 @@ What it enforces:
   (`ui-motion.md`, `Motion.pressable`), not to a colour change on an invisible frame.
 
 Text and chrome (glass pills, progress bars, dividers) are ordinary Roblox frames and keep their
-corners and strokes; they are drawn beside or on top of art, never under it.
+corners. They are drawn beside or on top of art, never under it. Inside framed art, chrome also
+drops its stroke (see Screen templates).
 
 ## Read the UI before decorating it
 
@@ -147,12 +148,124 @@ Before placing art on or inside an existing element, call `GuiArt.conflicts(elem
 visible background, any `UICorner`/`UIStroke`/`UIGradient`, and any child that already shows an
 image. Replace what it reports, or place the art elsewhere; never add a layer on top.
 
+## Screen templates
+
+A shop, a settings screen and an action bar were rebuilt on these templates. A play-test had found
+modals that closed on any click that missed a button, and icons inside borders they did not need.
+`luau/UiCheck.luau` checks screens against the templates (see `world-and-ui-checks.md`),
+`ui-pass.md` is the procedure that uses them, and `Motion.modal` applies the modal input rule. The
+numbers from that build appear below as examples only. Measure your own art.
+
+### Modal: shop, upgrades, settings, confirmations
+
+```lua
+local function new(className: string, props: { [string]: any }): Instance -- parent last
+	local object = Instance.new(className)
+	for key, value in pairs(props) do
+		if key ~= "Parent" then
+			(object :: any)[key] = value
+		end
+	end
+	object.Parent = props.Parent
+	return object
+end
+
+-- Backdrop: dims the world and sinks every click that misses the panel. No handler.
+local backdrop = new("TextButton", {
+	Name = "ShopBackdrop", Text = "", AutoButtonColor = false, Active = true, Modal = true,
+	Selectable = false, BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 1,
+	Size = UDim2.fromScale(1, 1), Visible = false, ZIndex = 80, Parent = screen,
+})
+local anchor = new("Frame", { -- carries the responsive UIScale
+	BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.fromScale(0.5, 0.53), Size = UDim2.fromOffset(1000, 560), ZIndex = 90, Parent = screen,
+})
+local panel = new("Frame", { -- Active: clicks on empty space stop here
+	Active = true, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Visible = false, Parent = anchor,
+})
+Art.panel("panel", { Size = UDim2.fromScale(1, 1), ZIndex = 1, Parent = panel })
+-- header ribbon and title over the top rim; close button over the top-right corner
+local modal = Motion.modal(panel, { backdrop = backdrop, blur = 16 })
+close.Activated:Connect(modal.close)
+```
+
+- **What closes it.** The close button, which uses the same art and sits top right on every modal.
+  The screen's own key. Gamepad B. Handle B even when `InputBegan` reports it as processed, because
+  gamepad selection marks it that way. **Never** close from the backdrop, and never from Escape,
+  which Roblox's menu owns.
+- **One modal at a time.** Opening one closes the other.
+- **Measure the inner area** of the panel art at the size you place it. Content stays inside that
+  area and off the crests. For example, one panel placed at 1000x560 had an inner area of x 35 to
+  965 and y 69 to 525. A crest hung below its header ribbon and another rose above the bottom edge.
+
+### Content inside framed art
+
+- The panel art is the only frame. Cards and rows inside it are **borderless fills**: ink colour,
+  a corner radius of about 20, a soft vertical gradient, and no `UIStroke`. A stroked card inside a
+  framed panel reads as a frame inside a frame.
+- Check fills over painted detail. In one build, rows at 0.42 transparency over clouds painted in
+  the panel art read as a different kind of row; at 0.12 they matched.
+- A stroke on text for legibility is fine. A control's own outline, such as a switch track, is part
+  of the control.
+
+### Icons
+
+- An icon stands alone, with **no chip, ring, disc or plate behind it**. Depth comes from a drop
+  shadow: a sibling copy of the art, ink-coloured, with `ImageTransparency` 0.6, 3 to 5 px lower
+  and one `ZIndex` below. It has to be a sibling because a child always renders above its parent.
+- Do not mix framed icon art with bare icons in one row. For example, one action bar put a hub icon
+  that draws its own frame beside bare chest, gear and star icons. It was fixed by swapping in a
+  bare icon.
+- An action bar slot is a transparent frame holding four things: the shadow, the icon as an
+  `ImageButton` with `Motion.pressable`, the label under it, and the key hint at its top left.
+
+### Upgrade card
+
+From top to bottom:
+
+1. the icon;
+2. the title;
+3. the level (`LEVEL 4 / 20`) with a progress bar;
+4. the effect, in one RichText label: `Carry 44 > 52`, with the current value dimmed, the arrow
+   gold and the next value green;
+5. a one-line note;
+6. the buy button, with the coin and price on the wide button art.
+
+The card answers three questions without arithmetic: what do I get, what does it cost, can I
+afford it.
+
+| State | Buy button | Price | Note | On tap |
+| --- | --- | --- | --- | --- |
+| Affordable | Full colour | White | "Ready to upgrade", green | Click sound, purchase request |
+| Unaffordable | Dimmed | Soft red | "Need 51 more coins", red | Low click, the button wobbles (rotation), the note pulses; no request |
+| Maxed | Replaced by a check icon and MAXED | Hidden | "Fully upgraded", gold | Nothing |
+| Just purchased | Updates when the level attribute rises | | | Card and icon pulse, sparkle burst, purchase sound |
+
+- Put the balance in a badge over the panel's top-left corner, mirroring the close button. The
+  HUD's own counter is dimmed behind the backdrop.
+- A locked section lists each requirement with its progress and a state icon (a lock, then a
+  check). Its button reads LOCKED until every requirement is met.
+
+### Settings toggles
+
+- The whole row is the button, and the switch inside it takes no input. A small target inside a
+  large row makes players miss.
+- The switch is fills only: a track colour for the state, a cream knob with a shadow, and ON/OFF
+  text.
+- A footer line says how to close the screen ("Press M or B to close") and what the settings apply
+  to.
+
 ## Checking the result
 
-- `python references/tools/test_tools.py` checks the splitter and the slice tool on synthetic art:
-  the slice centre avoids a crest, side gems and painted clouds, a sliced preview keeps its rim
-  thickness, and a split icon closer than `--min-gap` stays whole. 17 checks, no arguments, no
-  network.
+- `python references/tools/test_tools.py` checks the splitter and the slice tool on synthetic art.
+  The slice centre avoids a crest, side gems and painted clouds, a sliced preview keeps its rim
+  thickness, and a split icon closer than `--min-gap` stays whole. It also checks
+  `paste_module.py`. That is 22 checks, with no arguments and no network.
+- `lune run references/tests/qa`, run from the skill root, checks `UiCheck` against stubbed GUI
+  trees. `UiCheck` audits a live ScreenGui against the screen templates above: art chrome, icons in
+  chips or on plates, strokes inside framed art, and backdrops wired to close. The same run checks
+  `WorldCheck`. That is 46 checks.
+- In Studio, run `UiCheck` on each screen you built, as described in `world-and-ui-checks.md`.
 - In Studio, `screen_capture` at the target viewport *and* at a phone-sized one. A HUD that is
   correct at 1920x1080 and broken at 390x844 is the normal failure.
 - Read the slice metadata off the `--preview` render before uploading, not off a panel that is

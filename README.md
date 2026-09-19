@@ -1,6 +1,6 @@
 # ForgeGUI MCP for Claude Code
 
-Install ID: `mcp@forgegui`. Version `1.3.0` targets staging at `vzzqjekupwutoaasswwd.supabase.co`.
+Install ID: `mcp@forgegui`. Version `1.4.0` targets staging at `vzzqjekupwutoaasswwd.supabase.co`.
 
 **Launch status (September 16, 2026):** this package intentionally uses the staging MCP while the backend and Studio import workflow are validated. Staging testing verified generation and authentication, not a complete Studio import workflow. `enhance_prompt` failed and `auto_separate` was not verified in the supplied test report. See the setup checklist and bundled skill for image, 3D, and audio import limitations.
 

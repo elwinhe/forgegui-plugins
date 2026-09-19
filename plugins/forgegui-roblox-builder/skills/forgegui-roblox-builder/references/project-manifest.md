@@ -22,6 +22,8 @@ Illustrative IDs below are placeholders, not usable assets. Start a real project
   "palette": ["#2B1F3A", "#6E4BFF", "#F5C86B", "#E8E4DD"],
   "material_language": "matte painted wood, brushed bronze, glowing crystal with soft emissive edges",
   "style_refs": ["mcp-artifact:00000000-0000-4000-8000-000000000001:0"],
+  "style_id": "00000000-0000-4000-8000-0000000000aa",
+  "style_version": 1,
   "assets": [
     {
       "key": "hud.panel",
@@ -48,6 +50,7 @@ Fields:
 | `palette` | Hex colors named in prompts and used for Studio UI/lighting choices. |
 | `material_language` | Sentence used verbatim in 3D and GUI prompts. |
 | `style_refs` | Relevant theme-pack or hero-asset references passed in `reference_asset_ids` when the tool accepts them. |
+| `style_id` / `style_version` | The server-side style identity pin (`references/style-identity.md`), recorded when the live server exposes the style tools. Passed together on every generation call that accepts them; updated only after `style_revise`. Omit both when no identity exists. |
 | `assets[].key` | Stable human name (`hud.panel`, `prop.tree.pine`). |
 | `assets[].artifact_ref` | The content reference to pass when regenerating or deriving *this object*. |
 | `assets[].roblox_asset_id` / `studio_path` | Filled after import; a URL is never written here. |
@@ -58,5 +61,6 @@ Fields:
 1. Read the manifest before planning. If `assets` already has the item with a `roblox_asset_id` or `artifact_ref`, reuse it; do not generate again. Entries that are `planned`, `generating`, or `failed` carry no reusable output; check job status before generating.
 2. Write the planned ledger entry and stable `request_id` before the paid call; add the returned `job_id` immediately on acceptance and update the same entry on completion, so an interrupted session can reconcile the request instead of duplicating it.
 3. Keep `style_refs` short (one to three). A style reference is not a content reference; do not put every generated asset in `style_refs`.
+4. A manifest `style_id` from another account or a server that no longer returns it via `style_get` is stale: drop the pin, tell the user, and re-resolve rather than passing an ID the server rejects.
 4. Never store keys, tokens, headers, or account ids in the manifest.
 5. When a ForgeGUI listing tool becomes available, the server record wins over the manifest; reconcile and keep the manifest as a cache.

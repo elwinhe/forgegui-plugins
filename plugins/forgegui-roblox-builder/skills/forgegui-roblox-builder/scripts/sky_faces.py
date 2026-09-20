@@ -80,7 +80,21 @@ def selftest():
     assert np.abs(f["SkyboxFt"][0] - f["SkyboxUp"][-1]).max() < 12, "Ft/Up seam"
     assert np.abs(f["SkyboxFt"][-1] - f["SkyboxDn"][0]).max() < 12, "Ft/Dn seam"
     assert np.abs(f["SkyboxLf"][:, -1] - f["SkyboxBk"][:, 0]).max() < 12, "Lf/Bk seam"
-    print("selftest ok")
+    # ROTATE regression pin. This locks the table against an accidental sign or index change;
+    # that the turns are the ones Studio needs rests on the in-Studio captures, not on this test.
+    r = faces(pano, 64, rotate=True)
+    for n in ("SkyboxFt", "SkyboxBk", "SkyboxLf", "SkyboxRt"):
+        assert np.array_equal(r[n], f[n]), f"{n} must not be rotated"
+    # Up is pre-turned one quarter counter-clockwise, so forward (-Z, blue low) moves from the
+    # bottom edge to the right edge and +X (red high) to the top edge.
+    # edge midpoints sit at 45deg, so compare against the neutral 127.5 with a margin rather than 0/255
+    assert r["SkyboxUp"][32, -1][2] < 60 and r["SkyboxUp"][32, 0][2] > 195, "Up rotation"
+    assert r["SkyboxUp"][0, 32][0] > 195 and r["SkyboxUp"][-1, 32][0] < 60, "Up rotation direction"
+    # Dn is pre-turned one quarter clockwise: forward moves from the top edge to the right edge,
+    # and -X ends up on top.
+    assert r["SkyboxDn"][32, -1][2] < 60 and r["SkyboxDn"][32, 0][2] > 195, "Dn rotation"
+    assert r["SkyboxDn"][0, 32][0] < 60 and r["SkyboxDn"][-1, 32][0] > 195, "Dn rotation direction"
+    print("selftest ok: six face directions, four shared edges, ROTATE table pinned")
 
 
 if __name__ == "__main__":

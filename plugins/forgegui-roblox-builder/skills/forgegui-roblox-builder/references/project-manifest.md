@@ -64,3 +64,18 @@ Fields:
 4. A manifest `style_id` from another account or a server that no longer returns it via `style_get` is stale: drop the pin, tell the user, and re-resolve rather than passing an ID the server rejects.
 4. Never store keys, tokens, headers, or account ids in the manifest.
 5. When a ForgeGUI listing tool becomes available, the server record wins over the manifest; reconcile and keep the manifest as a cache.
+
+## Fidelity pass state: `.forgegui-fidelity`
+
+A separate one-word file next to the manifest, not a field inside it, so the plugin's Stop hook can read it without parsing JSON and never has to write to the project.
+
+| Value | Meaning | Written by |
+| --- | --- | --- |
+| *(file absent)* | No fidelity pass. The hook does nothing. | — |
+| `opted_in` | The user asked for a pass at intake. The hook reminds you once per stop until the build is ready. | agent, at intake |
+| `ready` | Build verified. The next stop hands you `references/fidelity-pass.md`. | agent, at step 7 |
+| `running` | Pass in progress. | agent, when it starts |
+| `done` | Pass verified. | agent, when it finishes |
+| `off` | The user called the pass off. | user or agent |
+
+The file on disk is a request, not consent: if the current user did not ask for a pass in this session, say so rather than spending on one. It is per-project bookkeeping, so add it to `.gitignore` rather than committing it; a checked-in state file asks every clone of the repo for a pass.

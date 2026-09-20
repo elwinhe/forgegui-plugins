@@ -6,12 +6,34 @@ description: Build or extend Roblox Studio experiences with ForgeGUI assets and 
 
 ForgeGUI MCP generates and searches. Roblox Studio MCP inspects the place, edits scripts, inserts assets, and playtests. You coordinate both. Neither replaces the other. Explicit user choices override these defaults.
 
-For assets destined for Studio, follow this loop in order: **reference → import preflight → generate → publish → assemble → verify**. Reuse existing assets and Roblox IDs where suitable; a standalone downloadable asset needs no Studio import route. Skipping the reference step causes style drift and duplicate spend. Skipping verification turns a generation success into an unproven claim.
+For assets destined for Studio, follow this loop in order: **intake → reference → import preflight → generate → publish → assemble → verify**. Reuse existing assets and Roblox IDs where suitable; a standalone downloadable asset needs no Studio import route. Skipping the reference step causes style drift and duplicate spend. Skipping verification turns a generation success into an unproven claim.
+
+## 0. Intake: one short round of questions
+
+For a new game or a large feature, ask one round of questions before planning. Skip intake for a small, fully specified change, or when the request already settles every decision below — including the fidelity pass, which "polished" does not settle.
+
+- Ask only decisions that change what gets built or what gets spent: at most five from the list below, plus the fidelity pass question when a reference exists. Ask only the ones still open after reading the request; fewer is better, and five is a ceiling, not a target.
+- Never ask for facts you can check yourself: connected tools, Studio state, the import route, an existing `forgegui-project.json`.
+- Number each question, give the likely options, and end it with your recommended answer, so "defaults" is a complete reply: `❓ **Q1** - **<title>**: <options>` then `➡️ <recommended answer>`.
+
+Pick from these, in order of importance:
+
+1. **Reference.** A game, video, or screenshots to match? Pasted images and links are welcome; none is fine. You cannot watch a video: ask for a few screenshots (menus, gameplay camera, HUD, win screen) when a link alone would decide the look.
+2. **Scope.** Which screens and systems are in (menus, shop, progression, economy) and which are out.
+3. **Players.** Solo against AI bots, or multiplayer?
+4. **Spend.** How many paid generations, and is paid generation authorized? Recommend a specific number (0 is a valid recommendation) so a "defaults" reply sets a real ceiling. Say the cost is unknown unless billing evidence gives a number.
+5. **Finish.** Quick prototype or polished build.
+
+6. **Fidelity pass.** Ask this one only when a reference exists, and never folded into the question above, because "polished build" does not answer it. After the build, compare the game against the reference and fix the biggest differences? In the single A/B run behind this (`docs/evidence/fidelity-pass-ab.md`) it took about twice as long as a plain polish pass and can use extra generations. If the user says yes, write `opted_in` to `.forgegui-fidelity` in the working directory; that file is what starts the pass later (see step 7).
+
+After the answers, play back a brief of three to five lines: what you will build, the reference, and the planned generation count. If the answers authorized paid generation and named a count, and the plan stays within it, post the brief and start building — the brief is notice, not a second gate. Wait for a go-ahead only when paid generation was never authorized, no count was given, or the plan needs more paid calls than were approved; then say the new number and what it buys. Record the art direction in the manifest. Do not re-ask a settled decision later.
 
 ## 1. Establish the task
 
 - Discover the live tools and input schemas of both servers. Aliases may differ from `forgegui` and `Roblox_Studio`; identify them by capability. An empty resource listing does not mean tools are missing. If no ForgeGUI tools appear at all and the server is not in the failed-connection list, the plugin's `forgegui_api_key` user config is probably unset and the client skipped the server silently; report that as a configuration blocker, distinct from an endpoint or authentication failure, and do not substitute another endpoint or key.
 - List Studio instances and select the intended place. Ask if more than one plausible target remains. Carry its `studio_id` through every Studio call.
+- **Check Studio before planning**, because a misconfigured Studio makes calls hang with no error rather than fail: exactly one place open (a second splits calls between them), Edit mode, and a call that returns. If nothing answers, say what the user must do — open a place, connect the Studio MCP — instead of waiting.
+- **Look for leftovers from an interrupted session** before building: test scripts, temporary GUI, teleport or currency helpers, an unfinished `.forgegui-fidelity`. A run that was cut short never cleaned up after itself. Report what you find; remove only what is clearly test scaffolding.
 - **Load project memory first.** Look for `forgegui-project.json` in the working directory (see `references/project-manifest.md`). If it exists, read `game_style` (routing type), `art_direction`, `palette`, `material_language`, and the `assets` ledger before planning. If it does not exist and the task will generate more than one asset, create it from the brief before the first paid call.
 - Inspect the existing scene and relevant scripts before planning additions. Reuse existing objects for ordinary geometry.
 
@@ -32,7 +54,7 @@ Rules:
 - A part-built stand-in is a **blockout**: fine for testing layout and gameplay, logged in the ledger as `status: "blockout"`, and replaced before the build is called finished. Leave it only when the user declined generation or the import handoff, and say which in the report. Never downgrade to parts silently because generation is paid or the import needs a manual step; those are reasons to ask.
 - **Toolbox is a last resort for anything visual.** A Creator Store model, texture or decal in the build reads as a stock Roblox game and erases the project's identity; prefer ForgeGUI generation for every visual asset and reach for `toolbox_search` only when the user declined generation, asked for a specific store asset, or the asset class has no generation route. Record the source in the ledger so a Toolbox stand-in is as visible as a blockout. Audio is the standing exception: ForgeGUI-generated audio currently has no import route, so build the sound layer from Roblox's audio library until one lands.
 - Show the planned generation count and the credit estimate only when billing evidence supports a number; otherwise show the count and say the cost is unknown.
-- Honor authorization already given; do not re-ask. If paid generation is not clearly authorized, clarify before spending.
+- Honor authorization already given, including the count it named; do not re-ask while the plan stays within it. Clarify before spending if paid generation was never authorized, no count was given, or the plan has grown past the approved count.
 - Do not assume every tool costs one credit. Provider credentials and account IDs are never tool arguments.
 - Use ForgeGUI for requested custom generation; do not silently substitute another generator after a failure. Use `library_search`, `library_details`, or `toolbox_search` for reuse when available. Keep library IDs, job IDs, artifact references and Roblox asset IDs distinct.
 
@@ -105,18 +127,29 @@ Detail flows: after the scene exists, apply polish in this order: lighting mood 
 - After a visual pass on the world or the UI, run `WorldCheck`, `UiCheck` and — for any screen built from generated art — `UiCheck.provenance` against the art registry before reporting (`references/world-and-ui-checks.md`; paste them into `execute_luau` with `references/tools/paste_module.py`). A screenshot does not show a buried spawn or a backdrop wired to close. An `error` finding means the pass is not done; include the check output in the report. `provenance` states what share of a screen's visible surfaces is generated art and names any image it cannot trace to the registry, which is the evidence that a UI was built from generated art rather than Roblox frames.
 - Update the ledger with the Roblox asset id or instance path and the verification performed.
 - List every asset still at `blockout` and every entry waiting at `handoff` in the report.
+- **Fidelity pass.** If `.forgegui-fidelity` says `opted_in`, finish verifying the build, write `ready` to that file, then run `references/fidelity-pass.md` in this turn — do not end the turn waiting for a hook to hand it to you. Write `running` when you start and `done` when it is verified. A pass left at `running` was interrupted: resume it from the same file. Suggest saving a copy of the place (File → Save to File As) before the pass so the user can compare. The whole mechanism is off unless that file exists.
 - Report: selected place, job ids, asset ids or paths, checks actually performed, pending jobs, manual steps, and credit amounts only when backed by billing evidence. Keep generated, imported, and gameplay-verified distinct. Never expose keys or headers.
 
 ## Studio testing gotchas
 
 Observed in the tested workflow; confirm against the live schema before applying elsewhere.
 
+- A Studio call that runs past about three minutes is hung, not slow. Stop waiting where the client supports it and treat the outcome as **unknown**, never as failed: inspect Studio before retrying anything that changes the place, retry only after confirming it did not already happen (§6), and report the blocker if you cannot inspect.
 - Mouse input targets GUI elements only by instance path. Resolve the real GUI path first.
 - Screen clicks carried a 58 px top-bar offset: subtract 58 from a full-window screenshot Y before using it as a viewport coordinate. Do not apply it to already viewport-relative or path-targeted input.
 - Non-colliding parts can still intercept clicks. Check `CanQuery` and decorative descendants, not just `CanCollide`.
 - Studio caches a module that failed to load. Replace the test ModuleScript with a fresh instance before requiring it again.
 - Test the clicks that are not on buttons. A backdrop wired to close means every missed click closes the panel the player was reading, and a panel's empty space lets clicks fall through to it.
 - `Tween.Completed` fires for a cancelled tween as well as a finished one, so reopening a menu mid-close can hide it again. Check `PlaybackState.Completed` before hiding or destroying anything.
+
+Found in the September 16, 2026 fidelity A/B test (`docs/evidence/fidelity-pass-ab.md`):
+
+- Keep one Studio place open per MCP connection. A second open place split calls between the two and stalled every Studio call for about 30 minutes.
+- Do not start a playtest while one is already running; the call hung for 30 minutes.
+- `generation_model_3d` returned the wrong object in one of two runs (a crate for a lantern). Look at the thumbnail before importing.
+- `toolbox_search` with `asset_type: Audio` returned nothing, even for "fire". Do not plan placeholder audio around it.
+- Billing returned `commitDeferred` with no amount, so cost stayed unknown; do not estimate it.
+- Images still `Reviewing` rendered for the uploading account in Studio Play. That does not show they load for other players.
 
 ## Example invocations
 

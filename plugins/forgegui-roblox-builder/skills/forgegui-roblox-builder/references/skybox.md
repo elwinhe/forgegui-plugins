@@ -12,12 +12,16 @@ by construction.
    supplied, use its words in the prompt; a template image is a reference
    only once it is in ForgeGUI's ID space (see SKILL.md §3).
 2. **Check it before cutting.** It must be 2:1; `sky_faces.py` refuses anything
-   else; pad or resize the image to 2:1 first, keeping the horizon near the middle. Look at the left and right edges side by side: that wrap seam is the one
-   place a generated panorama can break, and it lands on `SkyboxBk`, behind the
-   camera at spawn.
+   else, so pad or resize first, keeping the horizon near the middle.
 3. **Cut.** `python3 scripts/sky_faces.py pano.png out/ --size 1024` writes the six
-   PNGs. `--selftest` checks the six face directions, four shared edges, and the
-   `ROTATE` table.
+   PNGs. Faces cut from one image meet along their shared edges by construction; the
+   join where the panorama's own two ends meet is the exception, and generators do not
+   reliably close it — one measured panorama differed by 6.2 mean channel units across
+   that join against 1.1 for ordinary neighbouring columns, which shows in Studio as a
+   vertical line through one face. The cutter feathers the two edges into each other
+   first (`--band`, 64 columns by default, 0 to disable), which brought that panorama to
+   0.0, and prints the before and after so the result is visible rather than assumed.
+   `--selftest` checks the six face directions, four shared edges, and the `ROTATE` table.
 4. **Upload each face** as `assetType: "Image"` (§4), keeping the six ids in the
    ledger under one entry.
 5. **Apply** with a preset: `references/luau/SkyboxPresets.luau` carries three moods

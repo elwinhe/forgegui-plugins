@@ -44,19 +44,48 @@ def sample(pano, x, y, z):
     return top * (1 - fy) + bot * fy
 
 
+
+def wrap_blend(pano, band):
+    """Make the left and right edges meet.
+
+    A generated panorama is rarely seamless at its own wrap, and that seam is the one
+    discontinuity cutting faces from a single image cannot remove. Feather the two edges
+    into each other: at the seam each side becomes the average of both, and the influence
+    falls off across `band` columns, so the joint disappears without washing out the sky.
+    """
+    if band <= 0:
+        return pano
+    out = pano.copy()
+    for i in range(min(band, pano.shape[1] // 2)):
+        t = 0.5 * (1.0 - i / band)
+        left, right = pano[:, i].copy(), pano[:, -1 - i].copy()
+        out[:, i] = (1 - t) * left + t * right
+        out[:, -1 - i] = (1 - t) * right + t * left
+    return out
+
+
+def wrap_gap(pano):
+    """Mean per-channel difference between the first and last column."""
+    return float(np.abs(pano[:, 0] - pano[:, -1]).mean())
+
 def faces(pano, size, rotate=True):
     c = (np.arange(size) + 0.5) / size * 2 - 1
     u, v = np.meshgrid(c, c)
     return {n: np.rot90(sample(pano, *f(u, v)), ROTATE[n] if rotate else 0) for n, f in FACES.items()}
 
 
-def main(src, out, size=1024):
+def main(src, out, size=1024, band=64):
     img = Image.open(src).convert("RGB")
     w, h = img.size
     if abs(w / h - 2) > 0.02:
         sys.exit(f"error: {src} is {w}x{h}; an equirectangular panorama must be 2:1")
     Path(out).mkdir(parents=True, exist_ok=True)
-    for name, arr in faces(np.asarray(img, dtype=np.float32), size).items():
+    pano = np.asarray(img, dtype=np.float32)
+    before = wrap_gap(pano)
+    pano = wrap_blend(pano, band)
+    if band > 0:
+        print(f"wrap seam: {before:.1f} -> {wrap_gap(pano):.1f} (blended over {band} columns)")
+    for name, arr in faces(pano, size).items():
         Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8)).save(Path(out) / f"{name}.png")
         print(Path(out) / f"{name}.png")
 

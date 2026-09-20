@@ -12,7 +12,7 @@ by construction.
    supplied, use its words in the prompt; a template image is a reference
    only once it is in ForgeGUI's ID space (see SKILL.md §3).
 2. **Check it before cutting.** It must be 2:1; `sky_faces.py` refuses anything
-   else. Look at the left and right edges side by side: that wrap seam is the one
+   else; pad or resize the image to 2:1 first, keeping the horizon near the middle. Look at the left and right edges side by side: that wrap seam is the one
    place a generated panorama can break, and it lands on `SkyboxBk`, behind the
    camera at spawn.
 3. **Cut.** `python3 scripts/sky_faces.py pano.png out/ --size 1024` writes the six

@@ -4,8 +4,9 @@
 -- 2:1 panorama, cut it with scripts/sky_faces.py, and pass the ids in.
 --
 -- Shares the ownership convention of LightingPresets.luau: effects this module creates are named
--- ForgeGUI_* and tagged with the attribute ForgeGUIPreset = true, existing ones it reuses are tagged
--- ForgeGUIPresetAdopted = true, and clear() removes only what it owns. Run LightingPresets.apply() first
+-- ForgeGUI_* and tagged with the attribute ForgeGUISkyboxPreset = true, existing ones it reuses are tagged
+-- ForgeGUISkyboxPresetAdopted = true. The tag is deliberately distinct from the one LightingPresets uses,
+-- so neither module's clear() removes the other's effects. Run LightingPresets.apply() first
 -- and this second: the skybox preset's values are matched to the panorama and should win where the two
 -- overlap (TimeOfDay, Brightness, Ambient, OutdoorAmbient, ShadowSoftness, the Environment*Scale pair,
 -- GlobalShadows, and the Atmosphere / Bloom / SunRays effects).
@@ -80,8 +81,8 @@ local byName: { [string]: Preset } = {
 }
 Presets.byName = byName
 
-local OWNED_ATTR = "ForgeGUIPreset"
-local ADOPTED_ATTR = "ForgeGUIPresetAdopted"
+local OWNED_ATTR = "ForgeGUISkyboxPreset"
+local ADOPTED_ATTR = "ForgeGUISkyboxPresetAdopted"
 
 -- Resolve an effect by ownership, never by name, so a template's own Atmosphere/Bloom/SunRays is
 -- reconfigured in place instead of being shadowed by a second instance of the same class.

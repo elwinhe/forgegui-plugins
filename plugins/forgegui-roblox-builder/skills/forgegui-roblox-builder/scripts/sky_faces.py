@@ -45,22 +45,25 @@ def sample(pano, x, y, z):
 
 
 
-def wrap_blend(pano, band):
-    """Make the left and right edges meet.
+def close_wrap_seam(pano, band):
+    """Remove the step between the last and first column.
 
-    A generated panorama is rarely seamless at its own wrap, and that seam is the one
-    discontinuity cutting faces from a single image cannot remove. Feather the two edges
-    into each other: at the seam each side becomes the average of both, and the influence
-    falls off across `band` columns, so the joint disappears without washing out the sky.
+    A generated panorama is rarely seamless at its own wrap, and that step is the one
+    discontinuity cutting faces from a single image cannot remove. The two edges look at
+    different parts of the sky, so averaging them ghosts detail across the joint and dirties
+    a panorama that already wrapped. Instead take the step itself -- the per-row, per-channel
+    difference across the wrap -- and ramp half of it out of each side over `band` columns.
+    Detail is untouched; only a smooth offset moves, and a panorama with no step is unchanged.
     """
     if band <= 0:
         return pano
+    band = min(band, pano.shape[1] // 2)
     out = pano.copy()
-    for i in range(min(band, pano.shape[1] // 2)):
-        t = 0.5 * (1.0 - i / band)
-        left, right = pano[:, i].copy(), pano[:, -1 - i].copy()
-        out[:, i] = (1 - t) * left + t * right
-        out[:, -1 - i] = (1 - t) * right + t * left
+    half_step = (pano[:, 0] - pano[:, -1]) / 2.0
+    for i in range(band):
+        w = 1.0 - i / band
+        out[:, i] -= half_step * w
+        out[:, -1 - i] += half_step * w
     return out
 
 
@@ -82,9 +85,11 @@ def main(src, out, size=1024, band=64):
     Path(out).mkdir(parents=True, exist_ok=True)
     pano = np.asarray(img, dtype=np.float32)
     before = wrap_gap(pano)
-    pano = wrap_blend(pano, band)
+    pano = close_wrap_seam(pano, band)
     if band > 0:
-        print(f"wrap seam: {before:.1f} -> {wrap_gap(pano):.1f} (blended over {band} columns)")
+        # Not "before -> after": the correction sets both edge columns to the same value, so
+        # re-measuring the gap can only ever print 0. Report the step that was taken out.
+        print(f"wrap seam: {before:.1f} levels of step ramped out over {band} columns")
     for name, arr in faces(pano, size).items():
         Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8)).save(Path(out) / f"{name}.png")
         print(Path(out) / f"{name}.png")
@@ -123,7 +128,27 @@ def selftest():
     # and -X ends up on top.
     assert r["SkyboxDn"][32, -1][2] < 60 and r["SkyboxDn"][32, 0][2] > 195, "Dn rotation"
     assert r["SkyboxDn"][0, 32][0] < 60 and r["SkyboxDn"][-1, 32][0] > 195, "Dn rotation direction"
-    print("selftest ok: six face directions, four shared edges, ROTATE table pinned")
+    # close_wrap_seam: leaves an already-wrapping panorama alone, and removes a real step
+    # without touching detail.
+    # cos is symmetric about the wrap, so its first and last column already agree.
+    x = (np.arange(512) + 0.5) / 512 * 2 * np.pi
+    seamless = np.repeat((np.cos(x) * 60 + 128)[None, :, None], 3, 2).astype(np.float32)
+    seamless = np.repeat(seamless, 64, 0)
+    assert np.abs(close_wrap_seam(seamless, 64) - seamless).max() < 1e-3, "seamless input must not change"
+    # The bound that matters on real panoramas: nothing moves by more than half the step that
+    # was actually measured, so a nearly-seamless sky can only be nudged by a nearly-zero amount.
+    rng = np.random.default_rng(0)
+    noisy = rng.uniform(0, 255, (32, 256, 3)).astype(np.float32)
+    step = np.abs(noisy[:, 0] - noisy[:, -1]).max()
+    assert np.abs(close_wrap_seam(noisy, 64) - noisy).max() <= step / 2 + 1e-3, "change must be bounded by half the step"
+    stepped = seamless.copy()
+    stepped[:, :256] += 20.0  # a 20-level step at the wrap (and one inside, which must survive)
+    fixed = close_wrap_seam(stepped, 64)
+    assert wrap_gap(fixed) < 1e-3, "wrap step must close"
+    assert abs(float(np.abs(fixed[:, 0] - stepped[:, 0]).max()) - 10.0) < 1e-3, "each side takes half the step"
+    interior = np.abs(fixed[:, 255] - stepped[:, 255]).max()
+    assert interior < 1e-3, "detail outside the band must be untouched"
+    print("selftest ok: six face directions, four shared edges, ROTATE table pinned, wrap seam ramp")
 
 
 if __name__ == "__main__":
@@ -131,6 +156,8 @@ if __name__ == "__main__":
     if a == ["--selftest"]:
         selftest()
     elif len(a) in (2, 4):
-        main(a[0], a[1], int(a[3]) if len(a) == 4 and a[2] == "--size" else 1024)
+        size = int(a[3]) if len(a) == 4 and a[2] == "--size" else 1024
+        band = int(a[3]) if len(a) == 4 and a[2] == "--band" else 64
+        main(a[0], a[1], size, band)
     else:
         sys.exit(__doc__)

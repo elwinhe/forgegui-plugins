@@ -1,6 +1,6 @@
 # From a vague prompt to a finished game
 
-Defaults and decision points for building a whole game ("make me a rocket league game", "make a floating
+Defaults and decision points for building a whole game ("make me a car-football game", "make a floating
 island collectathon") with this skill. Guidance, not a script: every number here is what one build used, not
 a requirement, and each step says when to skip or shrink it. The loop in `SKILL.md` (intake → reference →
 import preflight → generate → publish → assemble → verify) still governs each asset; this page is the order the

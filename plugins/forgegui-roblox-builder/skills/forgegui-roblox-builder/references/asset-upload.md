@@ -11,10 +11,12 @@ then poll `GET /assets/v1/operations/{id}` until `done`, and read `response.asse
 
 ```sh
 scripts/open_cloud_upload.sh <file> <Image|Audio|Model|Animation> "<display name>"
-# -> assetId=76875404707631 assetType=Audio moderation=Reviewing
+# -> assetId=76875404707631 assetType=Audio moderation=Reviewing   (later re-checked: Approved)
 ```
 
-Credentials come from the environment and are never printed or passed as tool arguments:
+Credentials come from the environment. The key is never printed, and never appears in a command line: the
+script pipes it to `curl` as a header on stdin (`-H @-`), so it does not show up in the process table for
+anyone running `ps` while an upload is in flight.
 
 ```sh
 # .env (git-ignored; never commit it)
@@ -37,14 +39,24 @@ scripts/open_cloud_upload.sh --dry-run star-chime.mp3 Audio "Star chime"
 
 ## Asset types and formats
 
-| `assetType` | Extensions (content type) | Used as |
-| --- | --- | --- |
-| `Image` | `.png`, `.jpg` (`image/png`, `image/jpeg`) | `ImageLabel.Image`, `Decal.Texture`, `SurfaceAppearance` maps, `Sky` faces, `Shirt.ShirtTemplate` |
-| `Audio` | `.mp3`, `.ogg`, `.wav`, `.flac` (`audio/*`) | `Sound.SoundId` |
-| `Model` | `.glb`, `.fbx` (`model/gltf-binary`, `model/fbx`) | `InsertService:LoadAsset(id)` → MeshPart(s) |
-| `Animation` | `.rbxm`, `.rbxmx` (`model/x-rbxm`) holding a `KeyframeSequence` | `Animation.AnimationId` on an R15 `Animator` |
+Only four mappings have actually been run end to end here, and the script accepts only those:
 
-The script checks that the extension matches the requested type (`.glb` as `Image` is refused). Use the id as
+| `assetType` | Verified extension (content type) | Used as |
+| --- | --- | --- |
+| `Image` | `.png` (`image/png`) | `ImageLabel.Image`, `Decal.Texture`, `SurfaceAppearance` maps, `Sky` faces, `Shirt.ShirtTemplate` |
+| `Audio` | `.mp3` (`audio/mpeg`) | `Sound.SoundId` |
+| `Model` | `.glb` (`model/gltf-binary`) | `InsertService:LoadAsset(id)` → MeshPart(s) |
+| `Animation` | `.rbxm` (`model/x-rbxm`) holding a `KeyframeSequence` | `Animation.AnimationId` on an R15 `Animator` |
+
+**Everything else is untested here and the script refuses it**, so a run cannot spend an upload on a
+server-side rejection: `.jpg`, `.ogg`, `.fbx`, `.rbxmx`. Roblox's own docs list `.mp3` and `.ogg` for audio, so
+`.ogg` is likely fine — but likely is not measured, and `.wav`/`.flac` were asserted in an earlier draft of this
+page on no evidence at all. If you need one of them, upload a single throwaway file by hand first, record the
+result, then add the extension to the script's table and to this one.
+
+`.rbxm` is not exclusively an Animation container. The requested `assetType` decides, and the script only
+refuses combinations it knows are wrong: `.rbxm` may be uploaded as `Model` as well as `Animation` (it warns
+that the `Model` case is unexercised), while `.glb` as `Image` is refused outright. Use the id as
 `rbxassetid://<id>` where a content string is expected.
 
 ## Moderation
@@ -71,8 +83,11 @@ result carries `audio_urls` / an `artifact_ref` of kind `audio`: a plain public 
 September 19–20, 2026 (`evidence/audio-route/` in the showcase repo): request `audio-route-test-2026-09-19-a`,
 job `b948de0a-2dff-4fb9-9c5c-4dffa9c1baed`, a 2 s clip, 33 KB, 128 kbps 44.1 kHz stereo. Download it, upload it
 as `Audio` through this script, and the operation returned **assetId 76875404707631**, `Reviewing` at upload.
-That id is then a `Sound.SoundId`. In-game playback of that specific id was being confirmed in Studio when this
-was written; `evidence/audio-route/RESULT.md` carries the outcome, so read it rather than assuming.
+That id is then a `Sound.SoundId`, and it was carried the rest of the way: a moderation re-check about ten
+minutes later returned `Approved`/`Active`, and in a Studio play session the `Sound` reported `IsLoaded = true`,
+a 2.0 s length and `IsPlaying` after `Play()` (`evidence/audio-route/RESULT.md`). Audible output was not
+measured — no audio capture — and playback for any account other than the uploader's is untested, as for every
+asset here.
 
 **A library or licensed file.** The same command with the file you already have; the Roblox free audio library
 needs no upload at all, its ids go straight into `Sound.SoundId`.

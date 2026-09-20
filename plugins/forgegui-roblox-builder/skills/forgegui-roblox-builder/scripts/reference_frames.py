@@ -133,7 +133,12 @@ def main(argv):
             pos.append(a)
     if len(pos) != 2:
         sys.exit(__doc__)
-    if opts["--frames"] < 1 or opts["--width"] < 16 or "x" not in opts["--sheet"]:
+    try:
+        _rows, _cols = (int(v) for v in str(opts["--sheet"]).lower().split("x", 1))
+        if _rows < 1 or _cols < 1:
+            raise ValueError
+    except ValueError:
+        sys.exit("error: --sheet wants ROWSxCOLS with both at least 1, for example 3x4")
         sys.exit("--frames >= 1, --width >= 16, --sheet like 3x4")
     got, sh = capture(pos[0], pos[1], opts["--frames"], opts["--width"], opts["--sheet"])
     print(f"{len(got)} frames: {got[0]} .. {got[-1]}")

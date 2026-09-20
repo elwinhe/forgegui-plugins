@@ -86,6 +86,7 @@ Moss Louvan's September 15, 2026 [PR #1 findings](https://github.com/elwinhe/for
 - Measure 9-slice metadata instead of guessing it: `python references/tools/slice_metadata.py panel.png --preview 720x400`. Roblox stores an upload at no more than 1024 px on the longer side and reads `SliceCenter` in stored pixels, so metadata measured on the original file slices the wrong pixels in game.
 - Place art through `GuiArt`: it makes the backing frame transparent and strips its border, `UICorner`, `UIStroke` and `UIGradient`, locks plain art to its native aspect so it cannot be stretched, and drives `SliceScale` from the measured centre. Preserve intentionally separate chrome; text and progress bars sit beside or on top of art, never under it.
 - `GuiArt.conflicts(element)` lists what already draws on an element (background, decoration, existing image). Call it before decorating, and replace what it reports rather than layering over it.
+- **Style references on GUI calls.** `generation_gui` has no style fields and no `game_style`; its only image lever is `reference_asset_ids` (up to 8), which accepts owned asset UUIDs and `mcp-artifact:` references only. A user's file is therefore not a reference until an upload route exists. When `image_upload_authorize`/`image_upload_register` are exposed, register it and pass the UUID; when they are not, build the style plate described in `references/gui-art.md`, pin every GUI call to it, and disclose the substitution in the report. Never pass `style_id` or `style_brief` to `generation_gui` — the schema rejects unknown fields outright.
 - Check at the target viewport with `screen_capture`, including a phone-sized viewport for HUDs.
 - For HUDs, modals, shops and settings, follow `references/ui-pass.md` and build from the Screen templates in `references/gui-art.md`.
 
@@ -101,7 +102,7 @@ Detail flows: after the scene exists, apply polish in this order: lighting mood 
 ## 7. Verify, then report
 
 - Verify every insertion in Studio: `inspect_instance` on the new path, `screen_capture` of the result, and a focused playtest when gameplay changed. Stop any playtest you started. A ForgeGUI success is not a Studio success.
-- After a visual pass on the world or the UI, run `WorldCheck` and `UiCheck` before reporting (`references/world-and-ui-checks.md`; paste them into `execute_luau` with `references/tools/paste_module.py`). A screenshot does not show a buried spawn or a backdrop wired to close. An `error` finding means the pass is not done; include the check output in the report.
+- After a visual pass on the world or the UI, run `WorldCheck`, `UiCheck` and — for any screen built from generated art — `UiCheck.provenance` against the art registry before reporting (`references/world-and-ui-checks.md`; paste them into `execute_luau` with `references/tools/paste_module.py`). A screenshot does not show a buried spawn or a backdrop wired to close. An `error` finding means the pass is not done; include the check output in the report. `provenance` states what share of a screen's visible surfaces is generated art and names any image it cannot trace to the registry, which is the evidence that a UI was built from generated art rather than Roblox frames.
 - Update the ledger with the Roblox asset id or instance path and the verification performed.
 - List every asset still at `blockout` and every entry waiting at `handoff` in the report.
 - Report: selected place, job ids, asset ids or paths, checks actually performed, pending jobs, manual steps, and credit amounts only when backed by billing evidence. Keep generated, imported, and gameplay-verified distinct. Never expose keys or headers.
@@ -135,6 +136,7 @@ Based on the connected tool inventory of September 14–15, 2026, the ForgeGUI c
 - `references/3d-assets.md` — source per asset, kit planning, 3D prompts, moving parts, triangle budgets, import routes and placement
 - `references/gui-art.md` — GUI prompt templates, sheet splitting, 9-slice measurement, placement rules and screen templates (`luau/GuiArt.luau`, `tools/separate_sheet.py`, `tools/slice_metadata.py`)
 - `references/ui-pass.md` — the UI pass procedure: overlay classes, hard rules and PASS/FAIL gates
+- `references/tools/style_delta.py` — measures whether a style reference actually moved the output (CIELAB delta-E plus a contact sheet), for the style-adaptivity claim
 - `references/world-and-ui-checks.md` — spawn, floor and UI structure checks, how to run them through `execute_luau` and their known false positives (`luau/WorldCheck.luau`, `luau/UiCheck.luau`, `tools/paste_module.py`, `tests/qa.luau`)
 - `references/ui-motion.md` — reveals, presses, counters and modals (`luau/Motion.luau`)
 - `references/lighting-presets.md` — six looks, the `glow`/`haze`/`reduced` dials and reversible apply (`luau/LightingPresets.luau`)

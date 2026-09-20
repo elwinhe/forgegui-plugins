@@ -20,6 +20,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import paste_module  # noqa: E402
 import separate_sheet  # noqa: E402
 import slice_metadata  # noqa: E402
+import style_delta  # noqa: E402
 
 failures = 0
 checks = 0
@@ -133,7 +134,78 @@ def test_paste_module() -> None:
         check(f"local {name} = {{}}" in body and body.rstrip().endswith(f"return {name}.format"), f"the shipped {name} pastes with a runner")
 
 
-for test in (test_slice_avoids_decoration, test_render_keeps_rim_thickness, test_measures_at_roblox_stored_size, test_slice_rejects_all_decorated, test_separate_sheet_splits_and_trims, test_paste_module):
+def kit(background: tuple[int, int, int], accent: tuple[int, int, int], margin: int = 0) -> Image.Image:
+    """A panel-and-icon composition in two colours, optionally on a transparent margin."""
+    size = 200 + margin * 2
+    image = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    draw.rounded_rectangle((margin + 10, margin + 10, margin + 190, margin + 190), radius=24, fill=background + (255,))
+    draw.ellipse((margin + 60, margin + 60, margin + 140, margin + 140), fill=accent + (255,))
+    return image
+
+
+# IRONFRONT's charcoal/amber against the same composition in slate/cyan.
+WARM = kit((17, 24, 32), (217, 165, 74))
+COOL = kit((29, 41, 51), (107, 173, 180))
+
+
+def test_style_delta_separates_two_style_references() -> None:
+    result = style_delta.compare_pair(WARM, COOL)
+    check(result["delta_e"] > style_delta.DEFAULT_THRESHOLD, f"a recoloured kit clears the threshold (got {result['delta_e']:.2f})")
+    check(result["hue_shift"] > 30, f"the hue moved from amber toward cyan (got {result['hue_shift']:.1f})")
+    same = style_delta.compare_pair(WARM, WARM.copy())
+    check(same["delta_e"] < style_delta.JND, f"identical art is below the just-noticeable difference (got {same['delta_e']:.3f})")
+    check(same["hue_shift"] < 1e-6 and abs(same["saturation_delta"]) < 1e-9, "identical art reports no hue or saturation shift")
+
+
+def test_style_delta_ignores_transparent_background() -> None:
+    # The same art on a much larger transparent canvas must measure the same;
+    # averaging the empty pixels in would drag both palettes toward one grey.
+    padded = style_delta.compare_pair(WARM, kit((17, 24, 32), (217, 165, 74), margin=400))
+    check(padded["delta_e"] < style_delta.JND, f"a transparent margin does not change the palette (got {padded['delta_e']:.3f})")
+    check(padded["pixels"][1] == padded["pixels"][0], "only opaque pixels are counted, so the pixel count is unchanged")
+    blank = style_delta.measure(Image.new("RGBA", (64, 64), (0, 0, 0, 0)))
+    check(blank["pixels"] == 0 and blank["palette"].shape[0] == 0, "fully transparent art measures as empty rather than raising")
+
+
+def test_style_delta_reports_direction() -> None:
+    grey = kit((60, 60, 60), (150, 150, 150))
+    check(style_delta.compare_pair(grey, WARM)["saturation_delta"] > 0, "moving to a saturated palette reports a positive saturation delta")
+    check(style_delta.compare_pair(WARM, grey)["saturation_delta"] < 0, "and the reverse run reports a negative one")
+    dark = kit((10, 10, 10), (20, 20, 20))
+    check(style_delta.compare_pair(dark, kit((200, 200, 200), (240, 240, 240)))["value_delta"] > 0, "a brighter run reports a positive value delta")
+    check(style_delta.hue_gap(350, 10) == 20, "hue distance wraps around the colour wheel")
+    check(style_delta.hue_gap(10, 350) == 20, "and wraps the same way in reverse")
+
+
+def test_style_delta_palette_is_deterministic() -> None:
+    first = style_delta.measure(WARM)["palette"]
+    second = style_delta.measure(WARM)["palette"]
+    check(first.shape == second.shape and bool((first == second).all()), "the same art always yields the same palette, so two runs stay comparable")
+    lightness = style_delta.measure(WARM)["palette"][:, 0]
+    check(all(lightness[i] <= lightness[i + 1] for i in range(len(lightness) - 1)), "palette entries are ordered by lightness")
+
+
+def test_style_delta_pairs_directories_and_draws_a_sheet() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        first, second = pathlib.Path(tmp) / "a", pathlib.Path(tmp) / "b"
+        first.mkdir()
+        second.mkdir()
+        for name in ("panel.png", "icon.png"):
+            WARM.save(first / name)
+            COOL.save(second / name)
+        COOL.save(second / "unmatched.png")
+        (first / "notes.txt").write_text("ignored", encoding="utf-8")
+
+        pairs = style_delta.pair_files(first, second)
+        check([left.name for left, _ in pairs] == ["icon.png", "panel.png"], "only filenames present in both directories are paired, in order")
+        sheet = pathlib.Path(tmp) / "delta.png"
+        style_delta.contact_sheet(pairs, sheet, cell=64)
+        with Image.open(sheet) as rendered:
+            check(rendered.size == (128, 128), f"the sheet is one row per pair, two columns wide (got {rendered.size})")
+
+
+for test in (test_slice_avoids_decoration, test_render_keeps_rim_thickness, test_measures_at_roblox_stored_size, test_slice_rejects_all_decorated, test_separate_sheet_splits_and_trims, test_paste_module, test_style_delta_separates_two_style_references, test_style_delta_ignores_transparent_background, test_style_delta_reports_direction, test_style_delta_palette_is_deterministic, test_style_delta_pairs_directories_and_draws_a_sheet):
     test()
 
 print(f"\n{checks} checks, {failures} failures")

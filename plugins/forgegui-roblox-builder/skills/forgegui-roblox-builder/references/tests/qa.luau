@@ -456,6 +456,81 @@ do
 	check(string.find(UiCheck.format(merged), "UiCheck: 1 error(s), 2 warning(s), 4 checked", 1, true) == 1, "format leads with the totals")
 end
 
+-- Provenance: the positive claim, as a number -----------------------------------
+
+do
+	-- A HUD carrying one of each kind of surface: registered art, an unrecorded
+	-- image, a primitive that admits it, and one that does not.
+	local registry = {
+		panel = { id = "rbxassetid://811", aspect = 2.27 },
+		ammo = { id = "rbxassetid://822", aspect = 1 },
+	}
+	local root = gui("ScreenGui", "Hud", {}, {
+		gui("Frame", "Root", { AbsoluteSize = px(1920, 1080) }, {
+			gui("ImageLabel", "PanelArt", { Image = "rbxassetid://811", AbsoluteSize = px(720, 320) }),
+			gui("ImageLabel", "AmmoIcon", { Image = "rbxassetid://822", AbsoluteSize = px(48, 48) }),
+			gui("TextLabel", "AmmoCount", { Text = "30 / 120", TextFits = true, AbsoluteSize = px(160, 40) }),
+			gui("ImageLabel", "StockDecal", { Image = "rbxassetid://999", AbsoluteSize = px(64, 64) }),
+			gui("Frame", "HealthBar", { BackgroundTransparency = 0, AbsoluteSize = px(300, 18) }),
+			gui("Frame", "Divider", { BackgroundTransparency = 0, AbsoluteSize = px(300, 2), attributes = { AllowPrimitive = true } }),
+		}),
+	})
+	local report = UiCheck.provenance(root, registry)
+	local tally = report.provenance
+	check(tally.art == 2, "registered images count as generated art")
+	check(tally.unregistered == 1, "an image outside the registry is unattributed")
+	check(tally.primitive == 2, "both drawn frames count as primitive surfaces")
+	check(tally.text == 1, "text labels are tallied beside the ratio")
+	check(tally.surfaces == 5, "a transparent layout frame is not a surface")
+	check(math.abs(tally.coverage - 0.4) < 1e-9, "coverage is generated art over drawn surfaces")
+	check(count(report, "unregistered_image") == 1, "the unrecorded image is reported as an error")
+	check(count(report, "primitive_surface") == 1, "AllowPrimitive silences the divider but not the health bar")
+	check(report.errors == 1 and report.warnings == 1, "an unrecorded image fails, a primitive only warns")
+	check(string.find(UiCheck.format(report), "40% generated", 1, true) ~= nil, "format prints the surface ratio")
+end
+
+do
+	-- A screen built entirely from generated art: every surface is registered.
+	local registry = { panel = { id = "rbxassetid://811" }, close = { id = "rbxassetid://812" } }
+	local clean = gui("ScreenGui", "Loadout", {}, {
+		gui("Frame", "Anchor", {}, {
+			gui("ImageLabel", "Panel", { Image = "rbxassetid://811", AbsoluteSize = px(1000, 560) }),
+			gui("ImageButton", "Close", { Image = "rbxassetid://812", AbsoluteSize = px(62, 62) }),
+			gui("TextLabel", "Title", { Text = "LOADOUT", TextFits = true, AbsoluteSize = px(300, 48) }),
+		}),
+	})
+	local report = UiCheck.provenance(clean, registry)
+	check(report.errors == 0 and report.warnings == 0, "an all-generated screen reports nothing")
+	check(report.provenance.coverage == 1, "an all-generated screen is 100% generated")
+
+	-- The same screen rebuilt from Studio primitives is what provenance exists to catch.
+	local primitives = gui("ScreenGui", "Loadout", {}, {
+		gui("Frame", "Panel", { BackgroundTransparency = 0, AbsoluteSize = px(1000, 560) }, { stroke() }),
+		gui("Frame", "Close", { BackgroundTransparency = 0, AbsoluteSize = px(62, 62) }),
+	})
+	local built = UiCheck.provenance(primitives, registry)
+	check(built.provenance.coverage == 0, "a primitive-built screen scores zero")
+	check(count(built, "primitive_surface") == 2, "every undeclared primitive surface is named")
+end
+
+do
+	-- Without a registry the ratio is not evidence, and the report says so.
+	local root = gui("ScreenGui", "Hud", {}, {
+		gui("ImageLabel", "Art", { Image = "rbxassetid://5", AbsoluteSize = px(100, 100) }),
+	})
+	local report = UiCheck.provenance(root, nil)
+	check(count(report, "provenance_no_registry") == 1, "a missing registry is called out")
+	check(report.provenance.coverage == 1 and report.errors == 0, "without a registry no image can be judged unattributed")
+
+	-- An id is an id however the registry and the property spell it.
+	local spelled = gui("ScreenGui", "Hud", {}, {
+		gui("ImageLabel", "A", { Image = "rbxassetid://811", AbsoluteSize = px(64, 64) }),
+		gui("ImageLabel", "B", { Image = "http://www.roblox.com/asset/?id=822", AbsoluteSize = px(64, 64) }),
+	})
+	local matched = UiCheck.provenance(spelled, { a = "811", b = { id = "rbxassetid://822" } })
+	check(matched.provenance.art == 2 and matched.errors == 0, "bare digits and an asset URL match rbxassetid ids")
+end
+
 print(("\n%d checks, %d failures"):format(checks, failures))
 if failures > 0 then
 	process.exit(1)

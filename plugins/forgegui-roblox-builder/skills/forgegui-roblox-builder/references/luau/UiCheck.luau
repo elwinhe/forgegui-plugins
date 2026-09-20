@@ -252,6 +252,116 @@ function UiCheck.strayClickPoints(panel: GuiObject, screenSize: Vector2, grid: n
 	return points
 end
 
+-- Where every visible surface came from.
+--
+-- The checks above each report a wrong thing. This one reports the positive
+-- claim — an interface built from generated images and text labels rather than
+-- from Studio primitives — as a number, so it can be handed to a reviewer
+-- instead of argued from a screenshot.
+--
+-- A *surface* is an element that draws its own pixels:
+--   * an image element whose Image is in the art registry is generated art with
+--     known provenance;
+--   * an image element whose Image is not is unattributable, and a Toolbox decal
+--     looks exactly like one;
+--   * a container or label that draws a fill or a border is a Studio primitive.
+--
+-- Primitives are allowed — the screen templates put text, glass pills, progress
+-- bars and dividers in ordinary frames — so they are counted and warned, never
+-- failed. Mark the deliberate ones with AllowPrimitive = true. A transparent
+-- layout frame draws nothing and is not a surface at all, which is what keeps
+-- the ratio meaningful.
+--
+-- Text labels are compliant by the same rule, but glyphs are not a surface, so
+-- they are reported beside the ratio rather than inside it.
+--
+--   UiCheck.provenance(playerGui.Main, require(ReplicatedStorage.Game.ArtRegistry))
+
+export type Provenance = {
+	art: number,
+	unregistered: number,
+	primitive: number,
+	text: number,
+	surfaces: number,
+	coverage: number,
+}
+
+-- "rbxassetid://123", "123", and an asset URL all name the same upload.
+local function assetDigits(value: any): string?
+	if type(value) ~= "string" or value == "" then
+		return nil
+	end
+	return string.match(value, "[?&]id=(%d+)") or string.match(value, "(%d+)%s*$")
+end
+
+-- Accepts the GuiArt registry ({ coin = { id = "rbxassetid://..." } }), a plain
+-- list of ids, or a map of name to id string.
+local function registryIds(registry: any): { [string]: boolean }
+	local ids: { [string]: boolean } = {}
+	if type(registry) ~= "table" then
+		return ids
+	end
+	local function absorb(value: any)
+		local digits = assetDigits(value)
+		if digits then
+			ids[digits] = true
+		end
+	end
+	for _, entry in pairs(registry) do
+		if type(entry) == "table" then
+			absorb(entry.id)
+			absorb(entry.Image)
+		else
+			absorb(entry)
+		end
+	end
+	return ids
+end
+
+function UiCheck.provenance(root: Instance, registry: any, options: Options?): Report
+	local _ = options
+	local ids = registryIds(registry)
+	local known = next(ids) ~= nil
+	local tally: Provenance = { art = 0, unregistered = 0, primitive = 0, text = 0, surfaces = 0, coverage = 0 }
+	local report: Report = { findings = {}, errors = 0, warnings = 0, checked = 0 }
+	;(report :: any).provenance = tally
+
+	if not known then
+		add(report, "provenance_no_registry", "warning", root, "no art registry was supplied, so every image counts as generated art and the ratio below is not evidence; pass the place's ArtRegistry.")
+	end
+
+	for _, object in ipairs(root:GetDescendants()) do
+		if not isGuiObject(object) or ignored(object) or object.Visible == false then
+			continue
+		end
+		report.checked += 1
+		if isImage(object) then
+			tally.surfaces += 1
+			local digits = assetDigits(object.Image)
+			if known and (digits == nil or not ids[digits]) then
+				tally.unregistered += 1
+				add(report, "unregistered_image", "error", object, ("shows %s, which is not in the art registry; a generated asset is recorded there with its aspect, so an unlisted image is either an unrecorded upload or a Toolbox decal. Record it or replace it."):format(tostring(object.Image)))
+			else
+				tally.art += 1
+			end
+		elseif hasFill(object) or borderStroke(object) then
+			tally.surfaces += 1
+			tally.primitive += 1
+			if object:GetAttribute("AllowPrimitive") ~= true then
+				add(report, "primitive_surface", "warning", object, "draws a Roblox fill or border of its own. Chrome may do that — set AllowPrimitive = true to say so — but a panel, button or icon surface should be generated art.")
+			end
+		end
+		if TEXT_CLASSES[object.ClassName] and object.Text ~= nil and object.Text ~= "" then
+			tally.text += 1
+		end
+	end
+
+	if tally.surfaces > 0 then
+		tally.coverage = tally.art / tally.surfaces
+	end
+	return report
+end
+
 function UiCheck.merge(reports: { Report }): Report
 	local merged: Report = { findings = {}, errors = 0, warnings = 0, checked = 0 }
 	for _, report in ipairs(reports) do
@@ -267,6 +377,10 @@ end
 
 function UiCheck.format(report: Report): string
 	local lines = { ("UiCheck: %d error(s), %d warning(s), %d checked"):format(report.errors, report.warnings, report.checked) }
+	local tally = (report :: any).provenance
+	if tally then
+		table.insert(lines, ("  surfaces: %d generated art, %d unattributed, %d primitive — %.0f%% generated; %d text label(s)"):format(tally.art, tally.unregistered, tally.primitive, tally.coverage * 100, tally.text))
+	end
 	for _, finding in ipairs(report.findings) do
 		table.insert(lines, ("[%s] %s %s: %s"):format(finding.severity, finding.check, finding.subject, finding.detail))
 	end

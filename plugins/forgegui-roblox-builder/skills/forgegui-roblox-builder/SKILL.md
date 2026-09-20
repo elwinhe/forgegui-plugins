@@ -8,25 +8,31 @@ ForgeGUI MCP generates and searches. Roblox Studio MCP inspects the place, edits
 
 For assets destined for Studio, follow this loop in order: **intake → reference → import preflight → generate → publish → assemble → verify**. Reuse existing assets and Roblox IDs where suitable; a standalone downloadable asset needs no Studio import route. Skipping the reference step causes style drift and duplicate spend. Skipping verification turns a generation success into an unproven claim.
 
-## 0. Intake: one short round of questions
+## 0. Intake: ask at the start, and at the start of a prompt only when it opens a new decision
 
-For a new game or a large feature, ask one round of questions before planning. Skip intake for a small, fully specified change, or when the request already settles every decision below — including the fidelity pass, which "polished" does not settle.
+Questions belong in two places: **once at the start of a project**, and **at the start of a later prompt when that prompt opens a decision nobody has made yet**. Nowhere else. The question bank, the feature checklists and the full rule are in `references/intake.md`; read it before the first round.
 
-- Ask only decisions that change what gets built or what gets spent: at most five from the list below, plus the fidelity pass question when a reference exists. Ask only the ones still open after reading the request; fewer is better, and five is a ceiling, not a target.
-- Never ask for facts you can check yourself: connected tools, Studio state, the import route, an existing `forgegui-project.json`.
-- Number each question, give the likely options, and end it with your recommended answer, so "defaults" is a complete reply: `❓ **Q1** - **<title>**: <options>` then `➡️ <recommended answer>`.
+**Whether to ask.** Ask only when all three hold: the answer changes what gets built, how it looks, or what gets spent; it is not settled by the prompt, an earlier answer, or `decisions` in `forgegui-project.json`; and you cannot find it out yourself. Never ask for facts you can check: connected tools, Studio state, the import route, an existing manifest. If any one fails, state the assumption in one line and build.
 
-Pick from these, in order of importance:
+**Round one, for a new game or a large feature.** Skip it for a small, fully specified change, or when the request already settles every decision below, including the fidelity pass, which "polished" does not settle.
+
+- At most five questions, plus the fidelity pass question when a reference exists. Five is a ceiling, not a target; ask only what is still open, most consequential first.
+- Use the client's structured question tool when it has one (`AskUserQuestion` in Claude Code). Otherwise number each question, give the likely options, and end with your recommended answer, so "defaults" is a complete reply: `❓ **Q1** - **<title>**: <options>` then `➡️ <recommended answer>`.
+
+Pick from these:
 
 1. **Reference.** A game, video, or screenshots to match? Pasted images and links are welcome; none is fine. You cannot watch a video: ask for a few screenshots (menus, gameplay camera, HUD, win screen) when a link alone would decide the look.
-2. **Scope.** Which screens and systems are in (menus, shop, progression, economy) and which are out.
-3. **Players.** Solo against AI bots, or multiplayer?
-4. **Spend.** How many paid generations, and is paid generation authorized? Recommend a specific number (0 is a valid recommendation) so a "defaults" reply sets a real ceiling. Say the cost is unknown unless billing evidence gives a number.
-5. **Finish.** Quick prototype or polished build.
+2. **Interface tone.** Restrained and flat (hairline edges, one accent, air), or ornate and stylised (rims, crests, glow)? Ask for a game whose menus they like. The stock panel and button prompts produce ornate gold rims; on a grounded game that is what users call "AI-looking", and undoing it costs a regeneration of every surface.
+3. **What is in the game.** Offer the genre's feature checklist from `references/intake.md` as a multi-select with your recommended set ticked, rather than an open question. Users assume features (a startup sequence, their character on the title screen, levels, an admin panel); a checklist turns each assumption into a decision. Anything unticked is out, and the brief says so.
+4. **Players.** Solo against AI bots, multiplayer, or multiplayer with bots filling empty slots?
+5. **Spend.** How many paid generations, and is paid generation authorized? Recommend a specific number (0 is a valid recommendation) so a "defaults" reply sets a real ceiling. Say the cost is unknown unless billing evidence gives a number.
+6. **Finish.** Quick prototype or polished build.
 
-6. **Fidelity pass.** Ask this one only when a reference exists, and never folded into the question above, because "polished build" does not answer it. After the build, compare the game against the reference and fix the biggest differences? In the single A/B run behind this (`docs/evidence/fidelity-pass-ab.md`) it took about twice as long as a plain polish pass and can use extra generations. If the user says yes, write `opted_in` to `.forgegui-fidelity` in the working directory; that file is what starts the pass later (see step 7).
+7. **Fidelity pass.** Ask this one only when a reference exists, and never folded into the question above, because "polished build" does not answer it. After the build, compare the game against the reference and fix the biggest differences? In the single A/B run behind this (`docs/evidence/fidelity-pass-ab.md`) it took about twice as long as a plain polish pass and can use extra generations. If the user says yes, write `opted_in` to `.forgegui-fidelity` in the working directory; that file is what starts the pass later (see step 7).
 
-After the answers, play back a brief of three to five lines: what you will build, the reference, and the planned generation count. If the answers authorized paid generation and named a count, and the plan stays within it, post the brief and start building — the brief is notice, not a second gate. Wait for a go-ahead only when paid generation was never authorized, no count was given, or the plan needs more paid calls than were approved; then say the new number and what it buys. Record the art direction in the manifest. Do not re-ask a settled decision later.
+**Later rounds, at the start of a prompt.** Read each new message against `decisions` and apply the rule above. Most prompts need no question. When one does, ask at most three, then build; one interruption per prompt. The prompts that need one: a new system or screen named without what it does or where it shows ("add a level system"); a complaint about the look with no target ("it doesn't look right", "not what I wanted") — ask which screen is furthest off and what it should resemble instead of guessing again, because a second guess costs a rebuild; a wholesale redo; more paid generation than was authorized; a contradiction of an earlier decision. Bug reports, specified tweaks and "continue" get no questions. Never ask the same thing twice in a project, in any wording.
+
+**Record and play back.** Write every answer to `decisions` in the manifest as it is given, "defaults" included, so a resumed session or a compacted context still has it; read `decisions` before deciding whether to ask anything. After round one, play back a brief of three to five lines: what you will build, what is explicitly out, the reference and interface tone, and the planned generation count. If the answers authorized paid generation and named a count, and the plan stays within it, post the brief and start building — the brief is notice, not a second gate. Wait for a go-ahead only when paid generation was never authorized, no count was given, or the plan needs more paid calls than were approved; then say the new number and what it buys. Record the art direction in the manifest.
 
 ## 1. Establish the task
 
@@ -34,7 +40,7 @@ After the answers, play back a brief of three to five lines: what you will build
 - List Studio instances and select the intended place. Ask if more than one plausible target remains. Carry its `studio_id` through every Studio call.
 - **Check Studio before planning**, because a misconfigured Studio makes calls hang with no error rather than fail: exactly one place open (a second splits calls between them), Edit mode, and a call that returns. If nothing answers, say what the user must do — open a place, connect the Studio MCP — instead of waiting.
 - **Look for leftovers from an interrupted session** before building: test scripts, temporary GUI, teleport or currency helpers, an unfinished `.forgegui-fidelity`. A run that was cut short never cleaned up after itself. Report what you find; remove only what is clearly test scaffolding.
-- **Load project memory first.** Look for `forgegui-project.json` in the working directory (see `references/project-manifest.md`). If it exists, read `game_style` (routing type), `art_direction`, `palette`, `material_language`, and the `assets` ledger before planning. If it does not exist and the task will generate more than one asset, create it from the brief before the first paid call.
+- **Load project memory first.** Look for `forgegui-project.json` in the working directory (see `references/project-manifest.md`). If it exists, read `game_style` (routing type), `art_direction`, `palette`, `material_language`, `decisions`, and the `assets` ledger before planning. If it does not exist and the task will generate more than one asset, create it from the brief before the first paid call.
 - Inspect the existing scene and relevant scripts before planning additions. Reuse existing objects for ordinary geometry.
 
 ## 2. Plan assets before spending
@@ -170,6 +176,7 @@ Based on the connected tool inventory of September 14–15, 2026, the ForgeGUI c
 - `references/project-manifest.md` — per-project style memory and asset ledger
 - `references/style-identity.md` — server-side style identities: resolve, pin, upload user style images, revise (capability-gated)
 - `references/3d-assets.md` — source per asset, kit planning, 3D prompts, moving parts, triangle budgets, import routes and placement
+- `references/intake.md` — when to ask and when not to: the three-part rule, the round-one question bank, genre feature checklists, the per-prompt check-in, and recording answers in `decisions`
 - `references/gui-art.md` — GUI prompt templates, sheet splitting, 9-slice measurement, placement rules and screen templates (`luau/GuiArt.luau`, `tools/separate_sheet.py`, `tools/slice_metadata.py`)
 - `references/ui-pass.md` — the UI pass procedure: overlay classes, hard rules and PASS/FAIL gates
 - `references/tools/style_delta.py` — measures whether a style reference actually moved the output (CIELAB delta-E plus a contact sheet), for the style-adaptivity claim

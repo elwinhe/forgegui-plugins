@@ -4,8 +4,21 @@
   "updated": "2026-09-15T00:00:00Z",
   "game_style": "roblox",
   "art_direction": "stylized low-poly, chunky silhouettes, soft cel shading",
-  "palette": ["#1F2A44", "#4FA3FF", "#F2C94C", "#F4F1EA"],
+  "palette": [
+    "#1F2A44",
+    "#4FA3FF",
+    "#F2C94C",
+    "#F4F1EA"
+  ],
   "material_language": "matte painted wood, brushed steel, soft emissive accents",
   "style_refs": [],
+  "decisions": [
+    {
+      "asked": "2026-09-15",
+      "topic": "interface_tone",
+      "answer": "restrained and flat",
+      "by": "user"
+    }
+  ],
   "assets": []
 }

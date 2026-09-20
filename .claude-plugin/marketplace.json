@@ -11,7 +11,7 @@
       "name": "mcp",
       "source": "./plugins/forgegui-roblox-builder",
       "description": "Build Roblox experiences with ForgeGUI assets and the official Roblox Studio MCP.",
-      "version": "1.9.0"
+      "version": "1.10.0"
     }
   ]
 }

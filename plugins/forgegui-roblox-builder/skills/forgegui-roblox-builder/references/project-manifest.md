@@ -24,6 +24,11 @@ Illustrative IDs below are placeholders, not usable assets. Start a real project
   "style_refs": ["mcp-artifact:00000000-0000-4000-8000-000000000001:0"],
   "style_id": "00000000-0000-4000-8000-0000000000aa",
   "style_version": 1,
+  "decisions": [
+    { "asked": "2026-09-15", "topic": "interface_tone", "answer": "restrained and flat; menus like Modern Warfare (2019)", "by": "user" },
+    { "asked": "2026-09-15", "topic": "features", "answer": "in: startup sequence, title-screen operator, lobby, loadout, levels, bots. out: shop, mobile layout", "by": "user" },
+    { "asked": "2026-09-15", "topic": "spend", "answer": "up to 40 paid generations", "by": "defaults" }
+  ],
   "assets": [
     {
       "key": "hud.panel",
@@ -46,6 +51,7 @@ Fields:
 | Field | Meaning |
 | --- | --- |
 | `game_style` | Backend routing type passed as `game_style` on every generation that accepts it: `roblox`, `fortnite`, `minecraft`, or `general`. Default `roblox`; use `general` for non-Roblox-looking art. The other two routes are not fully built out, so do not pick them without a reason. Never put descriptive styling here. |
+| `decisions` | Every intake answer, as it was given: `topic`, `answer`, the date, and `by` (`user`, or `defaults` when they accepted the recommendation). Read it at the start of every prompt, before deciding whether to ask anything (`intake.md`). It is what stops a resumed session, or a context that has been compacted, from asking again or guessing differently. Append; when a decision changes, add the new one and leave the old. |
 | `art_direction` | The descriptive look of the world (silhouette language, shading, mood). Goes into every prompt verbatim, never into `game_style`. |
 | `palette` | Hex colors named in prompts and used for Studio UI/lighting choices. |
 | `material_language` | Sentence used verbatim in 3D and GUI prompts. |

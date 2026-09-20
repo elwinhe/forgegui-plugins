@@ -106,7 +106,8 @@ border around the artwork".
 `gui_frame`. The four below have been exercised on real builds. `gui_frame` has not — it is in the
 live schema and presumably returns a border or window chrome, but nothing here has tested what it
 returns or how it slices, so treat a first use as an experiment and write down what comes back
-rather than assuming it behaves like `gui_panel`. (The one attempt so far, a hairline window frame
+rather than assuming it behaves like `gui_panel`. (Submit GUI jobs one at a time and wait for each to finish. Twice, a second job submitted within a
+few seconds of the first ended `outcome_unknown` while the first succeeded. The one `gui_frame` attempt so far, a hairline window frame
 referenced to an existing button, ended `outcome_unknown` with `retryable: false`. Per the job
 rules it was not retried, so the type is still unverified.)
 

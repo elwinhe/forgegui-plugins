@@ -317,3 +317,47 @@ are in there", and it was accurate.
   dressing. Give each a `SpotLight` aimed into the play space, and remember a SpotLight reaches 60
   studs: perimeter masts cannot light the middle of a 260-stud map, so hang work lights from the
   central landmark as well.
+
+## First-person hands: solve them from the weapon, do not offset them
+
+Generated forearms are static meshes: a closed fist, a cupped palm, each about 40 cm long and
+ending in a cut. Two things go wrong when they are positioned by hand-tuned offsets:
+
+- **The library pivot is not the grip.** A pivot measured "at the grip" sat between the pistol grip
+  and the magazine, so a fist placed on it floated in front of the trigger guard, holding nothing.
+  Write down, per weapon, where hands actually go, in the weapon's own space at real size: `grip`
+  (centre of the pistol grip), `support` (underside of the handguard), `magWell`, and the sight
+  height. Read them off a side-on capture against a half-stud ruler of neon parts.
+- **Solve each arm from the gun's pose**: hand at the point, forearm (+Z) aimed at an elbow position
+  below and outside the frame in camera space, thumb side as close to the weapon's up vector as
+  that allows (`CFrame.fromMatrix`). The cut end then never shows; carry a plain sleeve cylinder on
+  past the frame edge to be sure. Reload becomes a route the support hand walks between named
+  points, and every weapon gets it for free.
+- Check it by capturing the side view AND the eye view. One generated pistol came out of the
+  pipeline pointing at its own user: the muzzle was on +Z and nobody had looked.
+- A fully metallic PBR weapon 15 cm from the lens at dusk renders as a black cut-out: metals have no
+  diffuse response and the sky it reflects is dark. `SurfaceAppearance` maps cannot be changed at
+  runtime, so build a first-person variant at edit time with the metalness map removed, and carry a
+  short-range fill light with the camera.
+- Run additive motion (look sway, strafe roll, landing dip, recoil) on springs, not lerps, so it
+  overshoots and settles; blend poses (hip, aim, sprint, draw, reload) underneath.
+
+## Third person on the stock rig: IKControl, not a Tool
+
+Making the weapon a `Tool` gets the stock one-armed hold with the support arm hanging at the side.
+Mount the weapon to `UpperTorso` with a `Motor6D` whose `C1` is the mesh's `PivotOffset` (so `C0`
+places the grip pivot), and add two `IKControl`s under the Humanoid (`Type = Position`,
+`ChainRoot = *UpperArm`, `EndEffector = *Hand`, `Target` = an Attachment on the weapon at the same
+grip and support points). IKControl runs after the animation step on every client and is an
+Instance, so it replicates: the stock walk, run, jump and fall keep driving the body while both
+hands stay on the gun, for players and server-owned NPCs alike. No custom rig and no animation
+assets to upload.
+
+- A blocky R15 arm is short. Bring the weapon in to the chest and pull the support target back from
+  the far end of the handguard.
+- **Do not set `Pole`.** An elbow hint cost more reach than the arm has: the support hand stopped
+  0.8 studs short with it and 0.2 without.
+- A server-owned rig has no running `Animate` script. Play idle, walk, run, jump and fall yourself
+  from `Humanoid.Running` and `StateChanged`.
+- IK does not evaluate in Edit. Verify in Play by reading the distance from `EndEffector.Position`
+  to `Target.WorldPosition`.

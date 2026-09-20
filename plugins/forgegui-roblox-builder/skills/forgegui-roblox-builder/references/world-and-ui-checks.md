@@ -277,6 +277,31 @@ game itself: never make a screen's removal depend on its exit tween completing.
 Delete the preview gui before saving or publishing. Because it lives in `StarterGui` it would
 otherwise ship to every player.
 
+## Blurry UI: do not build pages out of CanvasGroups
+
+A `CanvasGroup` is drawn to an off-screen texture and then composited, and Roblox sizes that
+texture by the client's graphics quality. At anything below the top setting, every label and
+hairline inside it is visibly soft. Using one as a screen root (so the whole page can fade through
+`GroupTransparency`) makes the ENTIRE interface blurry, and nothing reports it: layout, palette and
+provenance checks all pass, and a 1080p Studio capture at maximum quality looks fine. The user's
+report was simply "the UI is super blurry".
+
+- Screen roots, cards and bleed layers are plain `Frame`s. Use `ClipsDescendants` plus a `UICorner`
+  on the image itself where a rounded card was the reason for the CanvasGroup.
+- Replace the group fade with a **curtain**: a host-sized sheet in the ground colour that snaps
+  opaque and fades off the new screen (the dip-to-black every console shooter uses). Give it a
+  `task.delay` fallback that clears it, because tweens do not step when the client is not drawing.
+- A checker rule worth having: flag any `CanvasGroup` that contains a `TextLabel`.
+
+## The lighting is not ready on the frame after a camera jump
+
+`screen_capture` with `camera_position` moves the camera and photographs the next frame. Local
+lights (SpotLight, PointLight) had not been evaluated for that region yet: a set lit by three
+spotlights captured pitch black, and adding more lights changed nothing. Park the Studio camera at
+the shot first (`CurrentCamera.CFrame = ...`, wait two or three seconds), then capture without
+moving it. Judging a lighting setup from a jump-capture will send you chasing a bug that is not
+there.
+
 ## Fixed-stage layouts: four bugs that pass every per-screen check
 
 Laying screens out on a fixed 1920x1080 stage and scaling it to fit the window is a sound way to get
@@ -310,6 +335,28 @@ Two checker lessons from the same pass:
 - **Nothing reports dead motion code.** A staggered menu entrance was written, reviewed and never
   called; the screen simply appeared and every check passed. When a screen module exports `show` or
   `entrance`, grep for a call site.
+
+## Flow bugs that only show up when someone else presses the buttons
+
+Three from one build, all invisible to per-screen checks and to a developer who always takes the
+same path:
+
+- **"It queues me immediately."** The server turned `Players.CharacterAutoLoads` off near the END
+  of its bootstrap. Building the map took long enough that a player could finish joining first, get
+  a default body, and the client took "I have a body" to mean "I deployed". Turn auto-load off on
+  the FIRST line (and save the place with it off), and route the client off an explicit
+  server-set attribute, never off `CharacterAdded`.
+- **"Changing loadout immediately disappears."** Screens were routed by server phase every second:
+  "phase is Live and you are not on the HUD, so go to the HUD". Opening the loadout screen from the
+  death screen lasted under a second. Anything the player opens deliberately must be exempt from
+  phase routing; here it became a stand-down (body removed, redeploy from the screen).
+- **Streaming hides your set.** A menu stage built 400 studs from the map existed on the server and
+  not on the client: `StreamingEnabled` was on, parts that far from the player never arrived, and
+  the camera looked at an empty spot. Publish positions as attributes on a Folder (folders always
+  replicate) and set `Player.ReplicationFocus` to the set while the player is in the menus.
+
+Click through the real flow with `user_mouse_input` and an `instance_path`, as a new player would,
+before calling any of it done.
 
 ## Self-tests that tell the truth
 

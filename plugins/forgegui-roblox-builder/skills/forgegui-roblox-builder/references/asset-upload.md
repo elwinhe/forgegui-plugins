@@ -30,6 +30,8 @@ The script refuses to run, with a clear message, if either variable is unset. It
 no dependencies beyond `curl` and `python3`. A `Model` upload also has the 20k-triangle-per-mesh limit from
 PR #1; check with a local triangle count before uploading, not by waiting for a rejection.
 
+This script was run against the live endpoint on 20 September 2026: a 256x256 PNG uploaded as `Image` and returned an asset id with moderation `Reviewing`, which is the normal state for a fresh upload. The four accepted mappings below have each been exercised for real, apart from `.rbxm` as `Model`.
+
 **Verify the script without credentials** with `--dry-run`, which prints the request it would send (file, size,
 content type, JSON body) and whether the key is set, never its value:
 

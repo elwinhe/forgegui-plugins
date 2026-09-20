@@ -32,6 +32,7 @@ explain in the report.
 | `icon_on_plate` | error | An icon is laid on other framed art (a plate), so it is framed twice |
 | `stroke_in_framed_art` | error | A stroked container or label sits inside art that already frames it |
 | `text_overflow` | warning | Visible text does not fit its box |
+| `canvasgroup_text` | error | Visible text sits inside a `CanvasGroup`, which rasterises below native resolution and reads as blurry |
 | `modal_closes_on_stray_click` | error | Source connects a click or input signal on a backdrop, scrim, overlay or dimmer |
 | `unregistered_image` | error | An image element shows an asset that is not in the art registry, so its provenance cannot be shown |
 | `primitive_surface` | warning | A container or label draws its own Roblox fill or border where generated art was expected. Mark deliberate chrome `AllowPrimitive = true` |
@@ -291,7 +292,7 @@ report was simply "the UI is super blurry".
 - Replace the group fade with a **curtain**: a host-sized sheet in the ground colour that snaps
   opaque and fades off the new screen (the dip-to-black every console shooter uses). Give it a
   `task.delay` fallback that clears it, because tweens do not step when the client is not drawing.
-- A checker rule worth having: flag any `CanvasGroup` that contains a `TextLabel`.
+- `UiCheck.audit` reports this as `canvasgroup_text`.
 
 ## The lighting is not ready on the frame after a camera jump
 

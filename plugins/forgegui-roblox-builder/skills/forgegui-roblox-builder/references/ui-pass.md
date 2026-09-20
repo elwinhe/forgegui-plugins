@@ -9,6 +9,8 @@ uses live elsewhere:
 - Motion, including `Motion.modal`, comes from `luau/Motion.luau` (`ui-motion.md`).
 - The checks are in `luau/UiCheck.luau`. `world-and-ui-checks.md` covers how to run them and how to
   read their output.
+- Provenance and style-adaptivity evidence come from `UiCheck.provenance` and
+  `tools/style_delta.py`; `gui-art.md` covers both.
 
 ## Before you build
 
@@ -16,8 +18,9 @@ Write down five things:
 
 - the goal in one sentence (for example, "the shop answers: what do I get, what does it cost, can I
   afford it");
-- the visual target (reference images);
-- the art registry;
+- the visual target (reference images) — and, if the user supplied one, how it became a reference:
+  a registered owned asset, or the style-plate substitute in `gui-art.md`;
+- the art registry, which `UiCheck.provenance` checks every screen against;
 - what is in scope, meaning which screens;
 - what is out of scope: gameplay code, the world, and anything else not listed.
 
@@ -82,6 +85,8 @@ Then classify every overlay before you build it:
 | U8 Targets | Interactive targets are at least 44x44 px at the smallest viewport, and none are in the thumbstick or jump zones |
 | U9 Consistency | Every modal uses one close-button asset in one position, and only one modal is open at a time |
 | U10 Evidence | Captures of the Studio window only, with the player list covered; the audit and lint output; the stray-click result; and the reviewer's sign-off |
+| U11 Provenance | `UiCheck.provenance` over each ScreenGui, against the art registry, reports no `unregistered_image`. Every `primitive_surface` is either fixed or carries `AllowPrimitive` with a reason in the report. Record the generated-surface percentage per screen |
+| U12 Style adaptivity | Two runs of the same prompt set under two style references, compared with `tools/style_delta.py`, report a mean delta-E at or above the threshold, with the contact sheet attached. If the reference had to be reconstructed as a style plate, the report says so |
 
 ## Running the checks
 

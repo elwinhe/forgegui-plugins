@@ -35,11 +35,74 @@ art that went in without a stacked background, a nested border or a stretched co
 Both tools need Pillow; `slice_metadata.py` also needs NumPy. They run locally on the artifact file
 and never call a network service.
 
+## Style references, and the user's own image
+
+`generation_gui`'s whole live schema is `prompt`, `type`, `count`, `reference_asset_ids` and
+`request_id`. There is no `game_style`, and there are no style fields — the schema is
+`additionalProperties: false`, so passing `style_id`, `style_version` or `style_brief` is a hard
+rejection rather than a silently ignored extra. Style words go in the prompt; style *images* go in
+`reference_asset_ids`, which holds up to **8** entries and accepts **owned asset UUIDs and
+`mcp-artifact:<job>:<index>` references only**.
+
+That last constraint is the one that shapes the whole procedure: **a file on disk is not a
+reference.** A PNG the user pasted, screenshotted or downloaded cannot be passed to
+`generation_gui` at all until something has put it into ForgeGUI's ID space.
+
+### When the upload family is exposed
+
+`image_upload_authorize` → upload the bytes → `image_upload_register` returns an immutable owned
+asset UUID, and that UUID goes straight into `reference_asset_ids`. `references/style-identity.md`
+has the full procedure. Discover the live tool list first (SKILL.md §1) — do not assume.
+
+### When it is not: the style-plate substitute
+
+As of 2026-09-19 the connected staging server exposes neither the upload pair nor the `style_*`
+family, so there is no route from a user's image to a reference. Do not stall on this and do not
+hunt for a workaround that uploads the file somewhere else. Use a style plate:
+
+1. **Read the user's image and write it down.** Palette as hex, material language, line weight,
+   shading, corner treatment, the mood in one sentence. This is the only step where the user's image
+   is actually consulted, so be specific — everything downstream inherits these words.
+2. **Generate the plate.** One `generation_image` call, type `thumbnail`, prompting for a style
+   sheet rather than a screen: a few swatches, a rim treatment, one representative shape. Keep the
+   returned `mcp-artifact:` ref.
+3. **Pin every GUI call to it.** Pass that ref in `reference_asset_ids` on every `generation_gui`
+   call for the project, and record it as the manifest's `style_refs` entry. One plate, every
+   screen.
+4. **Disclose it.** Say in the report that the reference was reconstructed from a description
+   because no image-upload route was exposed, and name the two tools that would remove the step.
+
+This is a substitution, not a shortcut, and the distinction matters: the integration
+— a reference image measurably steering GUI output — is fully exercised, and only the *ingestion* of
+the user's file is stood in for. When the upload family lands, step 1 and 2 collapse into a register
+call and the rest is unchanged.
+
+### Show that it worked
+
+"The reference changed the style" is an opinion until it is a number. Generate the same prompt set
+twice, once per reference, into two directories with matching filenames, then:
+
+```sh
+python references/tools/style_delta.py runs/ref-a/ runs/ref-b/ --contact-sheet delta.png
+```
+
+It reports CIELAB delta-E between the two runs' dominant palettes, plus the hue, saturation and
+value shifts that say which way the style moved, and writes the side-by-side sheet. Delta-E's
+just-noticeable difference is about 2.3; the tool calls the change measurable at 5.0 and exits
+non-zero below it. Only opaque pixels are measured, because averaging in a transparent background
+drags every palette toward the same grey and makes two different styles look identical.
+
 ## Templates by type
 
 Every template ends with the same clauses, and they are what keep the output import-ready: "fully
 transparent background", "no text", "no drop shadow outside the shape", "no surrounding frame or
 border around the artwork".
+
+`type` accepts five values: `gui_button`, `gui_icon`, `gui_panel`, `gui_asset` (the default) and
+`gui_frame`. The four below have been exercised on real builds. `gui_frame` has not — it is in the
+live schema and presumably returns a border or window chrome, but nothing here has tested what it
+returns or how it slices, so treat a first use as an experiment and write down what comes back
+rather than assuming it behaves like `gui_panel`.
 
 ### `gui_button`: a matched pair
 
@@ -260,12 +323,15 @@ afford it.
 - `python references/tools/test_tools.py` checks the splitter and the slice tool on synthetic art.
   The slice centre avoids a crest, side gems and painted clouds, a sliced preview keeps its rim
   thickness, and a split icon closer than `--min-gap` stays whole. It also checks
-  `paste_module.py`. That is 22 checks, with no arguments and no network.
+  `paste_module.py`. That is 38 checks, with no arguments and no network.
 - `lune run references/tests/qa`, run from the skill root, checks `UiCheck` against stubbed GUI
   trees. `UiCheck` audits a live ScreenGui against the screen templates above: art chrome, icons in
   chips or on plates, strokes inside framed art, and backdrops wired to close. The same run checks
-  `WorldCheck`. That is 46 checks.
+  `WorldCheck`. That is 63 checks.
 - In Studio, run `UiCheck` on each screen you built, as described in `world-and-ui-checks.md`.
+- In Studio, run `UiCheck.provenance` on each screen against the art registry. It answers the
+  question a reviewer actually asks — is this built from generated images and text, or from Roblox
+  frames — as a percentage, and names every image it cannot trace to the registry.
 - In Studio, `screen_capture` at the target viewport *and* at a phone-sized one. A HUD that is
   correct at 1920x1080 and broken at 390x844 is the normal failure.
 - Read the slice metadata off the `--preview` render before uploading, not off a panel that is

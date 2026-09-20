@@ -6,7 +6,7 @@ description: Build or extend Roblox Studio experiences with ForgeGUI assets and 
 
 ForgeGUI MCP generates and searches. Roblox Studio MCP inspects the place, edits scripts, inserts assets, and playtests. You coordinate both. Neither replaces the other. Explicit user choices override these defaults.
 
-For assets destined for Studio, follow this loop in order: **reference → import preflight → generate → publish → assemble → verify**. Reuse existing assets and Roblox IDs where suitable; a standalone downloadable asset needs no Studio import route. Skipping the reference step causes style drift and duplicate spend. Skipping verification turns a generation success into an unproven claim.
+For assets destined for Studio, follow this loop in order: **reference → import preflight → generate → publish → assemble → verify**. Reuse existing assets and Roblox IDs where suitable; a standalone downloadable asset needs no Studio import route. Skipping the reference step causes style drift and duplicate spend. Skipping verification turns a generation success into an unproven claim. For a whole game from a vague prompt, `references/showcase-flow.md` gives the order the build happens in around this loop.
 
 ## 1. Establish the task
 
@@ -48,7 +48,7 @@ Rules:
 
 Establish a supported route from the expected output format into Studio before spending. A standalone downloadable asset needs no route.
 
-Moss Louvan's September 15, 2026 [PR #1 findings](https://github.com/elwinhe/forgegui-plugins/pull/1) report image, audio and GLB uploads through Open Cloud `POST /assets/v1/assets` with the file, followed by polling the returned operation for `response.assetId`. Those tests used a personal account and an Open Cloud API key. They establish a tested API route, not that the connected MCP exposes it or that a hosted OAuth flow or production group permissions have been verified. Discover the live publishing tool and its execution permissions before relying on this route; `execute_luau` alone does not establish permission to import files or publish assets.
+Moss Louvan's September 15, 2026 [PR #1 findings](https://github.com/elwinhe/forgegui-plugins/pull/1) report image, audio and GLB uploads through Open Cloud `POST /assets/v1/assets` with the file, followed by polling the returned operation for `response.assetId`. Those tests used a personal account and an Open Cloud API key. They establish a tested API route, not that the connected MCP exposes it or that a hosted OAuth flow or production group permissions have been verified. Discover the live publishing tool and its execution permissions before relying on this route; `execute_luau` alone does not establish permission to import files or publish assets. When no publishing tool is exposed, `scripts/open_cloud_upload.sh` runs the route with the user's own key (`references/asset-upload.md`); record which route produced each id.
 
 - `insert_asset` takes a numeric Roblox asset id. A GLB URL is not an id. Assigning an external URL to a mesh property is not an import. `upload_image` is not a model uploader. Inspect the publishing tool's actual schema, returned ID, asset type, moderation state and access rights; a completed upload alone does not prove an asset is usable.
 - **Images and GUI.** Prefer an exposed publishing route that returns a Roblox image ID. For Open Cloud GUI uploads, use `assetType: "Image"`; do not assign a Decal container ID as an image texture. PR #1 reported that a Decal upload could pass moderation yet fail `CreateEditableImageAsync` or render blank in an `ImageLabel`, so verify the rendered GUI. If using Studio `store_image` / `upload_image` instead, validate the download and accepted input URI; do not assume a remote fetcher can read a local path or localhost. Do not pass a ForgeGUI artifact URL to `upload_image`: the tested Studio route rejected it as untrusted ("Image Url is not trusted"). Serve only the intended file if an authorized HTTP handoff is necessary. If no reachable serving route exists, report the import blocker before spending.
@@ -115,3 +115,5 @@ Based on the connected tool inventory of September 14–15, 2026, the ForgeGUI c
 
 - [Roblox Studio MCP tools](https://create.roblox.com/docs/studio/mcp)
 - `references/project-manifest.md` — per-project style memory and asset ledger
+- `references/showcase-flow.md` — a vague prompt to a finished game: look-spec, grey-box, asset strategy, fidelity passes behind guards
+- `references/asset-upload.md` — Open Cloud upload route (`scripts/open_cloud_upload.sh`), formats, moderation, ownership caveats, forward path

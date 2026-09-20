@@ -121,7 +121,11 @@ def main(argv):
     it = iter(argv)
     for x in it:
         if x == "--k":
-            k = int(next(it, "0"))
+            v = next(it, "")
+            try:
+                k = int(v)
+            except ValueError:
+                sys.exit(f"--k takes a whole number, got {v!r}")
         elif x == "--vs":
             ref = next(it, None)
         elif x.startswith("-"):

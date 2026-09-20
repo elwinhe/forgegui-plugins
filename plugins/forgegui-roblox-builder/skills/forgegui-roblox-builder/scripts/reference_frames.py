@@ -5,8 +5,8 @@ usage: reference_frames.py <video-or-url> <outdir> [--frames 30] [--width 1280] 
        reference_frames.py --selftest
 
 Point it at the reference the user provided: a local file or a link they gave. It does not
-search for footage and downloads nothing the user did not hand over. A URL is fetched with
-yt-dlp; frames are extracted with ffmpeg. Frames are written as frame_000.png ... and tiled
+search for footage and downloads nothing the user did not hand over; before pointing it at a
+link, confirm the user is entitled to that footage. A URL is fetched with yt-dlp; frames are extracted with ffmpeg. Frames are written as frame_000.png ... and tiled
 into sheet_00.png ... (rows x cols per --sheet). Keep the frames: the fidelity pass compares
 Studio captures against these same stills.
 """
@@ -17,6 +17,7 @@ import tempfile
 from pathlib import Path
 
 INSTALL = {
+    "ffprobe": "ffprobe not found (ships with ffmpeg). Install: brew install ffmpeg  (macOS)  |  apt install ffmpeg  (Debian/Ubuntu)",
     "ffmpeg": "ffmpeg not found. Install: brew install ffmpeg  (macOS)  |  apt install ffmpeg  (Debian/Ubuntu)",
     "yt-dlp": "yt-dlp not found (needed for URLs). Install: brew install yt-dlp  |  pipx install yt-dlp",
 }
@@ -35,6 +36,7 @@ def run(cmd):
 
 
 def duration(video):
+    need("ffprobe")
     out = run(["ffprobe", "-v", "error", "-show_entries", "format=duration",
                "-of", "default=nw=1:nk=1", str(video)])
     try:
@@ -118,7 +120,13 @@ def main(argv):
             v = next(it, None)
             if v is None:
                 sys.exit(f"{a} needs a value")
-            opts[a] = int(v) if a != "--sheet" else v
+            if a == "--sheet":
+                opts[a] = v
+            else:
+                try:
+                    opts[a] = int(v)
+                except ValueError:
+                    sys.exit(f"{a} takes a whole number, got {v!r}")
         elif a.startswith("-"):
             sys.exit(f"unknown option {a}\n{__doc__}")
         else:

@@ -1,8 +1,10 @@
 # Reference capture
 
-A request that carries a likeness claim ("like X", "same style as", "like the real thing") is a claim you will be measured against. A reference is a prerequisite: do not start building, and do not report a likeness percentage, until you hold one. A fidelity pass without an external target measures the model against its own memory, and that pass has been seen to settle near 55–60% while reporting confidence.
+A request that carries a likeness claim ("like X", "same style as", "like the real thing") is a claim you will be measured against. A reference is a prerequisite: do not start building, and do not report a likeness percentage, until you hold one. A fidelity pass without an external target measures the model against its own memory: it converges on a remembered game rather than the real one, and reports a likeness figure nothing outside the model can check.
 
-Nothing ships with this skill and the builder does not go looking for footage. The reference always comes from the user.
+Nothing ships with this skill and the builder does not go looking for footage. The reference always comes from the
+user. Before `scripts/reference_frames.py` fetches a link, confirm the user is entitled to that footage and is
+handing it over for this build — the script downloads what it is pointed at and asks no questions.
 
 ## Getting a reference
 
@@ -27,11 +29,15 @@ Keep `refs/` for the whole project. The fidelity pass compares Studio captures a
 
 ## Worked example (hypothetical, arena sports game)
 
-The user asks for "a car-football arena like `<their reference clip>`" and attaches the clip.
+The user asks for a car-football arena like the match clip they attached, and confirms the clip is theirs to
+share. The numbers below are illustrative arithmetic — the point is the chain from a known-size object to every
+other dimension, not these particular values.
 
 1. `reference_frames.py <clip> refs/ --frames 30` → 30 frames, 3 sheets. The wide shot and the goal-mouth shot are the useful ones.
-2. Ruler: a car is ~4 studs long. The pitch is ~28 car lengths → 112 studs; goal mouth ~4 cars wide → 16 studs; walls ~2 cars high → 8 studs. Camera sits ~3 cars behind and ~1.5 cars above.
+2. Ruler: set the car at 12 studs long (an avatar is about 5, so a car that shares the frame with one cannot be
+   4). Counting car lengths off the wide shot: pitch ~87 long → ~1040 studs and ~69 wide → ~830 studs; goal mouth
+   ~2.5 cars → ~30 studs; walls ~1.6 cars → ~19 studs. Camera sits ~2.3 cars behind and ~0.85 above.
 3. `palette.py refs/ --k 6` → pitch green ~52%, two team colours, boost-orange accent, dark wall, white lines. Hex values go into the manifest.
 4. HUD: score centred at 0.50 × 0.05 of the screen, timer under it, boost gauge bottom-right at 0.85 × 0.90.
-5. Motion: top speed crosses the pitch in ~4 s; jump ~1.5 car lengths; boost burst ~1 s.
+5. Motion: top speed crosses the pitch end to end in ~8 s; jump ~1.5 car lengths; boost burst ~1 s.
 6. Build to those numbers, then capture the same wide and goal-mouth angles and compare.

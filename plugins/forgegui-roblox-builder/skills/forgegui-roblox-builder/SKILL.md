@@ -14,6 +14,7 @@ For assets destined for Studio, follow this loop in order: **reference → impor
 - List Studio instances and select the intended place. Ask if more than one plausible target remains. Carry its `studio_id` through every Studio call.
 - **Load project memory first.** Look for `forgegui-project.json` in the working directory (see `references/project-manifest.md`). If it exists, read `game_style` (routing type), `art_direction`, `palette`, `material_language`, and the `assets` ledger before planning. If it does not exist and the task will generate more than one asset, create it from the brief before the first paid call.
 - Inspect the existing scene and relevant scripts before planning additions. Reuse existing objects for ordinary geometry.
+- A likeness claim in the brief ("like X", "same style as") requires a user-supplied reference before building; obtain and measure it per `references/reference-capture.md`, and never report a likeness percentage without one.
 
 ## 2. Plan assets before spending
 
@@ -115,3 +116,5 @@ Based on the connected tool inventory of September 14–15, 2026, the ForgeGUI c
 
 - [Roblox Studio MCP tools](https://create.roblox.com/docs/studio/mcp)
 - `references/project-manifest.md` — per-project style memory and asset ledger
+- `references/reference-capture.md` — turning a user-supplied reference into frames, scale, palette and HUD numbers
+- `scripts/reference_frames.py`, `scripts/palette.py` — frame extraction and Lab palette / ΔE comparison (`--selftest` on each)

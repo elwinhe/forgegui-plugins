@@ -6,9 +6,9 @@ repeated vertex index). Vertices are merged by exact position before the edge an
 normal reasons are not reported as boundary.
 
 usage: glb_quality.py [--md] file.glb ...      (--md prints a Markdown table)
-       glb_quality.py --selftest                (closed tetrahedron -> 0 boundary edges; open one -> 3)
+       glb_quality.py --selftest                (hand-built shapes plus a real GLB round-trip)
 """
-import json, struct, sys
+import json, os, struct, sys, tempfile
 import numpy as np
 
 COMP = {5120: "b", 5121: "B", 5122: "h", 5123: "H", 5125: "I", 5126: "f"}
@@ -39,8 +39,10 @@ def _accessor(g, blob, idx):
     stride = bv.get("byteStride", dt.itemsize * nc)
     out = np.empty((a["count"], nc), dtype=dt)
     for i in range(nc):
-        out[:, i] = np.frombuffer(blob, dtype=dt, count=a["count"], offset=start + i * dt.itemsize) if stride == dt.itemsize * nc \
-            else np.ndarray((a["count"],), dt, blob, start + i * dt.itemsize, (stride,))
+        # one strided view per component; this is correct for both tightly packed and
+        # interleaved buffer views, so do not "optimise" the packed case with frombuffer —
+        # that reads consecutive values instead of every nc-th one and scrambles the vertices.
+        out[:, i] = np.ndarray((a["count"],), dt, blob, start + i * dt.itemsize, (stride,))
     return out
 
 
@@ -94,6 +96,55 @@ def report(path):
 COLS = ["mesh", "tris", "verts", "unique_verts", "boundary_edges", "nonmanifold_edges", "duplicate_tris", "degenerate_tris"]
 
 
+def _cube_glb(drop_last=False):
+    """A minimal in-memory GLB: closed unit cube, 8 vertices, 12 triangles.
+
+    The point is to exercise _read_glb/_accessor, not just analyse(): a hand-built
+    array never touches the buffer-view reader, which is where a real bug once hid.
+    """
+    verts = np.array([[x, y, z] for x in (0.0, 1.0) for y in (0.0, 1.0) for z in (0.0, 1.0)], np.float32)
+    # index = x*4 + y*2 + z; each ring walks one cube face
+    rings = [(0, 1, 3, 2), (4, 5, 7, 6), (0, 1, 5, 4), (2, 3, 7, 6), (0, 2, 6, 4), (1, 3, 7, 5)]
+    tris = [t for a, b, c, d in rings for t in ((a, b, c), (a, c, d))]
+    if drop_last:
+        tris = tris[:-1]  # one triangle short: its three edges lose a neighbour
+    idx = np.array(tris, np.uint16).reshape(-1)
+    vb, ib = verts.tobytes(), idx.tobytes()
+    ib += b"\0" * (-len(ib) % 4)
+    gltf = {
+        "asset": {"version": "2.0"},
+        "buffers": [{"byteLength": len(vb) + len(ib)}],
+        "bufferViews": [
+            {"buffer": 0, "byteOffset": 0, "byteLength": len(vb), "target": 34962},
+            {"buffer": 0, "byteOffset": len(vb), "byteLength": len(ib), "target": 34963},
+        ],
+        "accessors": [
+            {"bufferView": 0, "componentType": 5126, "count": len(verts), "type": "VEC3",
+             "min": verts.min(0).tolist(), "max": verts.max(0).tolist()},
+            {"bufferView": 1, "componentType": 5123, "count": len(idx), "type": "SCALAR"},
+        ],
+        "meshes": [{"name": "cube", "primitives": [{"attributes": {"POSITION": 0}, "indices": 1, "mode": 4}]}],
+    }
+    j = json.dumps(gltf).encode()
+    j += b" " * (-len(j) % 4)          # the JSON chunk pads with spaces
+    blob = vb + ib
+    blob += b"\0" * (-len(blob) % 4)   # the BIN chunk pads with nulls
+    body = (struct.pack("<II", len(j), 0x4E4F534A) + j
+            + struct.pack("<II", len(blob), 0x004E4942) + blob)
+    return struct.pack("<III", 0x46546C67, 2, 12 + len(body)) + body
+
+
+def _report_bytes(blob):
+    """report() on GLB bytes, through a temp file that is always removed."""
+    fd, path = tempfile.mkstemp(suffix=".glb")
+    try:
+        with os.fdopen(fd, "wb") as fh:
+            fh.write(blob)
+        return report(path)
+    finally:
+        os.unlink(path)
+
+
 def selftest():
     closed_v = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]], float)
     closed_f = np.array([[0, 1, 2], [0, 3, 1], [0, 2, 3], [1, 3, 2]])
@@ -133,8 +184,15 @@ def selftest():
     tube_f = [f for f in ring_f if 0 not in f]
     tb = analyse(np.array(ring_v, float), np.array(tube_f))
     assert tb["boundary_edges"] > 0, tb
+    # GLB round trip: reads a real file back through _read_glb/_accessor.
+    [closed] = _report_bytes(_cube_glb())
+    assert closed["tris"] == 12 and closed["verts"] == 8 and closed["unique_verts"] == 8, closed
+    assert all(closed[k] == 0 for k in
+               ("boundary_edges", "nonmanifold_edges", "duplicate_tris", "degenerate_tris")), closed
+    [holed] = _report_bytes(_cube_glb(drop_last=True))
+    assert holed["tris"] == 11 and holed["boundary_edges"] == 3, holed
     print("selftest PASS: closed tetra boundary=0, open tetra boundary=3, dup=1 degen=1, seam merge ok, "
-          "ring-with-hub-hole boundary=0, open tube boundary>0")
+          "ring-with-hub-hole boundary=0, open tube boundary>0, GLB cube 12 tris all-zero, cube less one tri boundary=3")
 
 
 if __name__ == "__main__":

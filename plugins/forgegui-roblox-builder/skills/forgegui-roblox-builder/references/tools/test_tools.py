@@ -17,6 +17,7 @@ from PIL import Image, ImageDraw
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
+import palette_check  # noqa: E402
 import paste_module  # noqa: E402
 import separate_sheet  # noqa: E402
 import slice_metadata  # noqa: E402
@@ -205,7 +206,79 @@ def test_style_delta_pairs_directories_and_draws_a_sheet() -> None:
             check(rendered.size == (128, 128), f"the sheet is one row per pair, two columns wide (got {rendered.size})")
 
 
-for test in (test_slice_avoids_decoration, test_render_keeps_rim_thickness, test_measures_at_roblox_stored_size, test_slice_rejects_all_decorated, test_separate_sheet_splits_and_trims, test_paste_module, test_style_delta_separates_two_style_references, test_style_delta_ignores_transparent_background, test_style_delta_reports_direction, test_style_delta_palette_is_deterministic, test_style_delta_pairs_directories_and_draws_a_sheet):
+
+# Palette conformance ----------------------------------------------------------
+
+IRONFRONT = ["#111820", "#1D2933", "#DCE2E3", "#7D929B", "#D9A54A", "#6BADB4", "#CB5F59"]
+
+
+def swatch(color: tuple[int, int, int], size: int = 32) -> Image.Image:
+    return Image.new("RGBA", (size, size), color + (255,))
+
+
+def test_palette_flags_an_invented_hue() -> None:
+    green = palette_check.analyse(swatch((10, 216, 8)), IRONFRONT, palette_check.DEFAULT_TOLERANCE)
+    check(green["share"] == 1.0, "pure green against an amber/steel palette is wholly off-palette")
+    check(green["offenders"] and green["offenders"][0]["degrees"] > 45, "and is reported tens of degrees from the nearest palette hue")
+    amber = palette_check.analyse(swatch((217, 165, 74)), IRONFRONT, palette_check.DEFAULT_TOLERANCE)
+    check(amber["share"] == 0.0, "a palette colour itself is on-palette")
+
+
+def test_palette_allows_shading_of_a_palette_hue() -> None:
+    # The reason the check measures hue angle and not colour distance: these are
+    # the same amber lit differently, and a delta-E check condemns all of them.
+    for name, rgb in (("darker", (120, 90, 40)), ("lighter", (245, 210, 140)), ("punchier", (224, 176, 32))):
+        result = palette_check.analyse(swatch(rgb), IRONFRONT, palette_check.DEFAULT_TOLERANCE)
+        check(result["share"] == 0.0, f"a {name} amber is still amber")
+
+
+def test_palette_keeps_desaturated_entries_in_the_comparison() -> None:
+    # #111820 is chroma 7. A cutoff that calls it neutral drops the project's own
+    # darks from the comparison and then condemns every shadow drawn from them.
+    result = palette_check.analyse(swatch((16, 32, 48)), IRONFRONT, palette_check.DEFAULT_TOLERANCE)
+    check(result["share"] == 0.0, "a dark blue-grey matches the palette's desaturated navy")
+    check(palette_check.NEUTRAL_CHROMA < 6.7, "the neutral cutoff sits below the palette's least saturated hued entry")
+    grey = palette_check.analyse(swatch((136, 136, 136)), IRONFRONT, palette_check.DEFAULT_TOLERANCE)
+    check(grey["share"] == 0.0, "a true neutral passes because the palette contains one")
+
+
+def test_palette_repair_rotates_hue_and_keeps_lightness() -> None:
+    import numpy as np
+
+    contaminated = Image.new("RGBA", (16, 16), (10, 216, 8, 255))
+    before = palette_check.analyse(contaminated, IRONFRONT, palette_check.DEFAULT_TOLERANCE)
+    repaired, changed = palette_check.repair(contaminated, IRONFRONT, palette_check.DEFAULT_TOLERANCE)
+    after = palette_check.analyse(repaired, IRONFRONT, palette_check.DEFAULT_TOLERANCE)
+    check(before["share"] == 1.0 and after["share"] == 0.0, "repair clears the off-palette pixels")
+    check(changed == 16 * 16, "repair reports how many pixels it rewrote")
+
+    lab_before = palette_check.srgb_to_lab(np.array([[10 / 255, 216 / 255, 8 / 255]]))
+    sample = np.asarray(repaired.convert("RGBA"), dtype=np.float64)[0, 0, :3] / 255
+    lab_after = palette_check.srgb_to_lab(sample.reshape(1, 3))
+    check(abs(lab_after[0][0] - lab_before[0][0]) < 1.5, "lightness is preserved, so shading survives the repair")
+
+    clean = Image.new("RGBA", (8, 8), (217, 165, 74, 255))
+    _, untouched = palette_check.repair(clean, IRONFRONT, palette_check.DEFAULT_TOLERANCE)
+    check(untouched == 0, "art already on palette is left alone")
+
+
+def test_palette_lab_inverse_is_exact_at_8_bit() -> None:
+    import numpy as np
+
+    rng = np.random.default_rng(11)
+    rgb = rng.integers(0, 256, (4000, 3)) / 255.0
+    back = palette_check.lab_to_srgb(palette_check.srgb_to_lab(rgb))
+    check(int(np.abs((rgb * 255).round() - (back * 255).round()).max()) == 0, "sRGB survives a Lab round trip unchanged at 8-bit")
+
+
+def test_palette_ignores_transparent_pixels() -> None:
+    art = Image.new("RGBA", (32, 32), (0, 0, 0, 0))
+    art.paste(swatch((10, 216, 8), 8), (4, 4))
+    result = palette_check.analyse(art, IRONFRONT, palette_check.DEFAULT_TOLERANCE)
+    check(result["pixels"] == 64, "only the opaque region is measured")
+    check(result["share"] == 1.0, "and it is judged on its own, not diluted by the empty canvas")
+
+for test in (test_slice_avoids_decoration, test_render_keeps_rim_thickness, test_measures_at_roblox_stored_size, test_slice_rejects_all_decorated, test_separate_sheet_splits_and_trims, test_paste_module, test_style_delta_separates_two_style_references, test_style_delta_ignores_transparent_background, test_style_delta_reports_direction, test_style_delta_palette_is_deterministic, test_style_delta_pairs_directories_and_draws_a_sheet, test_palette_flags_an_invented_hue, test_palette_allows_shading_of_a_palette_hue, test_palette_keeps_desaturated_entries_in_the_comparison, test_palette_repair_rotates_hue_and_keeps_lightness, test_palette_lab_inverse_is_exact_at_8_bit, test_palette_ignores_transparent_pixels):
     test()
 
 print(f"\n{checks} checks, {failures} failures")

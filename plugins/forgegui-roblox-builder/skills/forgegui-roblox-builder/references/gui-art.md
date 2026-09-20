@@ -18,6 +18,10 @@ art that went in without a stacked background, a nested border or a stretched co
    `python references/tools/separate_sheet.py sheet.png --out-dir pieces/` writes one trimmed PNG
    per object and prints each native aspect. Objects are found by fully transparent rows and
    columns, so the "wide transparent gaps" clause in the icon template is what makes it work.
+   An icon drawn as *disconnected strokes* — a crosshair, a dashed ring — gets split apart by the
+   same rule. The tell is a piece with an extreme aspect ratio and a grid index that skips a row.
+   Raise `--min-gap` above the gaps inside the icon but below the gaps between icons (80 worked on a
+   1520 px sheet with 250 px icons), or ask the prompt for one connected shape.
 3. **Measure slices** for anything that must resize (panels, wide buttons):
    `python references/tools/slice_metadata.py panel.png --preview 720x400` prints `size` and
    `sliceCenter` and renders a preview at that size to check by eye. Roblox stores an upload at no
@@ -173,6 +177,39 @@ but soft, lots of open sky in the upper third for a logo, no text, no characters
 
 Place it with `ScaleType.Crop`; it is the one piece of art that should fill the screen at any aspect.
 
+## Colour the generator invented
+
+Every sheet from a real IRONFRONT run came back carrying a hue the project never
+asked for. A weapon sheet prompted for off-white and amber was **21% off-palette**,
+mostly pure green. Adding "absolutely no green" to the next prompt worked — and
+the sheet came back with magenta instead. The contamination sits in **opaque**
+pixels, not in the anti-aliased edge, so it is painted by the generator rather
+than prompted, and negative prompts only move it.
+
+This is the single most reliable tell that a UI was generated rather than
+authored. At icon size it reads as dirt on the silhouette; across a screen it is
+what makes a set look assembled instead of designed.
+
+Check it, and repair it rather than re-rolling:
+
+```sh
+python references/tools/palette_check.py art/*.png --project forgegui-project.json
+python references/tools/palette_check.py art/*.png --project forgegui-project.json --fix
+```
+
+It judges **hue angle only** — lightness and saturation are ignored on purpose, so
+shading, highlights and a punchier accent all pass while a foreign hue fails.
+`--fix` rotates each off-palette pixel onto the nearest palette hue, keeping its
+lightness and clamping chroma to the palette's own maximum, so the silhouette and
+shading survive. On that run it took five sheets from 3–21% off-palette to 0.00%.
+
+Two things to keep straight. Keep the originals: the repair is lossy and a
+reviewer may want the before. And set the project palette's darks carefully —
+the check treats an entry below chroma 4 as a neutral with no hue, and a moody
+palette's darks are desaturated but *still hued* (`#111820` is chroma 7 at hue
+265), so a higher cutoff drops them from the comparison and then condemns every
+shadow drawn from them.
+
 ## Placing art: `GuiArt`
 
 ```lua
@@ -323,7 +360,7 @@ afford it.
 - `python references/tools/test_tools.py` checks the splitter and the slice tool on synthetic art.
   The slice centre avoids a crest, side gems and painted clouds, a sliced preview keeps its rim
   thickness, and a split icon closer than `--min-gap` stays whole. It also checks
-  `paste_module.py`. That is 38 checks, with no arguments and no network.
+  `paste_module.py`. That is 54 checks, with no arguments and no network.
 - `lune run references/tests/qa`, run from the skill root, checks `UiCheck` against stubbed GUI
   trees. `UiCheck` audits a live ScreenGui against the screen templates above: art chrome, icons in
   chips or on plates, strokes inside framed art, and backdrops wired to close. The same run checks

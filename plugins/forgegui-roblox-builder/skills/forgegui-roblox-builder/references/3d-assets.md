@@ -207,8 +207,10 @@ resolve its status before arranging import of the existing artifact.
 
 Record in the ledger for every asset (`references/project-manifest.md`): job id,
 delivery mode, available direct artifact refs or published delivery metadata
-(`publication_id`, decimal-string `asset_id`, `asset_type`, `creator_group_id`,
-and delivery status), plus the Studio instance path when inserted. Do not invent
+(`publication_id`, decimal-string `roblox_asset_id` mapped from the API response's
+`asset_id`, `asset_type`, `creator_group_id`, and delivery status), plus the Studio
+instance path when inserted. Use `roblox_asset_id` for manifest reuse and
+reconciliation. Do not invent
 an artifact ref for published output. Track local status separately (`generated`, then
 `handoff` while it waits for a manual import, `inserted`, `verified`).
 

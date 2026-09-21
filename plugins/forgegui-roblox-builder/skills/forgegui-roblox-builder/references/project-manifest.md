@@ -47,11 +47,11 @@ Fields:
 | `art_direction` | The descriptive look of the world (silhouette language, shading, mood). Goes into every prompt verbatim, never into `game_style`. |
 | `palette` | Hex colors named in prompts and used for Studio UI/lighting choices. |
 | `material_language` | Sentence used verbatim in 3D and GUI prompts. |
-| `style_refs` | Relevant theme-pack or hero-asset references passed in `reference_asset_ids` when the tool accepts them. |
+| `style_refs` | Relevant theme-pack or hero-asset references passed in `reference_asset_ids` when the tool accepts them. Each must resolve to an image; a finished 3D model is not a valid reference, so use its concept image or the prompt instead. |
 | `assets[].key` | Stable human name (`hud.panel`, `prop.tree.pine`). |
-| `assets[].artifact_ref` | The content reference to pass when regenerating or deriving *this object*. |
+| `assets[].artifact_ref` | The content reference to pass when regenerating or deriving *this object*. Pass it in `reference_asset_ids` only when it resolves to an image; for a 3D model entry, carry the look through a concept image or the prompt. |
 | `assets[].roblox_asset_id` / `studio_path` | Filled after import; a URL is never written here. |
-| `assets[].status` | `planned`, `generating`, `generated`, `handoff`, `inserted`, `verified`, `failed`. |
+| `assets[].status` | `planned`, `generating`, `generated`, `handoff`, `inserted`, `verified`, `failed`, or `blockout` for a part-built stand-in that a generated model will replace (`references/3d-assets.md`). |
 
 ## Rules
 

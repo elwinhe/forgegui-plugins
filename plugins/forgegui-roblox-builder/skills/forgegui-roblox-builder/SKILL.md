@@ -62,11 +62,11 @@ Rules:
 
 **Reuse relevant prior artifacts when the live tool supports them.** Do not regenerate an existing asset merely to match the project's style.
 
-- Content references: the ledger's `artifact_ref` or owned asset ids for *this object* (the same sword, the same panel family). Pass them in `reference_asset_ids` when that field is supported.
+- Content references: the ledger's `artifact_ref` or owned asset ids for *this object* (the same sword, the same panel family). Pass them in `reference_asset_ids` when that field is supported **and the reference resolves to an image**. A finished `generation_model_3d` artifact is not a usable reference: carry the object forward with its concept image, or repeat the art-direction and material sentence in the prompt.
 - Style references: the project's relevant `style_refs` (a theme pack or hero asset), plus the manifest's `art_direction` words written into the prompt. Do not add unsupported fields.
 - `game_style` is a routing type, not a place for descriptive styling. Pass the manifest's value on calls that accept it: `roblox` (default) or `general` for non-Roblox looks; the `fortnite` and `minecraft` routes are not fully built out, so use them only when asked. Keep every descriptive word ("low-poly", "cel shaded", "warm glow") in the prompt instead.
 - Keep the two separate in your prompt: style refs describe the world; content refs describe the thing.
-- `reference_asset_ids` accepts owned UUIDs and `mcp-artifact:<job>:<index>` references only. Chat images, local files, and external URLs are not references until they have been uploaded into ForgeGUI's ID space; if no upload route is available, say so and proceed with text plus existing refs.
+- `reference_asset_ids` accepts owned UUIDs and `mcp-artifact:<job>:<index>` references only, and the inspected schema requires every object and style reference to **resolve to an image**. A model artifact is rejected there even when its ID format is valid, so image, theme-pack and other image-backed references stay usable while finished 3D models do not (see `references/3d-assets.md`). Chat images, local files, and external URLs are not references until they have been uploaded into ForgeGUI's ID space; if no upload route is available, say so and proceed with text plus existing refs.
 - Prompt densely: `art_direction`, silhouette, materials, palette words from the manifest, intended use, approximate scale, lighting mood. `enhance_prompt` has been unreliable; do not depend on it. Write the dense brief yourself.
 
 ## 4. Check the import route before generating

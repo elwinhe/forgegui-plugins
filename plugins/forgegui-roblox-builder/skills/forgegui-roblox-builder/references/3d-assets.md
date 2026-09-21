@@ -59,11 +59,13 @@ Generate a small kit and place it many times:
   preflight and establish the later import route. Carry its look to the rest of
   the kit through the prompt: repeat the same art-direction and material
   sentence word for word.
-- Don't pass a finished model in `reference_asset_ids`. In a 2026-09-19 run,
+- Don't pass a finished model in `reference_asset_ids` or
+  `style_reference_asset_ids`. The inspected schema requires object and style
+  references to resolve to images, and in a 2026-09-19 run
   `generation_model_3d` rejected model artifacts there ("An input asset was not
   found for this account") and every such job failed at once; resubmitting
   without the reference worked. Image artifacts (a concept image from
-  `generation_image`) are the reference type to try.
+  `generation_image`) are the reference type that fits the contract.
 - Submit in small batches and check status between them. In the same run, 26
   model jobs sent within about two minutes: 14 succeeded, and 12 of the later ones
   came back `outcome_unknown` within seconds of submission. An `outcome_unknown`
@@ -73,8 +75,9 @@ Generate a small kit and place it many times:
 ## Prompting `generation_model_3d`
 
 Live schema (check before use): `prompt`, `quality` (`standard`/`high`),
-`pose_mode` (`a-pose`/`t-pose`, characters), `reference_asset_ids` (up to 4
-owned UUIDs or `mcp-artifact:` refs), `game_style` (routing type), `request_id`,
+`pose_mode` (`a-pose`/`t-pose`, characters), `reference_asset_ids` and
+`style_reference_asset_ids` (up to 4 owned UUIDs or `mcp-artifact:` refs each,
+and both must resolve to images), `game_style` (routing type), `request_id`,
 and optional `delivery` when exposed (see "Getting it into Studio").
 
 - One object per generation, centred, no ground plane, base or backdrop. Say so.

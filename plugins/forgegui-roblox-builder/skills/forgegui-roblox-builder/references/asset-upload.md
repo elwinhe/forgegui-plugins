@@ -41,7 +41,8 @@ scripts/open_cloud_upload.sh --dry-run star-chime.mp3 Audio "Star chime"
 
 ## Asset types and formats
 
-Only four mappings have actually been run end to end here, and the script accepts only those:
+Four mappings have been run end to end against this endpoint — one (`png -> Image`) through this script, the
+other three through an earlier helper of the same shape. The script accepts only those four:
 
 | `assetType` | Verified extension (content type) | Used as |
 | --- | --- | --- |
@@ -80,11 +81,13 @@ equivalent) before calling an asset ready, and record the state in the ledger be
 
 ## Audio: two sources, one route
 
-**A generated clip.** `generation_sound_effect` and `generation_music` return a terminal `succeeded` job whose
-result carries `audio_urls` / an `artifact_ref` of kind `audio`: a plain public `.mp3` URL. Measured on
+**A generated clip.** `generation_sound_effect` returns a terminal `succeeded` job whose
+result carries `audio_urls` / an `artifact_ref` of kind `audio`: a plain public `.mp3` URL. (`generation_music`
+returns the same shape, but no run of it was kept, so treat that as untested.) Measured on
 September 19–20, 2026 (`evidence/audio-route/` in the showcase repo): request `audio-route-test-2026-09-19-a`,
 job `b948de0a-2dff-4fb9-9c5c-4dffa9c1baed`, a 2 s clip, 33 KB, 128 kbps 44.1 kHz stereo. Download it, upload it
-as `Audio` through this script, and the operation returned **assetId 76875404707631**, `Reviewing` at upload.
+as `Audio` — that run went through `tools/roblox-upload.sh`, a helper of the same shape, not through this
+script — and the operation returned **assetId 76875404707631**, `Reviewing` at upload.
 That id is then a `Sound.SoundId`, and it was carried the rest of the way: a moderation re-check about ten
 minutes later returned `Approved`/`Active`, and in a Studio play session the `Sound` reported `IsLoaded = true`,
 a 2.0 s length and `IsPlaying` after `Play()` (`evidence/audio-route/RESULT.md`). Audible output was not

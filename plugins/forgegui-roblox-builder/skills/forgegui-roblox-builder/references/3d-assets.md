@@ -11,6 +11,8 @@ Publishing and animation inputs below were checked against the
 [backend contract at `9815cfa`](https://github.com/farewellagain18-byte/gitreposit/blob/9815cfa2096f4d5ac755b337348b9a282f2c7743/docs/mcp/tool-contract.json).
 This is a source snapshot, not proof that the connected deployment enables every
 capability; discover its live schemas and availability before use.
+Delivery response handling was checked against
+[`projectJob` at `75254cb`](https://github.com/farewellagain18-byte/gitreposit/blob/75254cb000883eb5492d80fa7ccc38e8f09198ac/supabase/functions/forgegui-mcp/server.ts#L453).
 
 ## Decide the source per asset
 
@@ -48,9 +50,15 @@ Generate a small kit and place it many times:
   the remaining allowance, obtain approval for the increased total first. Report
   credit cost as unknown unless billing evidence supplies it.
 - Generate one hero asset first per category (a weapon, a piece of gear, a
-  prop) and check it: the `thumbnail` in `generation_status`, then the triangle
-  count. Carry its look to the rest of the kit through the prompt: repeat the
-  same art-direction and material sentence word for word.
+  prop). For direct delivery, inspect available stored previews and model
+  artifacts; measure triangle counts from actual geometry where possible,
+  not an assumed response field. For published delivery, wait for
+  `delivery.status == "ready"`, then insert and inspect the model in Studio;
+  the public response does not expose a thumbnail or model file. If geometry
+  approval or remeshing must precede publication, choose direct delivery during
+  preflight and establish the later import route. Carry its look to the rest of
+  the kit through the prompt: repeat the same art-direction and material
+  sentence word for word.
 - Don't pass a finished model in `reference_asset_ids`. In a 2026-09-19 run,
   `generation_model_3d` rejected model artifacts there ("An input asset was not
   found for this account") and every such job failed at once; resubmitting
@@ -87,7 +95,9 @@ and optional `delivery` when exposed (see "Getting it into Studio").
   `segment_mesh` on the imported mesh (up to five named parts, returned as a new
   Model beside the source) and verify the split; don't assume it cuts where you
   need.
-- Check the body's thumbnail for the part anyway. In testing, a pistol frame
+- Check the body's available preview/model for direct delivery, or the inserted
+  Studio model after published delivery is ready, for the part anyway. In
+  testing, a pistol frame
   prompted on its own still came back with its slide modelled on, so the separate
   slide would overlap it. Then either use the body whole (and animate the whole
   item) or cut the part away with `segment_mesh` after import.
@@ -119,8 +129,11 @@ The generation finalization path does not independently validate the returned
 GLB's triangle count. Triangle limits also do not guarantee file size: embedded
 textures can make a low-poly model large. Do not treat P2 as an unconditional
 20,000-triangle or 20 MB output guarantee.
-Inspect actual per-mesh geometry and file size against the chosen import route's
-current limits and the scene budget. Remesh only when needed and within the
+For direct delivery, inspect actual per-mesh geometry and file size against the
+chosen import route's current limits and the scene budget. For published
+delivery, inspect geometry after insertion in Studio; report unavailable
+measurements rather than assuming compliance or waiting for hidden files.
+Remesh only when needed and within the
 approved paid-call allowance. Use `generation_remesh_3d`
 (`source_job_id`, `target_polycount`, `topology`); it kept all three texture maps
 in testing and took about 20 seconds. Keep `topology:
@@ -149,9 +162,23 @@ Establish the route when you plan the kit, not after generating (SKILL.md §4):
    ForgeGUI's **server-configured group**; callers cannot select an arbitrary
    user or group. Verify the destination and target experience's access first.
    Omitted delivery or `delivery: {"mode": "direct"}` returns files only.
-   Poll `generation_status`, inspect publishing status, moderation and access,
-   and require the returned Roblox asset ID before `insert_asset`; model
-   generation success alone is not publication success.
+   Poll `generation_status` until `delivery.status == "ready"`, verify access,
+   then use the returned Roblox asset ID with `insert_asset` and inspect in
+   Studio. Save `publication_id`, decimal-string `asset_id`, `asset_type` and
+   creator metadata (`creator_group_id`) as returned; retain the asset ID as a
+   string in records and adapt it only as required by the insertion schema.
+   Published responses deliberately set `result: null` and suppress raw files
+   on submission, polling and replay. Do not require `result.artifacts`, a GLB
+   URL or a thumbnail, or keep polling to obtain those hidden fields.
+   `pending_moderation` may already include an asset ID but is not ready;
+   continue bounded status polling. For `failed`, report the publication error;
+   for `needs_reconciliation`, stop and report the required operator
+   reconciliation. Preserve all identifiers in either case and do not regenerate
+   to switch delivery. Generation success or an asset ID alone is not readiness.
+   Generation-time publishing exposes the original model before the client can
+   approve its geometry. If inspection or remeshing must happen before any
+   externally visible publication, choose direct mode during preflight and
+   establish a separate later import route.
    This publishes the original generation, **not a later remesh**. The inspected
    `generation_remesh_3d` schema has no `delivery` field. If the final asset needs
    remeshing, preflight a separate route for that remeshed artifact before
@@ -176,7 +203,10 @@ an existing or ambiguous job to change delivery; retain its identifiers and
 resolve its status before arranging import of the existing artifact.
 
 Record in the ledger for every asset (`references/project-manifest.md`): job id,
-artifact ref, Roblox asset id or instance path, and status (`generated`, then
+delivery mode, available direct artifact refs or published delivery metadata
+(`publication_id`, decimal-string `asset_id`, `asset_type`, `creator_group_id`,
+and delivery status), plus the Studio instance path when inserted. Do not invent
+an artifact ref for published output. Track local status separately (`generated`, then
 `handoff` while it waits for a manual import, `inserted`, `verified`).
 
 ## Placing it

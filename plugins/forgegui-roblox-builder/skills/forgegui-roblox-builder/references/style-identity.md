@@ -13,7 +13,7 @@ Do this once, before the first paid visual generation, not per asset:
    - `name` — short and stable (≤ 120 chars), e.g. `"Crystal Mine — warm low-poly"`.
    - `detailed_brief` (≤ 8000 chars) — the intake style answer plus the manifest's `art_direction`, `palette` words, and `material_language`, written as full sentences. This brief is the reusable style contract; write it as carefully as a generation prompt.
    - `reference_asset_ids` — up to 4 account-owned image UUIDs or image-backed `mcp-artifact:<job>:<index>` references, as supported by the live schema. `style_create` and `style_revise` copy and register image artifacts at write time, deduplicating by owner and SHA-256; an existing image artifact does not need a separate upload. Every reference must resolve to an image: finished `generation_model_3d` artifacts and audio are invalid, even when their identifier format is valid. Use a concept image or the written brief instead.
-3. Map the returned `id` to manifest `style_id` and returned `version` to `style_version` (also the selected revision returned by `style_get`). Pass the pair together only on generation calls whose live schema supports it; currently the inspected contract exposes it on `generation_model_3d`.
+3. Map the returned `id` to manifest `style_id` and returned `version` to `style_version` (also the selected revision returned by `style_get`). Pass the pair together only on generation calls whose live schema supports it; the inspected contract exposes it on `generation_model_3d` and `generation_image`. `generation_gui` has no style-identity fields: use the existing prompt and compatible image-reference flow there.
 
 Style management calls do not charge credits, but creating/revising styles and authorizing/registering uploads require `generation:write`; style reads require `generation:read`.
 
@@ -23,12 +23,20 @@ A pasted or local image is not a reference until it is an owned asset. When the 
 
 ## Pinning generations
 
-On `generation_model_3d` (and any other generation whose live schema shows the fields):
+On `generation_model_3d` and `generation_image`, only when their live schemas show the fields:
 
 - Pass `style_id` and `style_version` from the manifest on every call. Together or neither — never one.
 - `style_brief` (≤ 4000 chars) and `style_reference_asset_ids` (≤ 4) are per-call *additions* layered on the pinned identity — for one asset that needs an extra nuance ("this one is ceremonial, gilded"). They are rejected without `style_id`/`style_version`. They do not modify the saved identity.
-- Each per-call reference array has at most 4 entries, and combined `reference_asset_ids` + `style_reference_asset_ids` cannot exceed 6. The resolved limit also includes saved style images: object references plus the deduplicated union of saved and per-call style references must total at most 6. Inspect the pinned revision's saved references before adding per-call references. All must resolve to images; finished model artifacts are invalid in either array. Content references still describe *this object*; style fields describe the world. Do not duplicate an ID across both.
+- All references must resolve to images; finished model artifacts are invalid in either array. Content references describe *this object*; style fields describe the world. Do not duplicate an ID across both. Inspect the pinned revision's saved references before adding per-call references.
 - `game_style` remains the routing type and is unchanged by any of this.
+
+**Model reference limits (`generation_model_3d`):** Each per-call reference array has at most 4 entries, and combined `reference_asset_ids` + `style_reference_asset_ids` cannot exceed 6. The resolved limit also includes saved style images: object references plus the deduplicated union of saved and per-call style references must total at most 6. The model schema has no `style_application` field.
+
+**Image application and limits (`generation_image`):** `reference_asset_ids` accepts up to 8 entries at schema level and `style_reference_asset_ids` up to 4, but a style-pinned request may apply at most 6 content-plus-style images in total. Applied style images are the deduplicated union of saved and per-call style references. This resolved limit also applies in `text_only` mode: style images are excluded, but content references alone still cannot exceed 6. Do not apply the model's four-content-reference limit to images or assume the image schema's eight-entry allowance overrides the style-pinned limit.
+
+- `style_application` requires the pin. Omitted, it defaults to `text_and_images` when saved or per-call style images exist, otherwise `text_only`. `text_only` applies the saved brief and any per-call brief without conditioning on style images; it does not remove content references or revise the identity.
+- Style-image conditioning supports only `thumbnail`, `icon_gfx`, `pixel_item`, `roblox_badge`, `roblox_gamepass`, and `profile_icon`.
+- For `pixel_texture`, `clothing_shirt`, `clothing_pants`, `roblox_skin_template`, and `mixed`, explicitly pass `style_application: "text_only"` when using a style pin. Otherwise a style containing images defaults to unsupported image conditioning and fails with `unsupported_style_conditioning`. Explicit `text_and_images` is also invalid without any style images. Resolve these conditions before spending; do not silently discard style images or change a request under its existing `request_id`.
 
 `generations_by_style` lists the account's generations pinned to an identity — use it to find reusable prior output before generating (SKILL.md §3 reuse rule applies).
 
@@ -38,4 +46,4 @@ Revisions are immutable and appended: `style_revise` with `style_id`, `expected_
 
 Do not revise the identity to serve one asset — that is what per-call `style_brief` is for. Revise when the *user* changes the project's look.
 
-Contract checked against `gitreposit`'s `elwin/mcp-slice-identities-publisher` at `3fd5ffa8`: `docs/mcp/tool-contract.json`, the MCP registry, adapters, store, and style-revision RPCs. This is source verification, not evidence of a live staging deployment or an end-to-end generation test. Discover deployed tools and schemas before use.
+Identity storage and revision mapping checked against `gitreposit`'s `elwin/mcp-slice-identities-publisher` at `3fd5ffa8`; generation schemas, application modes, and reference limits rechecked against #565 (`elwin/generation-mcp-api`) at `75254cb0`: `docs/mcp/tool-contract.json`, `supabase/functions/forgegui-mcp/registry.ts`, and `adapters.ts`. This is source verification, not evidence of a live staging deployment or an end-to-end generation test. Discover deployed tools and schemas before use.

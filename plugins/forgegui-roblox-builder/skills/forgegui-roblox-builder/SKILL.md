@@ -115,3 +115,4 @@ Based on the connected tool inventory of September 14–15, 2026, the ForgeGUI c
 
 - [Roblox Studio MCP tools](https://create.roblox.com/docs/studio/mcp)
 - `references/project-manifest.md` — per-project style memory and asset ledger
+- `references/animation-authoring.md` — authoring a `KeyframeSequence` for the standard R15 rig, and the in-Play measurements that prove one played

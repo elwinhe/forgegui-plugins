@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Checks for the GUI import tools on synthetic art, so no generated asset is needed.
+"""Checks for the GUI import tools on synthetic art, so no generated asset is needed, and for
+the module paster used to run the Luau checks through execute_luau.
 
     python references/tools/test_tools.py
 
@@ -16,6 +17,7 @@ from PIL import Image, ImageDraw
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
+import paste_module  # noqa: E402
 import separate_sheet  # noqa: E402
 import slice_metadata  # noqa: E402
 
@@ -114,7 +116,24 @@ def test_separate_sheet_splits_and_trims() -> None:
     check((127, 61) in sizes, f"a split icon closer than min-gap stays whole (got {sizes})")
 
 
-for test in (test_slice_avoids_decoration, test_render_keeps_rim_thickness, test_measures_at_roblox_stored_size, test_slice_rejects_all_decorated, test_separate_sheet_splits_and_trims):
+def test_paste_module() -> None:
+    module = "--!strict\nlocal Check = {}\nfunction Check.run() return 1 end\n\nreturn Check\n"
+    pasted = paste_module.paste(module, "return Check.run()\n")
+    check(not pasted.startswith("--!"), "the mode line is dropped, so the module can sit above a runner")
+    check("return Check\n" not in pasted and pasted.endswith("return Check.run()\n"), "the final return is replaced by the runner")
+    try:
+        paste_module.paste("local Check = {}\n", "return 1")
+        check(False, "a module without a final return is rejected")
+    except ValueError:
+        check(True, "a module without a final return is rejected")
+    luau = pathlib.Path(__file__).resolve().parent.parent / "luau"
+    for name in ("WorldCheck", "UiCheck"):
+        source = (luau / f"{name}.luau").read_text(encoding="utf-8")
+        body = paste_module.paste(source, f"return {name}.format")
+        check(f"local {name} = {{}}" in body and body.rstrip().endswith(f"return {name}.format"), f"the shipped {name} pastes with a runner")
+
+
+for test in (test_slice_avoids_decoration, test_render_keeps_rim_thickness, test_measures_at_roblox_stored_size, test_slice_rejects_all_decorated, test_separate_sheet_splits_and_trims, test_paste_module):
     test()
 
 print(f"\n{checks} checks, {failures} failures")

@@ -37,12 +37,16 @@ and never call a network service.
 
 ## Style references, and the user's own image
 
-`generation_gui`'s whole live schema is `prompt`, `type`, `count`, `reference_asset_ids` and
+The inspected `generation_gui` contract accepts `prompt`, `type`, `count`, `reference_asset_ids` and
 `request_id`. There is no `game_style`, and there are no style fields — the schema is
 `additionalProperties: false`, so passing `style_id`, `style_version` or `style_brief` is a hard
 rejection rather than a silently ignored extra. Style words go in the prompt; style *images* go in
 `reference_asset_ids`, which holds up to **8** entries and accepts **owned asset UUIDs and
-`mcp-artifact:<job>:<index>` references only**.
+`mcp-artifact:<job>:<index>` references only**. Every reference must resolve to an image;
+finished model and audio artifacts are invalid even when their identifier format is valid.
+Re-check the live schema before use. Style pins on `generation_image` and `generation_model_3d`
+do not imply support on `generation_gui`; their separate limits and image-family restrictions
+are documented in `references/style-identity.md`.
 
 That last constraint is the one that shapes the whole procedure: **a file on disk is not a
 reference.** A PNG the user pasted, screenshotted or downloaded cannot be passed to
@@ -56,26 +60,29 @@ has the full procedure. Discover the live tool list first (SKILL.md §1) — do 
 
 ### When it is not: the style-plate substitute
 
-As of 2026-09-19 the connected staging server exposes neither the upload pair nor the `style_*`
-family, so there is no route from a user's image to a reference. Do not stall on this and do not
-hunt for a workaround that uploads the file somewhere else. Use a style plate:
+The 2026-09-19 staging discovery reported neither the upload pair nor the `style_*` family.
+Use this substitute only if fresh discovery still finds no supported upload route; this dated
+observation does not establish current availability. Do not hunt for a workaround that uploads
+the file somewhere else. Include the paid plate and any comparison generations in the approved
+asset/call budget before generating. Use a style plate:
 
 1. **Read the user's image and write it down.** Palette as hex, material language, line weight,
    shading, corner treatment, the mood in one sentence. This is the only step where the user's image
    is actually consulted, so be specific — everything downstream inherits these words.
 2. **Generate the plate.** One `generation_image` call, type `thumbnail`, prompting for a style
    sheet rather than a screen: a few swatches, a rim treatment, one representative shape. Keep the
-   returned `mcp-artifact:` ref.
+   completed job's image-backed `mcp-artifact:` ref. If a project style pin is available and the
+   live image schema supports it, apply it using `references/style-identity.md`.
 3. **Pin every GUI call to it.** Pass that ref in `reference_asset_ids` on every `generation_gui`
    call for the project, and record it as the manifest's `style_refs` entry. One plate, every
    screen.
 4. **Disclose it.** Say in the report that the reference was reconstructed from a description
    because no image-upload route was exposed, and name the two tools that would remove the step.
 
-This is a substitution, not a shortcut, and the distinction matters: the integration
-— a reference image measurably steering GUI output — is fully exercised, and only the *ingestion* of
-the user's file is stood in for. When the upload family lands, step 1 and 2 collapse into a register
-call and the rest is unchanged.
+This substitute tests generated-image references, not direct conditioning on the user's original
+image. Report measured results only after running the comparison; the recipe alone is not evidence.
+When the upload family is exposed, replace steps 1 and 2 with the full authorize → upload bytes →
+register sequence, then pass the returned owned image UUID to GUI calls.
 
 ### Show that it worked
 

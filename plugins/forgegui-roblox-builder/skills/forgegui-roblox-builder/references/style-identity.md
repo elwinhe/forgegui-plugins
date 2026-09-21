@@ -2,7 +2,7 @@
 
 A style identity is an account-owned, server-side record of a project's look: a name, a detailed brief, and up to four owned reference images. Pinning preserves the same style inputs across sessions and machines without re-pasting the brief; visual consistency still requires inspection. The tool family is `style_list`, `style_get`, `style_create`, `style_revise`, and `generations_by_style`.
 
-**Verified absent on staging as of 2026-09-19.** Tool discovery against `vzzqjekupwutoaasswwd.supabase.co` returned 17 tools and none of this family; `generation_gui` and `generation_model_3d` are both `additionalProperties: false` with no style fields, so a pin sent today is rejected rather than ignored. Everything below describes the intended shape for when it lands — re-check before relying on it.
+**Historical staging observation (2026-09-19, reported in #15).** Discovery against `vzzqjekupwutoaasswwd.supabase.co` reported 17 tools, no style family, and no style fields on the exposed GUI/model schemas. This is not a current deployment check. The newer source contract below supports style pins on `generation_model_3d` and `generation_image`, but not `generation_gui`. Re-discover the connected server's tools and schemas before sending a pin.
 
 **These tools may not be exposed yet.** Discover the live tool list first (SKILL.md §1). When the family is absent, use the manifest's `art_direction`, `material_language`, and `style_refs` exactly as before and say nothing about styles being unavailable unless the user asks. Never treat a missing style tool as an error or substitute another endpoint.
 

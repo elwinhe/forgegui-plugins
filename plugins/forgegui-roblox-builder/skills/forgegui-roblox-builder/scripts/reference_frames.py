@@ -60,7 +60,7 @@ def extract(video, outdir, frames, width):
     need("ffmpeg")
     outdir.mkdir(parents=True, exist_ok=True)
     fps = frames / max(duration(video), 0.001)
-    # ponytail: fixed-rate sampling, no scene detection; add "select=gt(scene,..)" if a clip has long static stretches
+    # fixed-rate sampling, no scene detection; add "select=gt(scene,..)" if a clip has long static stretches
     run(["ffmpeg", "-nostdin", "-hide_banner", "-loglevel", "error", "-y", "-i", str(video),
          "-vf", f"fps={fps},scale={width}:-2", "-frames:v", str(frames),
          str(outdir / "frame_%03d.png")])

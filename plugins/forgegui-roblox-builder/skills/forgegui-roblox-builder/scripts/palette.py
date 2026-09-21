@@ -17,7 +17,7 @@ from PIL import Image
 
 EXTS = {".png", ".jpg", ".jpeg", ".webp", ".bmp"}
 THUMB = 160          # per-image sample size; enough for a palette, keeps k-means fast
-ITERS = 30           # ponytail: plain k-means, 30 iters converges on thumbnails
+ITERS = 30           # plain k-means, 30 iters converges on thumbnails
 
 
 def _lab(rgb):

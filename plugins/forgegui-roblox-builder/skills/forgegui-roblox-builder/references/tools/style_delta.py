@@ -1,21 +1,29 @@
 #!/usr/bin/env python3
-"""Measure how far a style reference moved the output, and render the evidence.
+"""Compare the palettes of two runs, and render the evidence.
 
     python references/tools/style_delta.py runs/ref-a/ runs/ref-b/ --contact-sheet delta.png
 
-A showcase has to demonstrate that a user-supplied reference
-image *measurably* changes the output's visual style. "Measurably" is the word
-that matters: two screenshots side by side are an opinion, and a reviewer is
-entitled to a number. So run the same prompt set twice, once under each style
-reference, drop the outputs in two directories with matching filenames, and
-point this at both.
+This is a diagnostic, not a test of whether a style reference worked. It
+measures one property -- colour -- of outputs you already have. Point it at two
+directories with matching filenames when two comparable runs exist; do not
+commission extra paid generations to produce a number.
 
 The number is CIELAB delta-E (CIE76) between the two runs' dominant palettes.
 Delta-E is the standard measure of perceived colour difference: about 2.3 is the
-just-noticeable difference, so the default threshold of 5.0 sits comfortably
-above "you would notice if shown both". Hue, saturation and value shifts are
-reported alongside because they say *which way* the style moved, which is what
+just-noticeable difference, and the default threshold of 5.0 is an advisory
+comparison point rather than a pass mark. Hue, saturation and value shifts are
+reported alongside because they say *which way* the colour moved, which is what
 you write in the report.
+
+A palette distance cannot establish cause. Two runs of the same prompt differ on
+their own, so ordinary generation variance can clear the threshold with no style
+effect at all, and a reference that genuinely changed shape, material,
+composition or line weight while holding the colours can land below it. Judge
+adherence by comparing each output against the reference itself, alongside
+whatever conditioning evidence the call returned: the style pin echoed back, the
+`style_application` in force, which reference IDs were accepted, or an
+`unsupported_style_conditioning` rejection. Use these numbers to describe a
+difference, never to prove one.
 
 Only pixels above the alpha floor are measured. Generated GUI art is mostly
 transparent background, and averaging that in drags every palette toward the
@@ -225,7 +233,7 @@ def main() -> int:
     parser.add_argument("first", help="outputs generated under style reference A")
     parser.add_argument("second", help="outputs generated under style reference B")
     parser.add_argument("--colors", type=int, default=DEFAULT_COLORS, help="palette size per image")
-    parser.add_argument("--threshold", type=float, default=DEFAULT_THRESHOLD, help=f"mean delta-E to call the change measurable (JND is {JND})")
+    parser.add_argument("--threshold", type=float, default=DEFAULT_THRESHOLD, help=f"advisory comparison point for the mean delta-E, not a pass mark (JND is {JND})")
     parser.add_argument("--contact-sheet", help="write a side-by-side PNG here")
     args = parser.parse_args()
 
@@ -246,16 +254,19 @@ def main() -> int:
         )
 
     mean = float(np.mean(deltas))
-    print(f"\nmean delta-E over {len(pairs)} asset(s): {mean:.2f}  (JND {JND}, threshold {args.threshold})")
+    print(f"\nmean delta-E over {len(pairs)} asset(s): {mean:.2f}  (JND {JND}, advisory comparison point {args.threshold})")
     if args.contact_sheet:
         contact_sheet(pairs, pathlib.Path(args.contact_sheet))
         print(f"contact sheet: {args.contact_sheet}")
 
-    if mean >= args.threshold:
-        print("MEASURABLE: the style reference changed the output.")
-        return 0
-    print("NOT MEASURABLE: the two runs are within the threshold; the reference did not move the style.", file=sys.stderr)
-    return 1
+    side = "at or above" if mean >= args.threshold else "below"
+    print(
+        f"advisory: the palettes sit {side} the comparison point. Colour distance alone neither "
+        "proves nor disproves that the reference conditioned the output -- generation variance "
+        "moves it, and a change to shape, material or composition may not. Compare the outputs "
+        "against the reference and report the conditioning evidence the calls returned."
+    )
+    return 0
 
 
 if __name__ == "__main__":

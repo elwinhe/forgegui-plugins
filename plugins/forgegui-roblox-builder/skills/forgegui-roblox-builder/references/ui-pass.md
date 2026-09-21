@@ -9,8 +9,9 @@ uses live elsewhere:
 - Motion, including `Motion.modal`, comes from `luau/Motion.luau` (`ui-motion.md`).
 - The checks are in `luau/UiCheck.luau`. `world-and-ui-checks.md` covers how to run them and how to
   read their output.
-- Provenance and style-adaptivity evidence come from `UiCheck.provenance` and
-  `tools/style_delta.py`; `gui-art.md` covers both.
+- Provenance evidence comes from `UiCheck.provenance`. Style adherence is judged against the
+  reference itself, with `tools/style_delta.py` as an advisory palette diagnostic over runs you
+  already have; `gui-art.md` covers both.
 
 ## Before you build
 
@@ -86,7 +87,7 @@ Then classify every overlay before you build it:
 | U9 Consistency | Every modal uses one close-button asset in one position, and only one modal is open at a time |
 | U10 Evidence | Captures of the Studio window only, with the player list covered; the audit and lint output; the stray-click result; and the reviewer's sign-off |
 | U11 Provenance | `UiCheck.provenance` over each ScreenGui, against the art registry, reports no `unregistered_image`. Every `primitive_surface` is either fixed or carries `AllowPrimitive` with a reason in the report. Record the generated-surface percentage per screen |
-| U12 Style adaptivity | Two runs of the same prompt set under two style references, compared with `tools/style_delta.py`, report a mean delta-E at or above the threshold, with the contact sheet attached. If the reference had to be reconstructed as a style plate, the report says so |
+| U12 Style adherence | The report names the reference each screen was generated under and how it was supplied — an owned asset UUID, an `mcp-artifact:` ref, a style pin as `style_id` and `style_version`, or a reconstructed style plate — records the conditioning evidence the calls returned, and compares the captures against that reference. Where two comparable runs already exist, attach `tools/style_delta.py` output and its contact sheet as an advisory palette diagnostic: it describes a colour difference and does not establish that the reference caused it, so no delta-E value passes or fails this gate. Do not commission extra paid runs to produce the number |
 
 ## Running the checks
 

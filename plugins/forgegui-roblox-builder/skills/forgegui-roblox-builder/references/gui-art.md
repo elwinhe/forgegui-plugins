@@ -86,18 +86,27 @@ register sequence, then pass the returned owned image UUID to GUI calls.
 
 ### Show that it worked
 
-"The reference changed the style" is an opinion until it is a number. Generate the same prompt set
-twice, once per reference, into two directories with matching filenames, then:
+Adherence is judged against the reference itself: put each screen beside the reference image or
+plate, say where it follows and where it drifts, and record the conditioning evidence the calls
+returned — the style pin echoed back, the `style_application` in force, which reference IDs were
+accepted, or an `unsupported_style_conditioning` rejection. That is what a reviewer reads.
+
+When two comparable runs already exist — one per reference, in two directories with matching
+filenames — the palette diagnostic adds a number:
 
 ```sh
 python references/tools/style_delta.py runs/ref-a/ runs/ref-b/ --contact-sheet delta.png
 ```
 
 It reports CIELAB delta-E between the two runs' dominant palettes, plus the hue, saturation and
-value shifts that say which way the style moved, and writes the side-by-side sheet. Delta-E's
-just-noticeable difference is about 2.3; the tool calls the change measurable at 5.0 and exits
-non-zero below it. Only opaque pixels are measured, because averaging in a transparent background
-drags every palette toward the same grey and makes two different styles look identical.
+value shifts that say which way the colour moved, and writes the side-by-side sheet. Delta-E's
+just-noticeable difference is about 2.3, and the tool's 5.0 is an advisory comparison point rather
+than a pass mark: ordinary generation variance can clear it with no style effect, and a reference
+that moved shape, material or composition while holding the colours can land below it. Read it as a
+description of a colour difference, never as proof of one, and do not commission extra paid
+generations solely to produce it. Only opaque pixels are measured, because averaging in a
+transparent background drags every palette toward the same grey and makes two different styles look
+identical.
 
 ## Templates by type
 

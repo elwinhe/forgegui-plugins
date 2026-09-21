@@ -173,7 +173,7 @@ Based on the connected tool inventory of September 14–15, 2026, the ForgeGUI c
 - `references/3d-assets.md` — source per asset, kit planning, 3D prompts, moving parts, triangle budgets, import routes and placement
 - `references/gui-art.md` — GUI prompt templates, sheet splitting, 9-slice measurement, placement rules and screen templates (`luau/GuiArt.luau`, `tools/separate_sheet.py`, `tools/slice_metadata.py`)
 - `references/ui-pass.md` — the UI pass procedure: overlay classes, hard rules and PASS/FAIL gates
-- `references/tools/style_delta.py` — measures whether a style reference actually moved the output (CIELAB delta-E plus a contact sheet), for the style-adaptivity claim
+- `references/tools/style_delta.py` — advisory palette diagnostic over two runs you already have (CIELAB delta-E, hue/saturation/value direction, contact sheet); it describes a colour difference and does not establish that a style reference caused it
 - `references/world-and-ui-checks.md` — spawn, floor and UI structure checks, how to run them through `execute_luau` and their known false positives (`luau/WorldCheck.luau`, `luau/UiCheck.luau`, `tools/paste_module.py`, `tests/qa.luau`)
 - `references/ui-motion.md` — reveals, presses, counters and modals (`luau/Motion.luau`)
 - `references/lighting-presets.md` — six looks, the `glow`/`haze`/`reduced` dials and reversible apply (`luau/LightingPresets.luau`)

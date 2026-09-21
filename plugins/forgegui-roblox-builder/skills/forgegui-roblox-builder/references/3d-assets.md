@@ -107,9 +107,18 @@ and optional `delivery` when exposed (see "Getting it into Studio").
 
 ## Triangle and size budgets
 
-In the 2026-09-19 run, most outputs arrived at about 100,000 triangles;
-two kit props came back at 5,500 and 6,500 triangles. These are observations from
-that run, not a guarantee about future outputs or a reason to remesh every model.
+New generations using ForgeGUI's direct-P2 defaults request at most **5,000
+triangles for standard quality** or **15,000 for high**, with `quad: false`.
+These are provider request limits, not prompt suggestions; see the
+[P2 implementation at `f83ab2a8`](https://github.com/farewellagain18-byte/gitreposit/blob/f83ab2a8/supabase/functions/_shared/tripo-client.ts).
+The roughly 100,000-triangle outputs observed in the 2026-09-19 run are not the
+expected behavior of this path. Confirm the connected deployment uses these
+defaults; older jobs and model overrides may follow a different path.
+
+The generation finalization path does not independently validate the returned
+GLB's triangle count. Triangle limits also do not guarantee file size: embedded
+textures can make a low-poly model large. Do not treat P2 as an unconditional
+20,000-triangle or 20 MB output guarantee.
 Inspect actual per-mesh geometry and file size against the chosen import route's
 current limits and the scene budget. Remesh only when needed and within the
 approved paid-call allowance. Use `generation_remesh_3d`

@@ -88,8 +88,10 @@ register sequence, then pass the returned owned image UUID to GUI calls.
 
 Adherence is judged against the reference itself: put each screen beside the reference image or
 plate, say where it follows and where it drifts, and record the conditioning evidence the calls
-returned — the style pin echoed back, the `style_application` in force, which reference IDs were
-accepted, or an `unsupported_style_conditioning` rejection. That is what a reviewer reads.
+returned, where supported — the style pin echoed back, the `style_application` in force, which
+reference IDs were accepted, or an `unsupported_style_conditioning` rejection. `generation_gui`
+has no style-identity fields: record accepted image references and the Studio comparison instead
+of requiring `style_application`. Accepted input does not demonstrate visual adherence.
 
 When two comparable runs already exist — one per reference, in two directories with matching
 filenames — the palette diagnostic adds a number:
@@ -98,10 +100,15 @@ filenames — the palette diagnostic adds a number:
 python references/tools/style_delta.py runs/ref-a/ runs/ref-b/ --contact-sheet delta.png
 ```
 
-It reports CIELAB delta-E between the two runs' dominant palettes, plus the hue, saturation and
-value shifts that say which way the colour moved, and writes the side-by-side sheet. Delta-E's
-just-noticeable difference is about 2.3, and the tool's 5.0 is an advisory comparison point rather
-than a pass mark: ordinary generation variance can clear it with no style effect, and a reference
+It reports an **unweighted palette-center distance** in CIELAB delta-E, plus absolute hue distance
+and signed saturation/value deltas, and writes the side-by-side sheet. Hue is unsigned:
+350→10 and 10→350 both measure 20 degrees, not clockwise/counterclockwise motion.
+The palette distance ignores color proportions, spatial arrangement and causality. A near-zero
+value means matched centers are close, not that color distribution or style is the same; reversed
+90/10 red/blue shares can score nearly zero. Use the visual comparison/contact sheet as well.
+The tool's 5.0 is an advisory comparison point, not a validated whole-image or style-adherence
+threshold (nor is a single-color just-noticeable difference one): ordinary generation variance can
+clear it with no style effect, and a reference
 that moved shape, material or composition while holding the colours can land below it. Read it as a
 description of a colour difference, never as proof of one, and do not commission extra paid
 generations solely to produce it. Only opaque pixels are measured, because averaging in a
@@ -343,11 +350,18 @@ afford it.
 - `lune run references/tests/qa`, run from the skill root, checks `UiCheck` against stubbed GUI
   trees. `UiCheck` audits a live ScreenGui against the screen templates above: art chrome, icons in
   chips or on plates, strokes inside framed art, and backdrops wired to close. The same run checks
-  `WorldCheck`. That is 63 checks.
+  `WorldCheck`. The suite includes provenance visibility and coverage regressions.
 - In Studio, run `UiCheck` on each screen you built, as described in `world-and-ui-checks.md`.
-- In Studio, run `UiCheck.provenance` on each screen against the art registry. It answers the
-  question a reviewer actually asks — is this built from generated images and text, or from Roblox
-  frames — as a percentage, and names every image it cannot trace to the registry.
+- In Studio, run `UiCheck.provenance` on every screen whose generated-art provenance was put in
+  scope during planning, even if it ended up primitive-only. Include the registry, findings and
+  unresolved substitutions. Coverage is registered image surfaces / counted surfaces (registered
+  images, unregistered images and primitive surfaces). Text is tallied separately, although a
+  label's fill/border also counts as a primitive. This is caller-maintained **registry-backed
+  attribution**, not proof of generation; retain ForgeGUI job/artifact/publication records in the
+  ledger. Missing registry means unverified provenance. `AllowPrimitive` suppresses a warning
+  without turning a primitive into art. There is no minimum ratio: valid native controls remain
+  allowed. The ratio counts structurally visible elements, not screen area, pixels or quality;
+  see `world-and-ui-checks.md` for visibility limits.
 - In Studio, `screen_capture` at the target viewport *and* at a phone-sized one. A HUD that is
   correct at 1920x1080 and broken at 390x844 is the normal failure.
 - Read the slice metadata off the `--preview` render before uploading, not off a panel that is

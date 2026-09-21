@@ -1,0 +1,159 @@
+# GUI art: prompts that import cleanly, and placement that stays clean
+
+Generated 2D art fails in Studio in three ways, and all three are fixable before anyone looks at a
+screenshot: a Roblox background drawn under art that already has its own shape, art stretched to an
+aspect it was not drawn at, and a packed sheet applied as one image. The prompt templates below
+close the first, `luau/GuiArt.luau` closes the second and third structurally, and `tools/` turns a
+sheet into pieces with measured metadata.
+
+The templates and tooling were used in two full Studio builds (September 16–17, 2026) and produced
+art that went in without a stacked background, a nested border or a stretched corner.
+
+## The pipeline
+
+1. **Generate** with the template for the type (below). Carry one art direction through a session by
+   passing the first accepted artifact as `reference_asset_ids` on every later `generation_gui`
+   call; `generation_gui` has no `game_style`, so the style words belong in the prompt.
+2. **Split and trim.** Sheets come back as one image even when the prompt asks for separate objects.
+   `python references/tools/separate_sheet.py sheet.png --out-dir pieces/` writes one trimmed PNG
+   per object and prints each native aspect. Objects are found by fully transparent rows and
+   columns, so the "wide transparent gaps" clause in the icon template is what makes it work.
+3. **Measure slices** for anything that must resize (panels, wide buttons):
+   `python references/tools/slice_metadata.py panel.png --preview 720x400` prints `size` and
+   `sliceCenter` and renders a preview at that size to check by eye. Roblox stores an upload at no
+   more than 1024 px on the longer side and reads `SliceCenter` in stored pixels, so the tool
+   measures at that size: a 1496x659 panel is measured as 1024x451 (checked against
+   `AssetService:CreateEditableImageAsync`). Metadata taken from the original file slices the wrong
+   pixels in game.
+4. **Upload** by a route the connected server actually exposes — see the skill's import-route step.
+   Studio's `upload_image` rejected a ForgeGUI storage URL as untrusted; serving the pieces locally
+   (`python -m http.server --bind 127.0.0.1`) and uploading `http://localhost:<port>/<file>.png`
+   worked, as did Open Cloud with `assetType: "Image"`.
+5. **Record** each asset id with its aspect and slice metadata in one registry module, and place art
+   only through `luau/GuiArt.luau`.
+
+Both tools need Pillow; `slice_metadata.py` also needs NumPy. They run locally on the artifact file
+and never call a network service.
+
+## Templates by type
+
+Every template ends with the same clauses, and they are what keep the output import-ready: "fully
+transparent background", "no text", "no drop shadow outside the shape", "no surrounding frame or
+border around the artwork".
+
+### `gui_button`: a matched pair
+
+```text
+A game UI kit for a <genre and setting>: one wide rounded button and one square icon button, in <two
+or three palette colours>, with <one motif> detailing and a subtle <accent> rim. Clean flat vector
+style, centered, fully transparent background, no text, no drop shadow outside the shape, no
+surrounding frame or border around the artwork.
+```
+
+`count: 2` returns two variants of the pair; pick one as the style reference for the rest of the
+session. Text goes on top in Luau, never in the art, so one button serves every label.
+
+### `gui_icon`: a sheet of eight
+
+```text
+A game icon sheet: eight separate, individually centered icons arranged in a 4 by 2 grid with wide
+fully transparent gaps between every icon so none touch or overlap. Icons, in order: <eight short
+noun phrases>. Polished stylized <genre> game UI style matching <palette>, soft highlights, subtle
+<accent> rim light. No text, no background, no frame, no shadow outside each icon.
+```
+
+"Wide fully transparent gaps ... so none touch" is the clause the splitter depends on. Icons came
+back in the listed reading order (left to right, top row first), so pieces can be named from the
+list. Eight per call is one generation instead of eight.
+
+### `gui_panel`: a window background
+
+```text
+A large empty game menu panel for a <genre and setting>: a wide rounded rectangle window with a
+<interior colour> interior, an ornate <accent> rim, <corner motif> from the lower corners, a small
+<crest> centered on the top edge. The interior is empty and clean so text and buttons can sit on
+it. Polished stylized <genre> game UI, fully transparent background outside the panel, no text, no
+buttons inside, no drop shadow outside the shape.
+```
+
+The panel carries its own rim, so it is the whole window background; never put it inside a Roblox
+frame that has its own background or stroke. Decoration painted into the interior (clouds, scenery)
+limits how far it can stretch: past roughly 1.5 times its native aspect, generate a plain interior.
+
+### `gui_asset`: logos and ribbons
+
+```text
+A game title logo reading <TITLE> in bold chunky <genre> letters: <letter colour> letterforms with a
+<glow colour> inner glow, a thick <outline colour> outline, <one emblem> behind the word, and <one
+small scene element> beneath the text. Centered, polished stylized game logo, fully transparent
+background, no extra text, no frame.
+```
+
+```text
+A wide horizontal game ribbon banner for a <genre and setting>: a long <colour> fabric ribbon with
+folded <accent>-trimmed tails on both ends and a clean empty center band for a title, a small
+<accent> gem at the top center. Polished stylized <genre> game UI, fully transparent background, no
+text, no drop shadow outside the shape, no frame.
+```
+
+Short text inside a logo rendered correctly. Keep every other label out of the art.
+
+### Full-bleed backdrops: `generation_image`, not `generation_gui`
+
+Loading splashes and title backdrops are scenes, not UI parts. `generation_image` with type
+`thumbnail` accepts `game_style`, which carries the same art direction:
+
+```text
+A wide cinematic game title backdrop: <scene>, <lighting>. Painterly stylized <genre> art, vibrant
+but soft, lots of open sky in the upper third for a logo, no text, no characters, no UI.
+```
+
+Place it with `ScaleType.Crop`; it is the one piece of art that should fill the screen at any aspect.
+
+## Placing art: `GuiArt`
+
+```lua
+local GuiArt = require(ReplicatedStorage.Visuals.GuiArt)
+local Art = GuiArt.new(require(ReplicatedStorage.Game.ArtRegistry))
+
+local window = Art.panel("panel", { Size = UDim2.fromOffset(720, 400), Parent = screen })
+local coin = Art.image("coin", { Size = UDim2.fromOffset(48, 48), Parent = hud })
+local buy = Art.button("buttonWide", { Size = UDim2.fromOffset(196, 80), Parent = card })
+```
+
+A registry entry is `{ id = "rbxassetid://...", aspect = 2.27 }`, plus `size` and `sliceCenter` from
+`slice_metadata.py` for anything placed with `panel`. `GuiArt.new` validates the registry and
+refuses malformed ids or slice rectangles, which otherwise render as blank or smeared elements with
+no error at all.
+
+What it enforces:
+
+- **No Roblox shape under art.** Background transparency 1, no border, no `UICorner`, `UIStroke` or
+  `UIGradient`, even when the caller's props ask for one.
+- **Native aspect.** `image` and `button` are fitted and aspect-locked, so they cannot be stretched.
+- **Slices from measurement.** `panel` uses `ScaleType.Slice` with the measured centre and keeps
+  `SliceScale` in step with the rendered size, so corners stay in proportion and never overlap. A
+  panel with no slice metadata falls back to fitted art rather than stretching.
+- **No `AutoButtonColor`.** Art has no background to tint, so press feedback belongs to motion
+  (`ui-motion.md`, `Motion.pressable`), not to a colour change on an invisible frame.
+
+Text and chrome (glass pills, progress bars, dividers) are ordinary Roblox frames and keep their
+corners and strokes; they are drawn beside or on top of art, never under it.
+
+## Read the UI before decorating it
+
+Generated backgrounds stacked on existing ones because nothing looked at what was already there.
+Before placing art on or inside an existing element, call `GuiArt.conflicts(element)`. It lists a
+visible background, any `UICorner`/`UIStroke`/`UIGradient`, and any child that already shows an
+image. Replace what it reports, or place the art elsewhere; never add a layer on top.
+
+## Checking the result
+
+- `python references/tools/test_tools.py` checks the splitter and the slice tool on synthetic art:
+  the slice centre avoids a crest, side gems and painted clouds, a sliced preview keeps its rim
+  thickness, and a split icon closer than `--min-gap` stays whole. 17 checks, no arguments, no
+  network.
+- In Studio, `screen_capture` at the target viewport *and* at a phone-sized one. A HUD that is
+  correct at 1920x1080 and broken at 390x844 is the normal failure.
+- Read the slice metadata off the `--preview` render before uploading, not off a panel that is
+  already in a place.

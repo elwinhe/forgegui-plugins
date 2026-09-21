@@ -2,33 +2,19 @@
 
 The small details that make a build read as finished. Each snippet is self-contained Luau for `multi_edit` into the right script type; resolve placeholder names such as `chest` to inspected instances in your place before pasting. Apply after the scene and gameplay exist; order: UI transitions → hit feedback → camera → prompts → onboarding.
 
-## UI tween-in (LocalScript under the ScreenGui)
+## UI transitions (LocalScript under the ScreenGui)
+
+Use `luau/Motion.luau`, documented in `ui-motion.md`, rather than a hand-written tween per panel:
 
 ```lua
-local TweenService = game:GetService("TweenService")
-local panel = script.Parent:WaitForChild("Panel")
-local scale = panel:FindFirstChildOfClass("UIScale") or Instance.new("UIScale", panel)
-local backgroundAlpha = { [panel] = panel.BackgroundTransparency }
-
-local function show()
-	panel.Visible = true
-	scale.Scale = 0.9
-	local objects = { panel }
-	for _, d in panel:GetDescendants() do
-		if d:IsA("GuiObject") then
-			if backgroundAlpha[d] == nil then backgroundAlpha[d] = d.BackgroundTransparency end
-			table.insert(objects, d)
-		end
-	end
-	TweenService:Create(scale, TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
-	for _, object in objects do
-		object.BackgroundTransparency = 1
-		TweenService:Create(object, TweenInfo.new(0.18), { BackgroundTransparency = backgroundAlpha[object] }):Play()
-	end
-end
+local Motion = require(ReplicatedStorage.Visuals.Motion)
+local shop = Motion.modal(panel, { backdrop = backdrop })
+Motion.pressable(buyButton)
+Motion.countTo(coinLabel, oldTotal, newTotal)
+shop.open()
 ```
 
-Rules: 150–250 ms, `Back`/`Quad` out for entrances, `Quad` in for exits, never bounce the whole HUD. Respect the art's transparency (do not tween an `ImageLabel` background that should stay transparent).
+Rules it already keeps: 150–250 ms, `Back`/`Quad` out for entrances, `Quad` in for exits, never bounce the whole HUD, and never tween a background that the art is meant to supply. Two failures a hand-written version usually has instead: `Tween.Completed` fires for `Cancel` as well, so reopening a menu mid-close hides it again; and animating the same `UIScale` that carries responsive scale snaps the HUD to design size. A modal's backdrop dims and sinks input — it never closes the modal.
 
 ## Hit feedback (Script on the server, effect on the victim; knockback for server-owned models only)
 

@@ -1,67 +1,79 @@
 # Textures on generated surfaces
 
-Two different things get called "texture" in a Roblox build, and the skill has to keep them apart:
+Two different things get called "texture", and a build has to keep them apart:
 
-- **Baked maps** that arrive inside a generated mesh as a `SurfaceAppearance.ColorMap`. You get these
-  for free with the mesh and they cannot be tiled or reused.
-- **Standalone textures** you generate as an image, upload, and apply to a surface yourself. These are
-  what "surfaces carry generated textures" normally means, and they are the ones that need work.
+- **Baked maps** that arrive inside a generated mesh as a `SurfaceAppearance.ColorMap`. You get
+  these free with the mesh; they cannot be tiled or reused.
+- **Standalone textures** you generate as an image, upload, and apply to a surface yourself.
 
-A build made only of the first kind still looks textured, but nothing in it is a texturing decision.
-State which kind a surface uses when it matters.
+A build made only of the first kind still looks textured while containing no texturing decision.
+Say which kind a surface uses when it matters.
 
-## Generating one
+## 1. Generate
 
-`generation_image` with `type: "mixed"`. Do not use `pixel_texture` — despite the name it returns
-pixel art, which is not what "texture" means to a Roblox builder.
+Use `generation_image` type `thumbnail` for materials (see the generator-behaviour notes in
+SKILL.md §5 for the measured comparison against `mixed`). Ask for a flat, straight-on, top-down
+view, even lighting, no shadow or vignette, uniform density across the frame, no border and no
+object.
 
-Two measured properties of the output, both of which need handling before upload:
+Two properties of the output to handle before it reaches a surface:
 
-1. **The image comes back with a black frame.** The usable tile is the inner square. Crop it or the
-   frame tiles across the surface as a grid of dark lines.
-2. **Nothing guarantees the result tiles.** Opposite edges are not matched. Check before you commit a
-   texture to a large surface, and expect a visible seam if you do not.
+1. **Some types return the tile inside a dark border.** Crop it, or the border tiles across the
+   surface as a grid of dark lines.
+2. **Nothing is guaranteed to tile**, whatever the prompt says. Check the wrap before committing a
+   texture to a large surface.
 
-`scripts/texture_prep.py` does the crop and reports the edge mismatch, so both are one command:
+## 2. Prepare
 
 ```sh
-python3 scripts/texture_prep.py raw.png out.png --size 1024
+python3 scripts/texture_prep.py raw.png tile.png --size 1024
 ```
 
-It prints the cropped frame width and a **tile mismatch** figure: the mean channel difference between
-opposite edges, next to the difference between ordinary neighbouring columns. A mismatch near the
-neighbour figure tiles cleanly; several times higher will show a seam. `--selftest` covers both.
+Crops the border and prints the **wrap difference** next to the ordinary neighbouring-pixel
+difference, so the figure is interpretable rather than a bare number. A wrap near the neighbour
+figure tiles; several times higher shows a seam. It preserves alpha, warns when a non-square crop
+would be distorted by the resize, and `--selftest` covers all of it.
 
-Two things the figure cannot tell you. A flat or near-uniform image reports 0.0 against 0.0 and
-"passes" trivially — read the numbers, not just the verdict. And a texture can tile perfectly and
-still look wrong at the scale you apply it. Measured on real generator output: raw returns carried
-frames of 234 px and 125 px, and one texture that shipped in a build reported a mismatch of 103.6
-against a neighbour difference of 20.0 — it tiles with a seam, which nobody noticed until this
-check existed.
+Read the two numbers, not just the verdict. A flat or near-uniform image has nothing to judge and
+says so. Measured on real generator output: raw returns carried borders of roughly 90-100 px per
+side (`tex-chevron-raw.png`, `tex-stand-seats-raw.png`), and three textures already shipped in a
+finished build report a wrap several times their neighbour figure -- they tile with a seam that
+nobody had noticed, because a tiling error is invisible in a close-up.
 
-Also note a multi-image request can return something unrelated to the prompt — a `mixed` request for a
-panorama once returned a coin. Look at every image in a `count > 1` return.
+**Colour mode matters here.** A generated texture may arrive RGBA with its artwork entirely in the
+alpha channel. Any step that flattens to RGB destroys it, and the flattened result reads as uniform
+and then passes a naive tiling check. Check the mode before processing.
 
-## Applying one
+If a texture does not tile, repair it before upload rather than living with the seam.
 
-`run_code` runs at plugin security, so textures are scriptable — no manual pass in the Studio UI:
+## 3. Upload
 
-| Target | Property | Verified |
-| --- | --- | --- |
-| `SurfaceAppearance` | `ColorMap` / `ColorMapContent`, `NormalMap` | written and read back |
-| `MaterialVariant` | `ColorMap` / `ColorMapContent` | written and read back |
-| `MeshPart` | `TextureID` | written and read back |
-| `Part` | `MaterialVariant` | written and read back |
+Upload the prepared PNG as `assetType: "Image"` (SKILL.md §4). Everything below takes the returned
+asset id. Roblox resamples image assets down to fit 1024 on a side -- measured when a HUD plate
+stored at 1774 px forced its `ImageRect` to be scaled by 1024/1774 -- so generating larger buys
+nothing and costs a resample.
 
-Every write above returned the asset id on readback. A `LocalScript` reading the same property raises a
-capability error in the same place, so do this from `run_code` or a server script, never client-side.
+## 4. Apply
 
-For a tiling surface use a `Texture` with `StudsPerTileU` / `StudsPerTileV` rather than a `Decal`, and
-size the tile from the surface: at 1024 px a 12-stud tile gives about 85 px per stud, which reads sharp
-at walking distance. Roblox resamples image assets down to fit 1024 on a side, so generating larger
-than that buys nothing and costs an extra resample.
+`run_code` runs at plugin security, so textures are scriptable and need no manual pass in the Studio
+UI. The properties that accept a write and return the id on readback are listed in SKILL.md §4 under
+the textures and materials route: `SurfaceAppearance` (`ColorMap` / `NormalMap` and their `Content`
+forms), `MaterialVariant`, `MeshPart.TextureID` and `Part.MaterialVariant`.
+
+Two practical notes that route does not cover:
+
+- **`ColorMap` or `ColorMapContent`?** Both accepted a write and read the id back. Which one the
+  current engine prefers was not established here; write the plain form, read it back, and fall back
+  to the `Content` form if the readback is empty.
+- Do this from `run_code` or a server script. A client-side read of the same property was **reported**
+  to raise a capability error by a separate pass and was not reproduced here -- the instruction stands
+  on the security model rather than on that report.
+
+For a tiling surface use a `Texture` with `StudsPerTileU` / `StudsPerTileV` rather than a `Decal`,
+and size the tile from the surface: at 1024 px a 12-stud tile gives about 85 px per stud.
 
 ## Check before you call it done
 
-Look at the surface in Play, not in Edit, at the distance a player sees it. A tiling error is invisible
-in a close-up and obvious across a floor.
+- the property you wrote reads back the id you set
+- `StudsPerTileU` / `StudsPerTileV` are the values you intended
+- the surface is viewed **in Play, across its full extent**, not in a close-up in Edit

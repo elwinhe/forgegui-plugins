@@ -1,56 +1,75 @@
 # Dressing a character beyond the default avatar
 
-Three separate pieces make a player look generated rather than default: clothing, a face, and gear.
-Gear is in `accessories.md`; this page covers the first two, plus applying them at spawn.
+Clothing, a face, and gear. Gear is in `accessories.md`; this page covers clothing and the face,
+plus applying them at spawn.
 
-## Clothing is just an uploaded image
+## Clothing is an uploaded image
 
-An `assetType: "Image"` id works **directly** as `Shirt.ShirtTemplate` and `Pants.PantsTemplate`.
-There is no separate clothing upload, and Open Cloud cannot upload `Shirt` or `Pants` assets —
-it does not need to for in-experience clothing.
-
-```lua
-local shirt = Instance.new("Shirt")
-shirt.ShirtTemplate = "rbxassetid://<image id>"
-shirt.Parent = character
-```
-
-Verified: templates set to plain Image ids preloaded successfully and the image wrapped onto the
-torso and limbs on a standard R15 dummy.
+An `assetType: "Image"` id works directly as `Shirt.ShirtTemplate` and `Pants.PantsTemplate` — the
+verified route is in SKILL.md §4 under clothing. Upload the image first (SKILL.md §4,
+`references/asset-upload.md`), then use the returned id.
 
 Generate with `generation_image` type `clothing_shirt` / `clothing_pants`, which lay the art out on
-the classic template. **Check the returned dimensions** rather than assuming: a request that should
-produce a template can come back at an unrelated aspect, and a template image at the wrong size wraps
-visibly wrong. The one measured here came back 585x559.
+the classic template. **Target the classic template size, 585x559**, and check what came back before
+uploading: any image is *accepted* as a clothing template — a photograph or a skybox face will not be
+rejected — but only a template-laid-out image at the right proportions wraps correctly. If a
+generation comes back at another size, regenerate rather than stretching it.
 
-Any image is *accepted* as a clothing template — the engine will not reject a texture, a photograph or
-a skybox face. Accepted is not the same as correct; only a template-laid-out image wraps properly.
+## The face is a Decal, and the default one is already there
 
-## The face is a Decal, not clothing
+A character head ships with a `face` Decal. Adding another one leaves two decals competing, which
+reads as the stock face rather than the generated one. **Replace the existing decal's `Texture`
+rather than adding a second**, and set `Face` so it points forward.
 
-Set a `Decal` on the `Head` with the generated image as its `Texture`. It does not go through the
-clothing properties.
+## Apply at spawn
 
-Note what this category can and cannot demonstrate: a generated face at play distance can read as a
-plain default smiley, and only the asset id proves otherwise. If the face is meant to be visible
-evidence, check it at the distance a player sees it, not in a close-up.
+```lua
+local Players = game:GetService("Players")
 
-## Apply at spawn, and strip the defaults
+local SHIRT, PANTS, FACE = "rbxassetid://0", "rbxassetid://0", "rbxassetid://0"
 
-Do this on `CharacterAdded`, and **remove the default accessories** first — a generated look with the
-stock avatar's hat and hair still reads as default. Set an attribute once applied so a later check can
-confirm it happened rather than assuming.
+local function dress(character: Model)
+    local humanoid = character:WaitForChild("Humanoid") :: Humanoid
 
-Order: strip defaults → clothing → face → gear.
+    -- Strip the stock hat and hair, or a generated look still reads as default.
+    humanoid:RemoveAccessories()
+
+    local shirt = character:FindFirstChildOfClass("Shirt") or Instance.new("Shirt")
+    shirt.ShirtTemplate = SHIRT
+    shirt.Parent = character
+
+    local pants = character:FindFirstChildOfClass("Pants") or Instance.new("Pants")
+    pants.PantsTemplate = PANTS
+    pants.Parent = character
+
+    -- Reuse the existing face Decal instead of adding a second one.
+    local head = character:WaitForChild("Head") :: BasePart
+    local face = head:FindFirstChild("face") or head:FindFirstChildOfClass("Decal") or Instance.new("Decal")
+    face.Name = "face"
+    ;(face :: Decal).Texture = FACE
+    ;(face :: Decal).Face = Enum.NormalId.Front
+    face.Parent = head
+
+    character:SetAttribute("GeneratedLookApplied", true)
+end
+
+Players.PlayerAdded:Connect(function(player)
+    player.CharacterAppearanceLoaded:Connect(dress)
+end)
+```
+
+Wait for `CharacterAppearanceLoaded` rather than `CharacterAdded`: the default appearance can land
+after your edit otherwise and overwrite it. The attribute is what a later check reads, so it has a
+fixed name rather than one each builder invents.
 
 ## Check before you call it done
 
-Read the properties back **off the live character in Play**, not off the template you built:
+Read these **off the live character in Play**, not off the template you built. Spawn timing differs
+between Edit and Play, and a look applied correctly in Edit is the most common silent failure here.
 
 - `Shirt.ShirtTemplate` and `Pants.PantsTemplate` hold the ids you set
-- the `Head` carries a `Decal` with the face id
-- the default accessories are gone
-- the attribute you set is present
-
-A character built correctly in Edit and never checked in Play is the most common way this category
-silently fails, because `StarterCharacter` handling and spawn timing differ between them.
+- the `Head` has exactly **one** Decal, carrying the face id
+- no stock accessories remain
+- `character:GetAttribute("GeneratedLookApplied")` is `true`
+- the face is looked at **at play distance**, not in a close-up — a generated face can read as a
+  plain default smiley from where a player actually sees it, and only the id proves otherwise

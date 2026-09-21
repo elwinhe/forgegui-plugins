@@ -18,10 +18,17 @@ by construction.
    join where the panorama's own two ends meet is the exception, and generators do not
    reliably close it — one measured panorama differed by 6.2 mean channel units across
    that join against 1.1 for ordinary neighbouring columns, which shows in Studio as a
-   vertical line through one face. The cutter feathers the two edges into each other
-   first (`--band`, 64 columns by default, 0 to disable), which brought that panorama to
-   0.0, and prints the before and after so the result is visible rather than assumed.
-   `--selftest` checks the six face directions, four shared edges, and the `ROTATE` table.
+   vertical line through one face. The cutter closes that join first (`--band`, 64 columns
+   by default, 0 to disable): it takes the step across the wrap, per row and per channel,
+   and ramps half of it out of each side. Averaging the two edges instead would blend parts
+   of the sky that face opposite directions, so it ghosts detail and disturbs a panorama
+   that already wrapped; ramping the step moves only a smooth offset, is bounded by half
+   the measured step, and leaves a seamless input untouched. It prints the step it removed
+   rather than a re-measured "after", which the correction would force to zero either way.
+   `--selftest` checks the six face directions, four shared edges, the `ROTATE` table, and
+   all three seam properties. The seam correction is verified by that selftest and by
+   measuring the panorama, not by a Studio capture: the in-Studio seam captures on record
+   were taken against an earlier averaging version, so re-capture if you need a visual check.
 4. **Upload each face** as `assetType: "Image"` (§4), keeping the six ids in the
    ledger under one entry.
 5. **Apply** with a preset: `references/luau/SkyboxPresets.luau` carries three moods

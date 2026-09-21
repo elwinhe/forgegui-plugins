@@ -115,3 +115,6 @@ Based on the connected tool inventory of September 14–15, 2026, the ForgeGUI c
 
 - [Roblox Studio MCP tools](https://create.roblox.com/docs/studio/mcp)
 - `references/project-manifest.md` — per-project style memory and asset ledger
+- `references/textures.md` — generating, preparing and applying a standalone texture (`scripts/texture_prep.py`)
+- `references/characters.md` — clothing from a plain Image id, the face Decal, and applying both at spawn
+- `references/accessories.md` — fitting rigid gear to the standard R15 rig without a fitting tool

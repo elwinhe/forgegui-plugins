@@ -72,7 +72,8 @@ Moss Louvan's September 15, 2026 [PR #1 findings](https://github.com/elwinhe/for
 Observed generator behaviour (September 19, 2026, across the Turbo Pitch and Sky Islands runs; live results take precedence):
 
 - A panorama prompt asking for 2:1 returned 1376×768 (1.79:1) every time. Resize or pad to 2:1 before cutting skybox faces, and keep the horizon near the middle.
-- `generation_image` type `pixel_texture` returns pixel art with a drawn frame; it is not a tileable material. Ask `mixed` for painted or photographic tiles, then crop the frame it adds, and check the tile edges yourself because nothing guarantees they wrap.
+- **Materials come back cleanest from `generation_image` type `thumbnail`.** Measured on one prompt run through both types back to back on September 21, 2026: `thumbnail` returned the texture edge to edge, no border, the whole image usable. `mixed` returned an equally good texture of the same subject inside a 281 px black border — about 37% of the image wasted — so `thumbnail` is the better route rather than `mixed` plus a crop. `pixel_texture` returns pixel art with a drawn frame and is not a material type at all. Nothing from either type is guaranteed to tile; check the opposite edges against the ordinary neighbouring-pixel difference before committing a texture to a large surface.
+- **The two types differ in colour mode**, which matters for any tool that touches the file: `mixed` returned RGBA and `thumbnail` RGB. A texture whose artwork lives in the alpha channel is destroyed by a step that flattens to RGB, and the result can look uniform and pass a naive tiling check. Read the mode before processing.
 - `generation_gui` output arrived with a real alpha channel on every panel, button and icon; `remove_background` was never needed for GUI art. Check the alpha before spending a call on it.
 
 ## 6. Assemble in Studio

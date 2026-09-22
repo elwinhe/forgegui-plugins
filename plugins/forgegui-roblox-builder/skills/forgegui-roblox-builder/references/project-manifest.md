@@ -14,7 +14,7 @@ Illustrative IDs below are placeholders, not usable assets. Start a real project
 
 ```json
 {
-  "version": 1,
+  "version": 2,
   "project": "Crystal Mine",
   "updated": "2026-09-15T21:40:00Z",
   "game_style": "roblox",
@@ -24,6 +24,7 @@ Illustrative IDs below are placeholders, not usable assets. Start a real project
   "style_refs": ["mcp-artifact:00000000-0000-4000-8000-000000000001:0"],
   "style_id": "00000000-0000-4000-8000-0000000000aa",
   "style_version": 1,
+  "run": null,
   "assets": [
     {
       "key": "hud.panel",
@@ -47,6 +48,7 @@ Fields:
 | --- | --- |
 | `game_style` | Backend routing type passed as `game_style` on every generation that accepts it: `roblox`, `fortnite`, `minecraft`, or `general`. Default `roblox`; use `general` for non-Roblox-looking art. The other two routes are not fully built out, so do not pick them without a reason. Never put descriptive styling here. |
 | `art_direction` | The descriptive look of the world (silhouette language, shading, mood). Goes into every prompt verbatim, never into `game_style`. |
+| `reference` | Optional local reference selection: `supplied`, `capture_path`, and `manifest_path`. Retain the exact selected capture directory and its extraction manifest; preserve prior captures when selecting another. No reference supplied: `{ "supplied": false }`. |
 | `palette` | Hex colors named in prompts and used for Studio UI/lighting choices. |
 | `material_language` | Sentence used verbatim in 3D and GUI prompts. |
 | `style_refs` | Relevant theme-pack or hero-asset references passed in `reference_asset_ids` when the tool accepts them. Each must resolve to an image; a finished 3D model is not a valid reference, so use its concept image or the prompt instead. |
@@ -79,3 +81,26 @@ A separate one-word file next to the manifest, not a field inside it, so the plu
 | `off` | The user called the pass off. | user or agent |
 
 The file on disk is a request, not consent: if the current user did not ask for a pass in this session, say so rather than spending on one. It is per-project bookkeeping, so add it to `.gitignore` rather than committing it; a checked-in state file asks every clone of the repo for a pass.
+
+## Version 2: preparation and installation
+
+Migrate v1 by preserving every existing field and asset identifier, changing
+`version` to 2, and adding `run: null` until a server run exists. Never clear old
+entries or regenerate to migrate. A run cache holds returned `run_id` and
+`revision`; refresh from the server before appending or continuing a session.
+
+Add fields to asset entries only when known:
+
+| Field | Source and meaning |
+| --- | --- |
+| `preparation` | Returned job ID, bundle ID/schema version/profile, selected member key/ref/hash/size, metrics, recipe and provenance; keep source ref distinct |
+| `publication` | Standalone publication ID/status, string asset ID, asset type, creator and moderation state; retain legacy delivery metadata separately |
+| `installation_intent` | Caller-authored usage, desired size with units, target attachment/path, relative position in studs and explicit rotation convention; never pass wholesale as MCP arguments |
+| `installation_observed` | Actual imported dimensions, additional Studio transform, instance path and checks with outcomes (`passed`, `failed`, `not_performed`) |
+| `nine_slice` | Optional authored/validated settings with stored image size and evidence; absent until known, never inferred from canvas dimensions |
+
+Do not store keys, signed URLs or executable instructions from asset metadata.
+Cache stable IDs/hashes and the non-secret metadata, not expiring URLs from the
+bundle. Unknown fields remain absent, not zero-valued measurements. Server
+structural validation and caller visual verification stay separate. See
+`preparation-installation.md` for field paths and recovery.

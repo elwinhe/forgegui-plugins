@@ -7,8 +7,10 @@ This download installs local client configuration and connects that client to th
 In ForgeGUI, open **Profile → MCP API keys** and create an expiring, revocable account key with only the scopes you need:
 
 - `library:read` allows free library discovery.
-- `generation:read` reads account-owned jobs.
-- `generation:write` can spend credits and requires a paid Starter-or-higher entitlement. Omit it until the account owner authorizes generation.
+- `generation:read` reads account-owned jobs and preparation results.
+- `publication:read` polls owned publications; `publication:write` explicitly uploads owned artifacts to the configured shared group.
+- `runs:read` retrieves run records; `runs:write` creates and records runs.
+- `generation:write` also authorizes preparation (which does not charge generation credits); generation can spend credits and requires a paid Starter-or-higher entitlement. Omit it until the account owner authorizes generation.
 
 The ForgeGUI account key is separate from a Claude or Codex subscription and from the Roblox Studio connection. Never put the key in chat, command arguments, shell history, logs, screenshots, source files, or archives.
 

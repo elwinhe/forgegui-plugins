@@ -76,7 +76,7 @@ def sheets(paths, outdir, rows, cols):
     for n, i in enumerate(range(0, len(paths), per)):
         chunk = paths[i:i + per]
         listing = outdir / f"_sheet_{n:02d}.txt"
-        listing.write_text("".join(f"file '{p.resolve()}'\n" for p in chunk))
+        listing.write_text("".join(f"file '{p.name}'\n" for p in chunk))
         dest = outdir / f"sheet_{n:02d}.png"
         run(["ffmpeg", "-nostdin", "-hide_banner", "-loglevel", "error", "-y",
              "-f", "concat", "-safe", "0", "-i", str(listing),
@@ -120,12 +120,12 @@ def selftest():
         run(["ffmpeg", "-nostdin", "-hide_banner", "-loglevel", "error", "-y",
              "-f", "lavfi", "-i", "testsrc=size=320x180:rate=10:duration=3",
              "-pix_fmt", "yuv420p", str(clip)])
-        got, sh = capture(str(clip), Path(tmp) / "out", frames=12, width=320, sheet="2x3")
+        got, sh = capture(str(clip), Path(tmp) / "Champ's references", frames=12, width=320, sheet="2x3")
         assert len(got) == 12, [p.name for p in got]
         assert len(sh) == 2, [p.name for p in sh]
         assert got[0].name == "frame_001.png" and all(p.stat().st_size > 0 for p in got + sh)
         original = {p: p.read_bytes() for p in got + sh + [got[0].parent / "manifest.json"]}
-        second, second_sheets = capture(str(clip), Path(tmp) / "out", frames=3, width=320, sheet="2x3")
+        second, second_sheets = capture(str(clip), Path(tmp) / "Champ's references", frames=3, width=320, sheet="2x3")
         assert len(second) == 3 and len(second_sheets) == 1
         assert second[0].parent != got[0].parent
         assert all(p.read_bytes() == data for p, data in original.items())

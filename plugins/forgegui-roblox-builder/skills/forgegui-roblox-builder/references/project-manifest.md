@@ -10,7 +10,7 @@ One file per game project, kept in the working directory the agent runs from. It
 
 ## Shape
 
-Illustrative IDs below are placeholders, not usable assets. Start a real project from `forgegui-project.example.json` and record returned identifiers.
+Illustrative IDs below are placeholders, not usable assets. Start a real project from `forgegui-project.example.json` with `decisions: []` and record returned identifiers. The illustrative answers below are documentation only, never user decisions to copy into a new project.
 
 ```json
 {
@@ -24,6 +24,11 @@ Illustrative IDs below are placeholders, not usable assets. Start a real project
   "style_refs": ["mcp-artifact:00000000-0000-4000-8000-000000000001:0"],
   "style_id": "00000000-0000-4000-8000-0000000000aa",
   "style_version": 1,
+  "decisions": [
+    { "asked": "2026-09-15", "topic": "interface_tone", "answer": "restrained and flat; menus like Modern Warfare (2019)", "by": "user" },
+    { "asked": "2026-09-15", "topic": "features", "answer": "in: startup sequence, title-screen operator, lobby, loadout, levels, bots. out: shop, mobile layout", "by": "user" },
+    { "asked": "2026-09-15", "topic": "spend", "answer": "accepted recommendation: paid generation authorized, ceiling 40 paid generations", "by": "defaults" }
+  ],
   "run": null,
   "assets": [
     {
@@ -47,6 +52,7 @@ Fields:
 | Field | Meaning |
 | --- | --- |
 | `game_style` | Backend routing type passed as `game_style` on every generation that accepts it: `roblox`, `fortnite`, `minecraft`, or `general`. Default `roblox`; use `general` for non-Roblox-looking art. The other two routes are not fully built out, so do not pick them without a reason. Never put descriptive styling here. |
+| `decisions` | Record each resolved answer with its topic, date and source. When the user accepts "defaults", store the concrete recommendation they accepted (including the numeric paid-generation ceiling, explicit spending authorization, and selected/excluded features for the relevant topics), with `by: "defaults"`; never store only the word "defaults" or invent an unoffered recommendation. Append changes to preserve history; the latest entry in array order for a topic supersedes earlier entries. An explicit user change is the new decision: record it with `by: "user"` and proceed without redundant confirmation. Ask only when the change is ambiguous. Read it before every prompt (`intake.md`). |
 | `art_direction` | The descriptive look of the world (silhouette language, shading, mood). Goes into every prompt verbatim, never into `game_style`. |
 | `reference` | Optional local reference selection: `supplied`, `capture_path`, and `manifest_path`. Retain the exact selected capture directory and its extraction manifest; preserve prior captures when selecting another. No reference supplied: `{ "supplied": false }`. |
 | `palette` | Hex colors named in prompts and used for Studio UI/lighting choices. |

@@ -1,8 +1,196 @@
 {
-  "backend_commit": "18faae7b5d7c574ea32d3e0817e55f0e386a17e2",
-  "export_sha256": "7cb6afb030c3399ea39c817f50ac5b8060588819f2ee8474042546f66a3e60f9",
-  "schema_version": "1.6.0",
+  "backend_commit": "36b26158b2a076ad5abd0ba4a9e89df65053434e",
+  "export_sha256": "ea876c46a494c9d9017053e565dac27799a248abd078c95c615bf4cfa09e8ce6",
+  "schema_version": "1.8.0",
   "tools": [
+    {
+      "name": "generation_sound_effect",
+      "scope": "generation:write",
+      "conditional_scopes": {
+        "delivery.mode=publish": [
+          "publication:write"
+        ]
+      },
+      "description": "Generate game sound effects. Optional delivery publish/roblox requires publication:write and publishes each retained output through the durable Audio publisher. Direct or omitted delivery returns file results and never publishes.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Stable caller-chosen idempotency key. Reuse only with identical parameters."
+          },
+          "run_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "delivery": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "const": "direct"
+                  }
+                },
+                "required": [
+                  "mode"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "const": "publish"
+                  },
+                  "platform": {
+                    "type": "string",
+                    "const": "roblox"
+                  }
+                },
+                "required": [
+                  "mode",
+                  "platform"
+                ],
+                "additionalProperties": false
+              }
+            ],
+            "description": "How finished audio is delivered. Omitted or direct returns ForgeGUI file results only. publish/roblox additionally publishes each retained MP3 output as a Roblox Audio asset owned by ForgeGUI's server-configured group; the destination group and credentials are trusted server configuration and cannot be chosen per call, and each output reports its own publication status and decimal-string asset id once ready."
+          },
+          "prompt": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5,
+            "default": 1
+          },
+          "duration_seconds": {
+            "type": "number",
+            "minimum": 0.5,
+            "maximum": 30
+          },
+          "audio_category": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "loopable": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "request_id",
+          "prompt"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "generation_music",
+      "scope": "generation:write",
+      "conditional_scopes": {
+        "delivery.mode=publish": [
+          "publication:write"
+        ]
+      },
+      "description": "Generate game music. Optional delivery publish/roblox requires publication:write and requests below 420 seconds; direct or omitted delivery permits 600 seconds and never publishes. Publication readiness is reported separately per output. loopable requests loop-friendly composition from the provider; no seam validation is performed and a seamless loop is not guaranteed.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Stable caller-chosen idempotency key. Reuse only with identical parameters."
+          },
+          "run_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "delivery": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "const": "direct"
+                  }
+                },
+                "required": [
+                  "mode"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "const": "publish"
+                  },
+                  "platform": {
+                    "type": "string",
+                    "const": "roblox"
+                  }
+                },
+                "required": [
+                  "mode",
+                  "platform"
+                ],
+                "additionalProperties": false
+              }
+            ],
+            "description": "How finished audio is delivered. Omitted or direct returns ForgeGUI file results only. publish/roblox additionally publishes each retained MP3 output as a Roblox Audio asset owned by ForgeGUI's server-configured group; the destination group and credentials are trusted server configuration and cannot be chosen per call, and each output reports its own publication status and decimal-string asset id once ready."
+          },
+          "prompt": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3,
+            "default": 1
+          },
+          "music_length_seconds": {
+            "type": "number",
+            "minimum": 3,
+            "maximum": 600
+          },
+          "music_mood": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "loopable": {
+            "type": "boolean",
+            "default": false
+          },
+          "instrumental": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": [
+          "request_id",
+          "prompt"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
     {
       "name": "generation_status",
       "scope": "generation:read",
@@ -828,7 +1016,7 @@
     {
       "name": "artifact_publish",
       "scope": "publication:write",
-      "description": "Publish one owned immutable Model GLB or PNG Image artifact to Roblox as a durable job owned by the server-configured shared group. Destination credentials and group are server configuration, OAuth is unavailable, no generation is repeated or charged, and group upload does not prove cross-creator usability. Returns truthful processing/moderation state and a decimal-string asset_id only when Roblox supplies one.",
+      "description": "Publish one owned immutable Model GLB, PNG Image, or MP3 Audio artifact to Roblox as a durable job owned by the server-configured shared group. Destination credentials and group are server configuration, OAuth is unavailable, no generation is repeated or charged, and group upload does not prove experience access or audible playback. Audio must be under 20,000,000 bytes and 420 seconds, at most 48 kHz, mono/stereo; no transcoding or seamless-loop verification. Returns truthful processing/moderation state and a decimal-string asset_id only when Roblox supplies one.",
       "input_schema": {
         "type": "object",
         "properties": {
@@ -850,13 +1038,14 @@
                 "pattern": "^mcp-artifact:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}:(0|[1-9][0-9]{0,2})$"
               }
             ],
-            "description": "An account-owned asset UUID or mcp-artifact reference. Object and style references must resolve to images."
+            "description": "Owned Model, Image, or Audio asset reference to publish."
           },
           "asset_type": {
             "type": "string",
             "enum": [
               "Model",
-              "Image"
+              "Image",
+              "Audio"
             ]
           },
           "destination": {
@@ -1324,7 +1513,7 @@
     {
       "name": "run_list",
       "scope": "runs:read",
-      "description": "List owned runs newest first, filtered by style revision, outcome, prepared asset kind, creator, intended universe, tag, creation time, or text in name/description/tags. Cursors are bound to the filters that produced them.",
+      "description": "List owned runs newest first, filtered by style revision, outcome, prepared or published asset kind, creator, intended universe, tag, creation time, or text in name/description/tags. Cursors are bound to the filters that produced them.",
       "input_schema": {
         "type": "object",
         "properties": {
@@ -1358,7 +1547,8 @@
               "texture",
               "skybox",
               "model",
-              "image"
+              "image",
+              "audio"
             ]
           },
           "creator_id": {

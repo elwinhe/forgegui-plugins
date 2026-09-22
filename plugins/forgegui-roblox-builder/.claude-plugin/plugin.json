@@ -1,6 +1,6 @@
 {
   "name": "mcp",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "Build Roblox experiences with ForgeGUI assets and the official Roblox Studio MCP.",
   "author": {
     "name": "ForgeGUI"
@@ -12,7 +12,7 @@
     "forgegui_api_key": {
       "type": "string",
       "title": "ForgeGUI account API key",
-      "description": "An expiring ForgeGUI MCP key created in Profile → MCP API keys. This is not a Claude subscription credential.",
+      "description": "An expiring ForgeGUI MCP key created in Profile \u2192 MCP API keys. This is not a Claude subscription credential.",
       "sensitive": true,
       "required": true
     }

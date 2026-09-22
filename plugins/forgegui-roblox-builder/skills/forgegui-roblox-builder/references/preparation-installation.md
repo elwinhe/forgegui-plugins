@@ -91,8 +91,10 @@ slice definition, use ordinary aspect-preserving art rather than guessing.
 
 Use `artifact_publish` for one owned `Model` GLB or PNG `Image`, with
 `destination: {platform: roblox, creator: configured_shared_group}`. The
-destination is server-selected; no OAuth, arbitrary creator, audio publication
-or whole-bundle publication is implied. Confirm shared-group ownership fits the
+destination is server-selected; no OAuth, arbitrary creator or whole-bundle
+publication is implied. Generated MP3 music/SFX can use the separate Audio
+extension only when the live schema and capabilities advertise it; follow
+`audio-publication.md`. Audio is not a model/image preparation variant. Confirm shared-group ownership fits the
 task and verify target-experience access. Do not switch destinations silently.
 
 The standalone tool and `publication_status` return a **top-level**

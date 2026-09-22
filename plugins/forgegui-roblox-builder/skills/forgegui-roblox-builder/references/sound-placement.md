@@ -32,7 +32,11 @@ sound.Parent = emittingPart
 
 ## Generated audio
 
-`generation_sound_effect` and `generation_music` return downloadable files. They are not Roblox audio ids until published through a verified route (see SKILL.md §4). If the connected server exposes no publishing tool, disclose the manual upload step before spending, keep the job id in the manifest, and fall back to `search_asset` on the Creator Store for placeholders. Roblox audio moderation is asynchronous; a freshly uploaded id can be silent for minutes and must be checked in a playtest, not assumed.
+`generation_sound_effect` and `generation_music` return downloadable files and owned audio artifact references. They are not Roblox audio ids until published. Follow `audio-publication.md`: when the live schema accepts `Audio` and `asset_capabilities` reports the publication route usable for this account and type, send the owned reference to `artifact_publish`. Do not download or reprocess it locally for that route. A plugin update alone does not enable backend publication.
+
+Before spending, confirm the destination and target experience's access. If no usable route exists, disclose the blocker and use the explicitly authorized local/manual fallback in `asset-upload.md`, or agree on Creator Store placeholders. Never switch routes after an ambiguous submission. Keep request, generation, artifact and publication identifiers in ledger v2.
+
+`loopable` guides the generation prompt; it is not a measured seamless-loop guarantee. Listen across the loop boundary before calling a music or ambience loop seamless. Moderation approval and loaded/playing properties do not prove audible output; verify it by ear in Play and record unperformed checks honestly.
 
 ## Verify
 

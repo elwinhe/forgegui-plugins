@@ -52,7 +52,7 @@ Rules:
 - Decide reuse vs Roblox primitive vs Toolbox vs generate for every item. Generating every scene object is the expensive failure. Duplicating one good asset across placements is the cheap right answer.
 - **Generate the identity, build the structure.** Building identity assets from parts is the opposite failure: the game plays and still looks like a prototype. Weapons and held items, characters and gear, vehicles, machines, landmarks, and dressing props seen up close default to ForgeGUI `generation_model_3d`, planned as a small kit that is placed many times. Roblox parts, terrain and materials are for floors, walls, stairs, collision proxies, triggers and distant backdrops. Follow `references/3d-assets.md` for the source table, kit sizes and hero-first order.
 - A part-built stand-in is a **blockout**: fine for testing layout and gameplay, logged in the ledger as `status: "blockout"`, and replaced before the build is called finished. Leave it only when the user declined generation or the import handoff, and say which in the report. Never downgrade to parts silently because generation is paid or the import needs a manual step; those are reasons to ask.
-- **Toolbox is a last resort for anything visual.** A Creator Store model, texture or decal in the build reads as a stock Roblox game and erases the project's identity; prefer ForgeGUI generation for every visual asset and reach for `toolbox_search` only when the user declined generation, asked for a specific store asset, or the asset class has no generation route. Record the source in the ledger so a Toolbox stand-in is as visible as a blockout. Audio is the standing exception: ForgeGUI-generated audio currently has no import route, so build the sound layer from Roblox's audio library until one lands.
+- **Toolbox is a last resort for anything visual.** A Creator Store model, texture or decal in the build reads as a stock Roblox game and erases the project's identity; prefer ForgeGUI generation for every visual asset and reach for `toolbox_search` only when the user declined generation, asked for a specific store asset, or the asset class has no generation route. Record the source in the ledger so a Toolbox stand-in is as visible as a blockout. Audio may use Roblox's audio library for reuse; generated audio requires a verified publication and experience-access route (see `references/asset-upload.md`).
 - Show the planned generation count and the credit estimate only when billing evidence supports a number; otherwise show the count and say the cost is unknown.
 - Honor authorization already given, including the count it named; do not re-ask while the plan stays within it. Clarify before spending if paid generation was never authorized, no count was given, or the plan has grown past the approved count.
 - Do not assume every tool costs one credit. Provider credentials and account IDs are never tool arguments.
@@ -73,6 +73,18 @@ Rules:
 ## 4. Check the import route before generating
 
 Establish a supported route from the expected output format into Studio before spending. A standalone downloadable asset needs no route.
+
+Prefer discovered, deployed ForgeGUI publication when it supports both the asset type and
+intended destination owner. Check the actual schema and authority; do not assume universal
+account/key support. Open Cloud is an explicitly chosen fallback, documented in
+`references/asset-upload.md`, with mandatory destination and durable receipt flags. Its
+`references/tools/oc_upload.py` implementation also serves `scripts/open_cloud_upload.sh`.
+Use `--resume` with identical inputs to recover saved operations/IDs. An uncertain submission
+must be reconciled, never resubmitted with a new receipt. Likewise, retain ForgeGUI publication
+identifiers on `outcome_unknown` and reconcile that request; never automatically switch to
+Open Cloud after an ambiguous ForgeGUI result. Record ID, moderation and Studio usability
+as separate facts.
+
 
 Moss Louvan's September 15, 2026 [PR #1 findings](https://github.com/elwinhe/forgegui-plugins/pull/1) report image, audio and GLB uploads through Open Cloud `POST /assets/v1/assets` with the file, followed by polling the returned operation for `response.assetId`. Those tests used a personal account and an Open Cloud API key. They establish a tested API route, not that the connected MCP exposes it or that a hosted OAuth flow or production group permissions have been verified. Discover the live publishing tool and its execution permissions before relying on this route; `execute_luau` alone does not establish permission to import files or publish assets.
 

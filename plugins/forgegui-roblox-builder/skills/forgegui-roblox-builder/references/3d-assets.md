@@ -110,9 +110,10 @@ Establish the route when you plan the kit, not after generating (SKILL.md §4):
 
 1. **A publishing tool exposed by the connected MCP** that returns a Roblox asset
    id. Use it, then `insert_asset`.
-2. **Open Cloud upload** (`POST /assets/v1/assets`, `assetType: "Model"`, the GLB
-   as-is) with the user's own API key through a bridge they run. Poll the
-   operation for `response.assetId`, check moderation, then `insert_asset`.
+2. **Open Cloud upload** as an explicitly chosen fallback, through
+   `references/tools/oc_upload.py` with a mandatory receipt and an explicit
+   destination. See [Establish the publication route](#establish-the-publication-route)
+   below. Check moderation, then `insert_asset`.
 3. **Manual import handoff.** Download each GLB into the project folder and ask
    the user to import them in one sitting with Studio's 3D Importer (File >
    Import 3D). Then find the imported MeshParts in the place and continue. This is slower but fully valid. **Don't fall back to building the
@@ -144,49 +145,30 @@ Structure, collision, blockouts, and anything the user explicitly wants built in
 Studio. Primitives are not the fallback for "generation is paid" or "import needs
 a click"; those are reasons to ask, not to downgrade silently.
 
-## The import route, settled
+## Establish the publication route
 
-The Studio MCP cannot upload a model. `upload_image` is images-only, `store_image`
-takes a local image for `generate_procedural_model`, and `insert_asset` needs an
-id that already exists. A generated GLB therefore reaches Studio through Roblox
-Open Cloud or through a human doing File > Import 3D.
+Discover deployed ForgeGUI publication first and prefer it when the live route supports
+both the requested asset type and intended owner. `insert_asset` needs a Roblox ID;
+a GLB URL is not an ID, and an image uploader is not a model uploader.
 
-Open Cloud, verified end to end on 2026-09-20:
-
-```
-POST https://apis.roblox.com/assets/v1/assets
-     multipart: request (JSON: assetType/displayName/creationContext) + fileContent
-     header:    x-api-key
-  -> { operationId }
-GET  https://apis.roblox.com/assets/v1/operations/{operationId}
-  -> poll to { done: true, response: { assetId } }
-```
-
-`references/tools/oc_upload.py` drives it:
+If explicitly choosing Open Cloud as the fallback, use the resumable uploader:
 
 ```sh
-python3 references/tools/oc_upload.py model.glb --type Model --name "AR-17 VESPER"
-python3 references/tools/oc_upload.py art/*.png --type Image --json ids.json
+python3 references/tools/oc_upload.py model.glb --type Model --name "Prop" \
+  --user-id 123456 --receipt model-upload.json
+python3 references/tools/oc_upload.py model.glb --type Model --name "Prop" \
+  --user-id 123456 --receipt model-upload.json --resume
 ```
 
-The key comes from a Creator Dashboard API key with the **Assets** system and
-`asset:read` + `asset:write`, read from `ROBLOX_API_KEY` or a gitignored `.env`.
-It is never logged and never written to the ledger; only the numeric id is.
+Replace the example ID with the intended owner, or use `--group-id` for a provable group
+scope. `ROBLOX_API_KEY` comes only from the environment, never `.env` or arguments.
+Read [asset-upload.md](asset-upload.md) for authority checks, formats, batch examples,
+receipt recovery and the compatibility shell wrapper. Do not retry ambiguous publication
+or automatically fall back after ForgeGUI `outcome_unknown`; reconcile the original request.
+An ID alone does not prove moderation approval or usability in the target Studio experience.
 
-Two things that cost time here:
-
-- **A valid Open Cloud key looks like a JWT.** It carries `aud: RobloxInternal`,
-  `iss: CloudAuthenticationService` and a short `exp`, which reads like an
-  internal session token. It is not. Do not refuse a key on the shape of its
-  claims — make one authenticated `GET /assets/v1/assets/{id}` and believe the
-  status code.
-- **python.org builds have no CA bundle wired into `ssl`**, so `urllib` raises
-  `CERTIFICATE_VERIFY_FAILED` against a host `curl` reaches fine. Pass a context
-  built from `certifi`. Never answer this by disabling verification: the request
-  carries an API key.
-
-Establish this route *before* the first paid 3D call, and prove it with one
-throwaway upload rather than assuming.
+Establish this route before paid generation using discovery and local dry-run. Any live
+publication test requires authorization. Studio's native 3D Importer remains a manual route.
 
 ## What a generated model actually arrives as
 

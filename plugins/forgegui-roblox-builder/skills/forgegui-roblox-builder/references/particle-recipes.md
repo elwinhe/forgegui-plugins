@@ -60,7 +60,7 @@ Same caveat as the lighting guide: a ModuleScript created through `multi_edit` m
 
 ## Textures
 
-Defaults use engine-bundled textures (`sparkles_main`, `smoke_main`, `fire_main`) so no upload is needed. For a distinctive look, generate a sprite with ForgeGUI `generation_image`, publish it to a Roblox image id through a verified route, and pass it as `texture`. The constructor does not support flipbook properties in `overrides`. For a published flipbook sheet, explicitly set `FlipbookLayout`, `FlipbookMode` and `FlipbookFramerate` on the resulting inspected ParticleEmitter and verify the animation in Play.
+Defaults use engine-bundled textures (`sparkles_main`, `smoke_main`, `fire_main`) so no upload is needed. For a distinctive look, generate a sprite with ForgeGUI `generation_image`, prepare any alpha/resize operations server-side, then publish the prepared Image member through `artifact_publish` when usable (`preparation-installation.md`), and pass it as `texture`. The constructor does not support flipbook properties in `overrides`. For a published flipbook sheet, explicitly set `FlipbookLayout`, `FlipbookMode` and `FlipbookFramerate` on the resulting inspected ParticleEmitter and verify the animation in Play.
 
 All recipes emit from an Attachment position. A large owning Part does not turn `ambient_dust` into room-volume emission, and spherical shape settings on an attachment do not establish a volumetric portal. Room-volume effects need a separate reviewed emitter parented directly to a BasePart; verify that effect separately.
 

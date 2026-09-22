@@ -11,6 +11,13 @@ art that went in without a stacked background, a nested border or a stretched co
 
 ## The pipeline
 
+Use `preparation-installation.md` first: server `asset_prepare` handles supported
+alpha conversion and resizing, and `artifact_publish` publishes the prepared
+PNG member. Do not repeat these transformations locally. The local tools below
+remain for sheet splitting and nine-slice measurement, which #606 does not
+provide. Re-register locally changed bytes before server publication; preserve
+their provenance separately.
+
 1. **Generate** with the template for the type (below). Carry one art direction through a session by
    passing the first accepted artifact as `reference_asset_ids` on every later `generation_gui`
    call; `generation_gui` has no `game_style`, so the style words belong in the prompt.
@@ -25,7 +32,8 @@ art that went in without a stacked background, a nested border or a stretched co
    measures at that size: a 1496x659 panel is measured as 1024x451 (checked against
    `AssetService:CreateEditableImageAsync`). Metadata taken from the original file slices the wrong
    pixels in game.
-4. **Upload** by a route the connected server actually exposes — see the skill's import-route step.
+4. **Publish** the prepared/registered member with `artifact_publish` when usable.
+   Otherwise upload by a route the connected server actually exposes — see the skill's import-route step.
    Studio's `upload_image` rejected a ForgeGUI storage URL as untrusted; serving the pieces locally
    (`python -m http.server --bind 127.0.0.1`) and uploading `http://localhost:<port>/<file>.png`
    worked, as did Open Cloud with `assetType: "Image"`.

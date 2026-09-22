@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
-"""Per-mesh quality report for GLB files (no deps beyond numpy).
-Reports, per mesh: triangles, vertices, boundary edges (edges used by exactly one triangle: > 0 means the surface is
+"""Advisory per-primitive topology report for GLB files (requires numpy).
+Supports GLB 2 with one embedded buffer, uncompressed TRIANGLES, float32 VEC3
+positions and optional unsigned scalar indices, packed or interleaved.
+Sparse, compressed, quantized, external-buffer and non-triangle geometry is
+unsupported and fails explicitly; this is not a general glTF validator.
+Reports, per primitive: triangles, vertices, boundary edges (edges used by exactly one triangle: > 0 means the surface is
 open / has holes), non-manifold edges (used by > 2 triangles), duplicate triangles, degenerate triangles (zero area or
-repeated vertex index). Vertices are merged by exact position before the edge analysis so seams split only for UV /
-normal reasons are not reported as boundary.
+repeated vertex index). Positions are rounded to six decimals before merging:
+nearby vertices may merge, and material/primitive boundaries may appear open.
+Counts are not a whole-model verdict, mesh repair, or proof of Roblox compatibility.
+Intentional openings need visual interpretation, never automatic paid regeneration.
+Any uninspectable file causes a nonzero exit after remaining files are processed.
 
 usage: glb_quality.py [--md] file.glb ...      (--md prints a Markdown table)
        glb_quality.py --selftest                (hand-built shapes plus a real GLB round-trip)
@@ -16,9 +23,20 @@ NCOMP = {"SCALAR": 1, "VEC2": 2, "VEC3": 3, "VEC4": 4}
 
 
 def _read_glb(path):
-    b = open(path, "rb").read()
+    with open(path, "rb") as source:
+        b = source.read()
+    if len(b) < 20 or struct.unpack_from("<III", b) != (0x46546C67, 2, len(b)):
+        raise ValueError("Invalid GLB 2 header or declared length")
+    if struct.unpack_from("<I", b, 16)[0] != 0x4E4F534A:
+        raise ValueError("Missing GLB JSON chunk")
     n = struct.unpack_from("<I", b, 12)[0]
     g = json.loads(b[20:20 + n])
+    buffers = g.get("buffers", [])
+    if len(buffers) != 1 or "uri" in buffers[0]:
+        raise ValueError("Unsupported geometry: requires one embedded buffer")
+    if any(ext in g.get("extensionsUsed", []) for ext in
+           ("KHR_draco_mesh_compression", "EXT_meshopt_compression", "KHR_mesh_quantization")):
+        raise ValueError("Unsupported geometry: compressed or quantized accessors")
     off = 20 + n
     bins = []
     while off < len(b):
@@ -32,7 +50,11 @@ def _read_glb(path):
 
 def _accessor(g, blob, idx):
     a = g["accessors"][idx]
+    if "sparse" in a:
+        raise ValueError("Unsupported geometry: sparse accessor")
     bv = g["bufferViews"][a["bufferView"]]
+    if bv.get("buffer", 0) != 0 or bv.get("extensions"):
+        raise ValueError("Unsupported geometry: buffer reference or buffer-view extension")
     dt = np.dtype("<" + COMP[a["componentType"]])
     nc = NCOMP[a["type"]]
     start = bv.get("byteOffset", 0) + a.get("byteOffset", 0)
@@ -80,16 +102,28 @@ def report(path):
     for m in g.get("meshes", []):
         for pi, p in enumerate(m["primitives"]):
             if p.get("mode", 4) != 4:
-                continue
+                raise ValueError(f"Unsupported geometry: primitive mode {p['mode']}")
+            if p.get("extensions"):
+                raise ValueError("Unsupported geometry: primitive extension")
+            position = g["accessors"][p["attributes"]["POSITION"]]
+            if position["type"] != "VEC3" or position["componentType"] != 5126 or position.get("normalized"):
+                raise ValueError("Unsupported geometry: requires float32 VEC3 positions")
             pos = _accessor(g, blob, p["attributes"]["POSITION"]).astype(np.float64)
             if "indices" in p:
+                indices = g["accessors"][p["indices"]]
+                if indices["type"] != "SCALAR" or indices["componentType"] not in (5121, 5123, 5125) or indices.get("normalized"):
+                    raise ValueError("Unsupported geometry: requires unsigned scalar indices")
                 idx = _accessor(g, blob, p["indices"]).reshape(-1).astype(np.int64)
             else:
                 idx = np.arange(len(pos))
-            faces = idx[: len(idx) - len(idx) % 3].reshape(-1, 3)
+            if not len(idx) or len(idx) % 3 or np.any(idx >= len(pos)) or not np.isfinite(pos).all():
+                raise ValueError("Invalid triangle geometry: empty, incomplete, out-of-range or nonfinite data")
+            faces = idx.reshape(-1, 3)
             r = analyse(pos, faces)
             r["mesh"] = f"{m.get('name', '?')}[{pi}]"
             rows.append(r)
+    if not rows:
+        raise ValueError("No inspectable triangle primitives")
     return rows
 
 
@@ -205,6 +239,7 @@ if __name__ == "__main__":
     if md:
         print("| file | " + " | ".join(COLS) + " |")
         print("|" + "---|" * (len(COLS) + 1))
+    failed = not files
     for fpath in files:
         try:
             for r in report(fpath):
@@ -213,4 +248,6 @@ if __name__ == "__main__":
                 else:
                     print(fpath, " ".join(f"{c}={r[c]}" for c in COLS))
         except Exception as e:  # keep going across the folder, but say why
+            failed = True
             print(f"| {fpath} | ERROR {e} |" if md else f"{fpath} ERROR {e}")
+    sys.exit(1 if failed else 0)

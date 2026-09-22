@@ -1,0 +1,1401 @@
+{
+  "backend_commit": "18faae7b5d7c574ea32d3e0817e55f0e386a17e2",
+  "export_sha256": "7cb6afb030c3399ea39c817f50ac5b8060588819f2ee8474042546f66a3e60f9",
+  "schema_version": "1.6.0",
+  "tools": [
+    {
+      "name": "generation_status",
+      "scope": "generation:read",
+      "description": "Read an account-owned durable generation job and artifact result.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "job_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "publication_status",
+      "scope": "publication:read",
+      "description": "Read an account-owned durable Roblox publication by publication_id, including actual asset type, configured group, processing/moderation state, and a decimal-string asset_id only after Roblox supplies one.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "publication_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "publication_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "asset_capabilities",
+      "scope": "generation:read",
+      "description": "List the versioned asset preparation, upload, run, and publication routes, their limits and profiles, and whether each is enabled, preview, or unavailable for this account (with a reason). Unavailable routes reject requests before any work. This read does not charge credits.",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "asset_prepare",
+      "scope": "generation:write",
+      "description": "Validate and transform owned sources into an immutable prepared bundle: measured/transformed static GLB models, deterministic image alpha/resize operations, a Roblox skybox from a 2:1 panorama, a tiled PBR texture set, or a standard R15 character outfit. The variant is selected by asset.kind. Returns a durable job_id; poll generation_status for result.prepared_bundle, whose members are reusable mcp-artifact references. Check asset_capabilities first: unavailable or preview-restricted routes are rejected before any work. Preparation does not charge generation credits; at most 3 run at once and 100 per day per account. It never publishes to Roblox.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Stable caller-chosen idempotency key. Reuse only with identical parameters."
+          },
+          "run_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "asset": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "character"
+                  },
+                  "rig_profile": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "const": "roblox-r15-standard"
+                      },
+                      "version": {
+                        "type": "number",
+                        "const": 1
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "version"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "shirt_ref": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/properties/run_id"
+                      },
+                      {
+                        "type": "string",
+                        "pattern": "^mcp-artifact:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}:(0|[1-9][0-9]{0,2})$"
+                      }
+                    ],
+                    "description": "Owned 585x559 classic shirt template image."
+                  },
+                  "pants_ref": {
+                    "$ref": "#/properties/asset/anyOf/0/properties/shirt_ref",
+                    "description": "Owned 585x559 classic pants template image."
+                  },
+                  "accessories": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "model_ref": {
+                          "anyOf": [
+                            {
+                              "$ref": "#/properties/run_id"
+                            },
+                            {
+                              "$ref": "#/properties/asset/anyOf/0/properties/shirt_ref/anyOf/1"
+                            }
+                          ],
+                          "description": "Owned rigid model (GLB) reference used as the accessory Handle."
+                        },
+                        "attachment": {
+                          "type": "string",
+                          "enum": [
+                            "HatAttachment",
+                            "HairAttachment",
+                            "FaceFrontAttachment",
+                            "FaceCenterAttachment",
+                            "NeckAttachment",
+                            "BodyFrontAttachment",
+                            "BodyBackAttachment",
+                            "LeftCollarAttachment",
+                            "RightCollarAttachment",
+                            "WaistFrontAttachment",
+                            "WaistCenterAttachment",
+                            "WaistBackAttachment",
+                            "LeftShoulderAttachment",
+                            "RightShoulderAttachment",
+                            "LeftGripAttachment",
+                            "RightGripAttachment",
+                            "LeftFootAttachment",
+                            "RightFootAttachment"
+                          ]
+                        },
+                        "transform": {
+                          "type": "object",
+                          "properties": {
+                            "position": {
+                              "type": "array",
+                              "minItems": 3,
+                              "maxItems": 3,
+                              "items": [
+                                {
+                                  "type": "number",
+                                  "minimum": -4,
+                                  "maximum": 4
+                                },
+                                {
+                                  "$ref": "#/properties/asset/anyOf/0/properties/accessories/items/properties/transform/properties/position/items/0"
+                                },
+                                {
+                                  "$ref": "#/properties/asset/anyOf/0/properties/accessories/items/properties/transform/properties/position/items/0"
+                                }
+                              ],
+                              "description": "Attachment offset in studs, relative to the named R15 attachment."
+                            },
+                            "rotation": {
+                              "type": "array",
+                              "minItems": 4,
+                              "maxItems": 4,
+                              "items": [
+                                {
+                                  "type": "number",
+                                  "minimum": -1,
+                                  "maximum": 1
+                                },
+                                {
+                                  "$ref": "#/properties/asset/anyOf/0/properties/accessories/items/properties/transform/properties/rotation/items/0"
+                                },
+                                {
+                                  "$ref": "#/properties/asset/anyOf/0/properties/accessories/items/properties/transform/properties/rotation/items/0"
+                                },
+                                {
+                                  "$ref": "#/properties/asset/anyOf/0/properties/accessories/items/properties/transform/properties/rotation/items/0"
+                                }
+                              ],
+                              "description": "Normalized quaternion as [x, y, z, w]."
+                            }
+                          },
+                          "required": [
+                            "position",
+                            "rotation"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "model_ref",
+                        "attachment",
+                        "transform"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "maxItems": 4,
+                    "default": []
+                  },
+                  "animation_bundle_ids": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/properties/run_id"
+                    },
+                    "maxItems": 6,
+                    "default": [],
+                    "description": "Owned prepared animation bundles targeting the same rig profile."
+                  }
+                },
+                "required": [
+                  "kind",
+                  "rig_profile"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "animation"
+                  },
+                  "source": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "const": "studio_keyframe_sequence"
+                          },
+                          "asset_ref": {
+                            "anyOf": [
+                              {
+                                "$ref": "#/properties/run_id"
+                              },
+                              {
+                                "$ref": "#/properties/asset/anyOf/0/properties/shirt_ref/anyOf/1"
+                              }
+                            ],
+                            "description": "Owned, validated Studio-authored animation upload."
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "asset_ref"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "const": "provider_clip"
+                          },
+                          "rig_ref": {
+                            "anyOf": [
+                              {
+                                "$ref": "#/properties/run_id"
+                              },
+                              {
+                                "$ref": "#/properties/asset/anyOf/0/properties/shirt_ref/anyOf/1"
+                              }
+                            ],
+                            "description": "Owned provider rig result."
+                          },
+                          "clip_ref": {
+                            "anyOf": [
+                              {
+                                "$ref": "#/properties/run_id"
+                              },
+                              {
+                                "$ref": "#/properties/asset/anyOf/0/properties/shirt_ref/anyOf/1"
+                              }
+                            ],
+                            "description": "Owned provider animation result for that rig."
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "rig_ref",
+                          "clip_ref"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  },
+                  "target_profile": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "const": "roblox-r15-standard"
+                      },
+                      "version": {
+                        "type": "number",
+                        "const": 1
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "version"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "retarget_profile": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "const": "tripo-humanoid-to-r15"
+                      },
+                      "version": {
+                        "type": "number",
+                        "const": 1
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "version"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "root_motion": {
+                    "type": "string",
+                    "const": "in_place"
+                  },
+                  "loop": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Requested loop behaviour; loop_validation reports whether it was verified."
+                  }
+                },
+                "required": [
+                  "kind",
+                  "source",
+                  "target_profile"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "texture"
+                  },
+                  "maps": {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "role": {
+                              "type": "string",
+                              "const": "color"
+                            },
+                            "asset_ref": {
+                              "$ref": "#/properties/asset/anyOf/0/properties/shirt_ref"
+                            },
+                            "color_space": {
+                              "type": "string",
+                              "const": "srgb"
+                            }
+                          },
+                          "required": [
+                            "role",
+                            "asset_ref",
+                            "color_space"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "role": {
+                              "type": "string",
+                              "const": "normal"
+                            },
+                            "asset_ref": {
+                              "$ref": "#/properties/asset/anyOf/0/properties/shirt_ref"
+                            },
+                            "color_space": {
+                              "type": "string",
+                              "const": "linear"
+                            },
+                            "normal_space": {
+                              "type": "string",
+                              "const": "opengl_tangent"
+                            }
+                          },
+                          "required": [
+                            "role",
+                            "asset_ref",
+                            "color_space",
+                            "normal_space"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "role": {
+                              "type": "string",
+                              "const": "roughness"
+                            },
+                            "asset_ref": {
+                              "$ref": "#/properties/asset/anyOf/0/properties/shirt_ref"
+                            },
+                            "color_space": {
+                              "type": "string",
+                              "const": "linear"
+                            }
+                          },
+                          "required": [
+                            "role",
+                            "asset_ref",
+                            "color_space"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "role": {
+                              "type": "string",
+                              "const": "metalness"
+                            },
+                            "asset_ref": {
+                              "$ref": "#/properties/asset/anyOf/0/properties/shirt_ref"
+                            },
+                            "color_space": {
+                              "type": "string",
+                              "const": "linear"
+                            }
+                          },
+                          "required": [
+                            "role",
+                            "asset_ref",
+                            "color_space"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
+                    },
+                    "minItems": 1,
+                    "maxItems": 4
+                  },
+                  "mapping": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "const": "tiled"
+                          },
+                          "studs_per_tile": {
+                            "type": "number",
+                            "minimum": 0.1,
+                            "maximum": 1024
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "studs_per_tile"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "const": "mesh_uv"
+                          },
+                          "geometry_ref": {
+                            "anyOf": [
+                              {
+                                "$ref": "#/properties/run_id"
+                              },
+                              {
+                                "$ref": "#/properties/asset/anyOf/0/properties/shirt_ref/anyOf/1"
+                              }
+                            ],
+                            "description": "Owned target mesh whose first UV set the maps are authored for."
+                          },
+                          "uv_set": {
+                            "type": "number",
+                            "const": 0
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "geometry_ref",
+                          "uv_set"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  },
+                  "seam_check": {
+                    "type": "string",
+                    "enum": [
+                      "measure",
+                      "not_performed"
+                    ],
+                    "default": "measure"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "maps",
+                  "mapping"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "skybox"
+                  },
+                  "source_ref": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/properties/run_id"
+                      },
+                      {
+                        "$ref": "#/properties/asset/anyOf/0/properties/shirt_ref/anyOf/1"
+                      }
+                    ],
+                    "description": "Owned equirectangular panorama with an exact 2:1 aspect ratio."
+                  },
+                  "projection": {
+                    "type": "string",
+                    "const": "equirectangular"
+                  },
+                  "face_size": {
+                    "type": "number",
+                    "enum": [
+                      512,
+                      1024
+                    ]
+                  },
+                  "orientation_profile": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "const": "roblox-sky-cubemap"
+                      },
+                      "version": {
+                        "type": "number",
+                        "const": 1
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "version"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "yaw_degrees": {
+                    "type": "number",
+                    "minimum": -360,
+                    "maximum": 360,
+                    "default": 0
+                  }
+                },
+                "required": [
+                  "kind",
+                  "source_ref",
+                  "projection",
+                  "face_size",
+                  "orientation_profile"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "model"
+                  },
+                  "source_ref": {
+                    "$ref": "#/properties/asset/anyOf/0/properties/shirt_ref"
+                  },
+                  "transform": {
+                    "type": "object",
+                    "properties": {
+                      "uniform_scale": {
+                        "type": "number",
+                        "exclusiveMinimum": 0,
+                        "minimum": 0.001,
+                        "maximum": 1000,
+                        "default": 1
+                      },
+                      "pivot": {
+                        "type": "string",
+                        "enum": [
+                          "preserve",
+                          "bounds_center",
+                          "bounds_bottom_center"
+                        ],
+                        "default": "preserve"
+                      },
+                      "orientation_degrees": {
+                        "type": "array",
+                        "minItems": 3,
+                        "maxItems": 3,
+                        "items": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "$ref": "#/properties/asset/anyOf/4/properties/transform/properties/orientation_degrees/items/0"
+                          },
+                          {
+                            "$ref": "#/properties/asset/anyOf/4/properties/transform/properties/orientation_degrees/items/0"
+                          }
+                        ],
+                        "default": [
+                          0,
+                          0,
+                          0
+                        ]
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "kind",
+                  "source_ref"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "image"
+                  },
+                  "source_ref": {
+                    "$ref": "#/properties/asset/anyOf/0/properties/shirt_ref"
+                  },
+                  "operations": {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "op": {
+                              "type": "string",
+                              "const": "color_key_to_alpha"
+                            },
+                            "key_rgb": {
+                              "type": "array",
+                              "minItems": 3,
+                              "maxItems": 3,
+                              "items": [
+                                {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 255
+                                },
+                                {
+                                  "$ref": "#/properties/asset/anyOf/5/properties/operations/items/anyOf/0/properties/key_rgb/items/0"
+                                },
+                                {
+                                  "$ref": "#/properties/asset/anyOf/5/properties/operations/items/anyOf/0/properties/key_rgb/items/0"
+                                }
+                              ]
+                            },
+                            "tolerance": {
+                              "$ref": "#/properties/asset/anyOf/5/properties/operations/items/anyOf/0/properties/key_rgb/items/0",
+                              "default": 0
+                            },
+                            "existing_alpha": {
+                              "type": "string",
+                              "enum": [
+                                "preserve",
+                                "replace"
+                              ],
+                              "default": "preserve"
+                            }
+                          },
+                          "required": [
+                            "op",
+                            "key_rgb"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "op": {
+                              "type": "string",
+                              "const": "luminance_to_alpha"
+                            },
+                            "rgb": {
+                              "type": "string",
+                              "enum": [
+                                "preserve",
+                                "white"
+                              ],
+                              "default": "preserve"
+                            },
+                            "existing_alpha": {
+                              "type": "string",
+                              "enum": [
+                                "multiply",
+                                "replace"
+                              ],
+                              "default": "multiply"
+                            }
+                          },
+                          "required": [
+                            "op"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "op": {
+                              "type": "string",
+                              "const": "resize"
+                            },
+                            "width": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 4096
+                            },
+                            "height": {
+                              "$ref": "#/properties/asset/anyOf/5/properties/operations/items/anyOf/2/properties/width"
+                            },
+                            "fit": {
+                              "type": "string",
+                              "enum": [
+                                "stretch",
+                                "contain",
+                                "cover"
+                              ]
+                            },
+                            "background_rgba": {
+                              "type": "array",
+                              "minItems": 4,
+                              "maxItems": 4,
+                              "items": [
+                                {
+                                  "$ref": "#/properties/asset/anyOf/5/properties/operations/items/anyOf/0/properties/key_rgb/items/0"
+                                },
+                                {
+                                  "$ref": "#/properties/asset/anyOf/5/properties/operations/items/anyOf/0/properties/key_rgb/items/0"
+                                },
+                                {
+                                  "$ref": "#/properties/asset/anyOf/5/properties/operations/items/anyOf/0/properties/key_rgb/items/0"
+                                },
+                                {
+                                  "$ref": "#/properties/asset/anyOf/5/properties/operations/items/anyOf/0/properties/key_rgb/items/0"
+                                }
+                              ],
+                              "default": [
+                                0,
+                                0,
+                                0,
+                                0
+                              ]
+                            }
+                          },
+                          "required": [
+                            "op",
+                            "width",
+                            "height",
+                            "fit"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
+                    },
+                    "minItems": 1,
+                    "maxItems": 8
+                  }
+                },
+                "required": [
+                  "kind",
+                  "source_ref",
+                  "operations"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "required": [
+          "request_id",
+          "asset"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "artifact_publish",
+      "scope": "publication:write",
+      "description": "Publish one owned immutable Model GLB or PNG Image artifact to Roblox as a durable job owned by the server-configured shared group. Destination credentials and group are server configuration, OAuth is unavailable, no generation is repeated or charged, and group upload does not prove cross-creator usability. Returns truthful processing/moderation state and a decimal-string asset_id only when Roblox supplies one.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Stable caller-chosen idempotency key. Reuse only with identical parameters."
+          },
+          "artifact_ref": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "string",
+                "pattern": "^mcp-artifact:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}:(0|[1-9][0-9]{0,2})$"
+              }
+            ],
+            "description": "An account-owned asset UUID or mcp-artifact reference. Object and style references must resolve to images."
+          },
+          "asset_type": {
+            "type": "string",
+            "enum": [
+              "Model",
+              "Image"
+            ]
+          },
+          "destination": {
+            "type": "object",
+            "properties": {
+              "platform": {
+                "type": "string",
+                "const": "roblox"
+              },
+              "creator": {
+                "type": "string",
+                "const": "configured_shared_group"
+              }
+            },
+            "required": [
+              "platform",
+              "creator"
+            ],
+            "additionalProperties": false
+          },
+          "run_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "request_id",
+          "artifact_ref",
+          "asset_type",
+          "destination"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "run_create",
+      "scope": "runs:write",
+      "description": "Create a private, owner-scoped record of one game build attempt, optionally pinned to an owned style revision and an intended Roblox universe/place (declared context, not verified access). Idempotent by request_id; returns run_id and revision 1.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Stable caller-chosen idempotency key. Reuse only with identical parameters."
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40
+            },
+            "maxItems": 16,
+            "default": []
+          },
+          "style": {
+            "type": "object",
+            "properties": {
+              "style_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "required": [
+              "style_id",
+              "version"
+            ],
+            "additionalProperties": false,
+            "description": "Owned style revision the run intends to use."
+          },
+          "intended_universe_id": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$"
+          },
+          "intended_place_id": {
+            "$ref": "#/properties/intended_universe_id"
+          },
+          "external_project_label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "parent_run_id": {
+            "$ref": "#/properties/style/properties/style_id"
+          }
+        },
+        "required": [
+          "request_id",
+          "name"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "run_append",
+      "scope": "runs:write",
+      "description": "Append up to 25 typed events to an open run under optimistic concurrency (expected_revision). Job, bundle, and publication links carry only IDs; the server resolves their tool, status, hashes, and creator from the account's own records. External assets and verification are recorded as caller-reported and never upgraded to server-verified. Replaying a committed request_id returns its original receipt even if the run has advanced; a stale revision returns revision_conflict.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Stable caller-chosen idempotency key. Reuse only with identical parameters."
+          },
+          "expected_revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "job_linked"
+                    },
+                    "job_id": {
+                      "$ref": "#/properties/run_id"
+                    },
+                    "role": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9_]{0,39}$"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "job_id",
+                    "role"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "bundle_linked"
+                    },
+                    "bundle_id": {
+                      "$ref": "#/properties/run_id"
+                    },
+                    "role": {
+                      "$ref": "#/properties/events/items/anyOf/0/properties/role"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "bundle_id",
+                    "role"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "publication_linked"
+                    },
+                    "publication_id": {
+                      "$ref": "#/properties/run_id"
+                    },
+                    "role": {
+                      "$ref": "#/properties/events/items/anyOf/0/properties/role"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "publication_id",
+                    "role"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "external_asset_reported"
+                    },
+                    "roblox_asset_id": {
+                      "type": "string",
+                      "pattern": "^[1-9][0-9]{0,19}$"
+                    },
+                    "asset_type": {
+                      "type": "string",
+                      "enum": [
+                        "Image",
+                        "Model",
+                        "Animation",
+                        "Audio",
+                        "MeshPart",
+                        "Decal",
+                        "Package",
+                        "Other"
+                      ]
+                    },
+                    "role": {
+                      "$ref": "#/properties/events/items/anyOf/0/properties/role"
+                    },
+                    "source_url": {
+                      "type": "string",
+                      "format": "uri",
+                      "maxLength": 500,
+                      "pattern": "^https\\:\\/\\/",
+                      "description": "Recorded as reported; the server never fetches it."
+                    },
+                    "note": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "roblox_asset_id",
+                    "asset_type",
+                    "role"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "verification_reported"
+                    },
+                    "test_profile": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+                        },
+                        "version": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 1000
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "version"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "target": {
+                      "type": "object",
+                      "properties": {
+                        "universe_id": {
+                          "$ref": "#/properties/events/items/anyOf/3/properties/roblox_asset_id"
+                        },
+                        "place_id": {
+                          "$ref": "#/properties/events/items/anyOf/3/properties/roblox_asset_id"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "observed_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "outcome": {
+                      "type": "string",
+                      "enum": [
+                        "passed",
+                        "failed",
+                        "not_performed"
+                      ]
+                    },
+                    "checks": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 80
+                          },
+                          "outcome": {
+                            "$ref": "#/properties/events/items/anyOf/4/properties/outcome"
+                          },
+                          "required": {
+                            "type": "boolean",
+                            "default": true
+                          },
+                          "metrics": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "number"
+                            }
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "outcome"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "maxItems": 32,
+                      "default": []
+                    },
+                    "evidence_refs": {
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "$ref": "#/properties/run_id"
+                          },
+                          {
+                            "type": "string",
+                            "pattern": "^mcp-artifact:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}:(0|[1-9][0-9]{0,2})$"
+                          }
+                        ],
+                        "description": "An account-owned asset UUID or mcp-artifact reference. Object and style references must resolve to images."
+                      },
+                      "maxItems": 8,
+                      "default": [],
+                      "description": "Owned screenshots or other owned artifacts."
+                    },
+                    "metrics": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "anyOf": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 200
+                          },
+                          {
+                            "type": "boolean"
+                          }
+                        ]
+                      }
+                    },
+                    "asset_ids": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/properties/events/items/anyOf/3/properties/roblox_asset_id"
+                      },
+                      "maxItems": 16
+                    },
+                    "studio_version": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 40
+                    },
+                    "client_version": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 40
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "test_profile",
+                    "observed_at",
+                    "outcome"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "note"
+                    },
+                    "text": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 4000
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "text"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 25
+          }
+        },
+        "required": [
+          "run_id",
+          "request_id",
+          "expected_revision",
+          "events"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "run_get",
+      "scope": "runs:read",
+      "description": "Read an owned run summary, its computed evidence summary once closed, and a page of events (use next_cursor for more). Closed runs include each link's frozen at_completion snapshot and manifest {sha256, byte_size}. Set manifest_link to also receive manifest.download_url, valid for 300 seconds: the file is the frozen manifest byte-for-byte, so its SHA-256 equals manifest.sha256. Treat the URL as a secret and do not store it in run records.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "cursor": {
+            "type": "string",
+            "maxLength": 200,
+            "pattern": "^[A-Za-z0-9_-]+$"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 50
+          },
+          "manifest_link": {
+            "type": "boolean",
+            "default": false,
+            "description": "Also return a short-lived download URL for the closed run's frozen manifest."
+          }
+        },
+        "required": [
+          "run_id"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "run_list",
+      "scope": "runs:read",
+      "description": "List owned runs newest first, filtered by style revision, outcome, prepared asset kind, creator, intended universe, tag, creation time, or text in name/description/tags. Cursors are bound to the filters that produced them.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "style_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "style_version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "reported_outcome": {
+            "type": "string",
+            "enum": [
+              "succeeded",
+              "partial",
+              "failed",
+              "abandoned"
+            ]
+          },
+          "asset_kind": {
+            "type": "string",
+            "enum": [
+              "character",
+              "animation",
+              "texture",
+              "skybox",
+              "model",
+              "image"
+            ]
+          },
+          "creator_id": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,19}$"
+          },
+          "universe_id": {
+            "$ref": "#/properties/creator_id"
+          },
+          "tag": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "created_after": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "created_before": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "cursor": {
+            "type": "string",
+            "maxLength": 300,
+            "pattern": "^[A-Za-z0-9_-]+$"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "default": 20
+          }
+        },
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    }
+  ]
+}

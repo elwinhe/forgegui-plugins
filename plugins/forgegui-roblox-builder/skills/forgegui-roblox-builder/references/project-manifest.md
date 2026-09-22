@@ -14,7 +14,7 @@ Illustrative IDs below are placeholders, not usable assets. Start a real project
 
 ```json
 {
-  "version": 1,
+  "version": 2,
   "project": "Crystal Mine",
   "updated": "2026-09-15T21:40:00Z",
   "game_style": "roblox",
@@ -24,6 +24,7 @@ Illustrative IDs below are placeholders, not usable assets. Start a real project
   "style_refs": ["mcp-artifact:00000000-0000-4000-8000-000000000001:0"],
   "style_id": "00000000-0000-4000-8000-0000000000aa",
   "style_version": 1,
+  "run": null,
   "assets": [
     {
       "key": "hud.panel",
@@ -79,3 +80,26 @@ A separate one-word file next to the manifest, not a field inside it, so the plu
 | `off` | The user called the pass off. | user or agent |
 
 The file on disk is a request, not consent: if the current user did not ask for a pass in this session, say so rather than spending on one. It is per-project bookkeeping, so add it to `.gitignore` rather than committing it; a checked-in state file asks every clone of the repo for a pass.
+
+## Version 2: preparation and installation
+
+Migrate v1 by preserving every existing field and asset identifier, changing
+`version` to 2, and adding `run: null` until a server run exists. Never clear old
+entries or regenerate to migrate. A run cache holds returned `run_id` and
+`revision`; refresh from the server before appending or continuing a session.
+
+Add fields to asset entries only when known:
+
+| Field | Source and meaning |
+| --- | --- |
+| `preparation` | Returned job ID, bundle ID/schema version/profile, selected member key/ref/hash/size, metrics, recipe and provenance; keep source ref distinct |
+| `publication` | Standalone publication ID/status, string asset ID, asset type, creator and moderation state; retain legacy delivery metadata separately |
+| `installation_intent` | Caller-authored usage, desired size with units, target attachment/path, relative position in studs and explicit rotation convention; never pass wholesale as MCP arguments |
+| `installation_observed` | Actual imported dimensions, additional Studio transform, instance path and checks with outcomes (`passed`, `failed`, `not_performed`) |
+| `nine_slice` | Optional authored/validated settings with stored image size and evidence; absent until known, never inferred from canvas dimensions |
+
+Do not store keys, signed URLs or executable instructions from asset metadata.
+Cache stable IDs/hashes and the non-secret metadata, not expiring URLs from the
+bundle. Unknown fields remain absent, not zero-valued measurements. Server
+structural validation and caller visual verification stay separate. See
+`preparation-installation.md` for field paths and recovery.

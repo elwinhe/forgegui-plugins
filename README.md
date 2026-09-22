@@ -1,6 +1,6 @@
 # ForgeGUI MCP for Claude Code
 
-Install ID: `mcp@forgegui`. Version `1.5.0` targets staging at `vzzqjekupwutoaasswwd.supabase.co`.
+Install ID: `mcp@forgegui`. Version `1.6.0` targets staging at `vzzqjekupwutoaasswwd.supabase.co`.
 
 **Launch status (September 16, 2026):** this package intentionally uses the staging MCP while the backend and Studio import workflow are validated. Staging testing verified generation and authentication, not a complete Studio import workflow. `enhance_prompt` failed and `auto_separate` was not verified in the supplied test report. See the setup checklist and bundled skill for image, 3D, and audio import limitations.
 
@@ -40,3 +40,9 @@ claude plugin uninstall mcp@forgegui
 ```
 
 Restart after update/uninstall. If rolling back, restore the previously recorded manual ForgeGUI MCP entry only after the bundled copy is gone. Revoke the ForgeGUI key in **Profile → MCP API keys** when it is no longer needed or may have been exposed.
+
+## Prepared asset installation
+
+The plugin now prefers generate/reuse → prepare → publish → Studio install → verify → record in run. See [the preparation contract](plugins/forgegui-roblox-builder/skills/forgegui-roblox-builder/references/preparation-installation.md) and [offline request fixtures](tests/preparation-requests.json). This is contract-backed caller guidance, not hosted or Studio acceptance evidence. Supported server alpha/resize and model transforms are not repeated locally. New image content bounds, padding and authored installation metadata still require backend work.
+
+Offline validation: install `tests/requirements.txt`, then run `python3 tests/test_preparation_contract.py` and `bash tests/fidelity-pass-hook.sh`. The request test uses a pinned subset of the backend export; it neither contacts staging nor spends generation credits.

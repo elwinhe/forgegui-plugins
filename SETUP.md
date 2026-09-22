@@ -59,3 +59,7 @@ Check the bundled skill for import findings and live-tool requirements. Personal
 ## Rollback
 
 Uninstall or disable this bundle, start a new client session, and restore the recorded manual ForgeGUI entry only after the bundled copy is gone. Revoke the bundle's ForgeGUI key from **Profile → MCP API keys** if it is no longer needed or may have been exposed. Removing this bundle does not disable the separate Studio MCP server.
+
+## Generated audio publication
+
+For music and sound effects, check that live `artifact_publish` accepts `Audio` and `asset_capabilities` reports the configured shared-group route usable for the account and asset type. Use `publication:write` and `publication:read`, and confirm the target experience can use that group-owned audio before paid generation. Follow [audio publication](plugins/forgegui-roblox-builder/skills/forgegui-roblox-builder/references/audio-publication.md). Installing this version does not deploy the backend extension or establish OAuth, moderation or audible-playback acceptance.

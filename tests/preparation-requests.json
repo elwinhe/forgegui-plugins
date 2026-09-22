@@ -190,6 +190,68 @@
       "arguments": {
         "asset_kind": "image"
       }
+    },
+    {
+      "name": "generate-sfx",
+      "tool": "generation_sound_effect",
+      "arguments": {
+        "request_id": "desert-sfx-v1",
+        "prompt": "A short dry sword impact, isolated, no music",
+        "duration_seconds": 2,
+        "count": 1
+      }
+    },
+    {
+      "name": "generate-music",
+      "tool": "generation_music",
+      "arguments": {
+        "request_id": "desert-music-v1",
+        "prompt": "Quiet instrumental desert exploration with soft percussion",
+        "music_length_seconds": 30,
+        "instrumental": true,
+        "loopable": true,
+        "count": 1
+      }
+    },
+    {
+      "name": "publish-audio",
+      "tool": "artifact_publish",
+      "arguments": {
+        "request_id": "desert-ambience-publish-v1",
+        "artifact_ref": "mcp-artifact:00000000-0000-4000-8000-000000000003:0",
+        "asset_type": "Audio",
+        "destination": {
+          "platform": "roblox",
+          "creator": "configured_shared_group"
+        },
+        "run_id": "00000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "name": "report-audio-check",
+      "tool": "run_append",
+      "arguments": {
+        "run_id": "00000000-0000-4000-8000-000000000001",
+        "request_id": "audio-check-v1",
+        "expected_revision": 1,
+        "events": [
+          {
+            "type": "verification_reported",
+            "test_profile": {
+              "id": "audio-playback",
+              "version": 1
+            },
+            "observed_at": "2026-09-22T00:00:00Z",
+            "outcome": "not_performed",
+            "checks": [
+              {
+                "name": "audible-playback-in-target-experience",
+                "outcome": "not_performed"
+              }
+            ]
+          }
+        ]
+      }
     }
   ]
 }

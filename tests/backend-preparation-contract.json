@@ -1,8 +1,114 @@
 {
-  "backend_commit": "18faae7b5d7c574ea32d3e0817e55f0e386a17e2",
-  "export_sha256": "7cb6afb030c3399ea39c817f50ac5b8060588819f2ee8474042546f66a3e60f9",
-  "schema_version": "1.6.0",
+  "backend_commit": "a51f28d07aabb2405b29fd99e6da2625c1f14fd9",
+  "export_sha256": "a5f233de075992d4380cfbf01b215f39bd9b1a29d2f8e935e6c03d93f322fd07",
+  "schema_version": "1.7.0",
   "tools": [
+    {
+      "name": "generation_sound_effect",
+      "scope": "generation:write",
+      "description": "Generate game sound effects.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Stable caller-chosen idempotency key. Reuse only with identical parameters."
+          },
+          "run_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "prompt": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5,
+            "default": 1
+          },
+          "duration_seconds": {
+            "type": "number",
+            "minimum": 0.5,
+            "maximum": 30
+          },
+          "audio_category": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "loopable": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "request_id",
+          "prompt"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "generation_music",
+      "scope": "generation:write",
+      "description": "Generate game music. loopable requests loop-friendly composition from the provider; no seam validation is performed and a seamless loop is not guaranteed.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Stable caller-chosen idempotency key. Reuse only with identical parameters."
+          },
+          "run_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "prompt": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3,
+            "default": 1
+          },
+          "music_length_seconds": {
+            "type": "number",
+            "minimum": 3,
+            "maximum": 600
+          },
+          "music_mood": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "loopable": {
+            "type": "boolean",
+            "default": false
+          },
+          "instrumental": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": [
+          "request_id",
+          "prompt"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
     {
       "name": "generation_status",
       "scope": "generation:read",
@@ -828,7 +934,7 @@
     {
       "name": "artifact_publish",
       "scope": "publication:write",
-      "description": "Publish one owned immutable Model GLB or PNG Image artifact to Roblox as a durable job owned by the server-configured shared group. Destination credentials and group are server configuration, OAuth is unavailable, no generation is repeated or charged, and group upload does not prove cross-creator usability. Returns truthful processing/moderation state and a decimal-string asset_id only when Roblox supplies one.",
+      "description": "Publish one owned immutable Model GLB, PNG Image, or MP3 Audio artifact to Roblox as a durable job owned by the server-configured shared group. Destination credentials and group are server configuration, OAuth is unavailable, no generation is repeated or charged, and group upload does not prove experience access or audible playback. Audio must be under 20,000,000 bytes and 420 seconds, at most 48 kHz, mono/stereo; no transcoding or seamless-loop verification. Returns truthful processing/moderation state and a decimal-string asset_id only when Roblox supplies one.",
       "input_schema": {
         "type": "object",
         "properties": {
@@ -856,7 +962,8 @@
             "type": "string",
             "enum": [
               "Model",
-              "Image"
+              "Image",
+              "Audio"
             ]
           },
           "destination": {
@@ -1324,7 +1431,7 @@
     {
       "name": "run_list",
       "scope": "runs:read",
-      "description": "List owned runs newest first, filtered by style revision, outcome, prepared asset kind, creator, intended universe, tag, creation time, or text in name/description/tags. Cursors are bound to the filters that produced them.",
+      "description": "List owned runs newest first, filtered by style revision, outcome, prepared or published asset kind, creator, intended universe, tag, creation time, or text in name/description/tags. Cursors are bound to the filters that produced them.",
       "input_schema": {
         "type": "object",
         "properties": {
@@ -1358,7 +1465,8 @@
               "texture",
               "skybox",
               "model",
-              "image"
+              "image",
+              "audio"
             ]
           },
           "creator_id": {

@@ -36,7 +36,7 @@ class PreparationContractTests(unittest.TestCase):
 
     def test_rejects_unsupported_publication_destinations_and_types(self):
         request = next(c["arguments"] for c in CASES if c["name"] == "publish-model")
-        for field, value in [("asset_type", "Audio"), ("artifact_ref", "https://example.com/model.glb"), ("destination", {"platform": "roblox", "creator": "user_oauth"})]:
+        for field, value in [("asset_type", "Animation"), ("artifact_ref", "https://example.com/model.glb"), ("destination", {"platform": "roblox", "creator": "user_oauth"})]:
             changed = copy.deepcopy(request)
             changed[field] = value
             self.assertFalse(validator("artifact_publish").is_valid(changed))
@@ -47,6 +47,30 @@ class PreparationContractTests(unittest.TestCase):
         publish = next(c["arguments"] for c in CASES if c["name"] == "publish-model")
         self.assertNotEqual(source, publish["artifact_ref"])
         self.assertEqual(publish["artifact_ref"], f"mcp-artifact:{prepared_job}:0")
+
+    def test_audio_publication_is_separate_from_generation(self):
+        audio = next(c["arguments"] for c in CASES if c["name"] == "publish-audio")
+        self.assertTrue(validator("artifact_publish").is_valid(audio))
+        self.assertFalse(validator("artifact_publish").is_valid({**audio, "api_key": "forbidden"}))
+        self.assertFalse(validator("artifact_publish").is_valid({**audio, "destination": {
+            "platform": "roblox", "creator": "configured_shared_group", "group_id": "123"
+        }}))
+        for name in ["generate-sfx", "generate-music"]:
+            case = next(c for c in CASES if c["name"] == name)
+            self.assertFalse(validator(case["tool"]).is_valid({
+                **case["arguments"], "delivery": {"mode": "publish", "platform": "roblox"}
+            }))
+
+    def test_older_backend_does_not_accept_audio_example(self):
+        schema = copy.deepcopy(TOOLS["artifact_publish"]["input_schema"])
+        schema["properties"]["asset_type"]["enum"].remove("Audio")
+        audio = next(c["arguments"] for c in CASES if c["name"] == "publish-audio")
+        self.assertFalse(Draft7Validator(schema).is_valid(audio))
+
+    def test_audio_guidance_example_matches_contract(self):
+        path = ROOT / "plugins/forgegui-roblox-builder/skills/forgegui-roblox-builder/references/audio-publication.md"
+        example = json.loads(path.read_text().split("```json\n", 1)[1].split("```", 1)[0])
+        validator("artifact_publish").validate(example)
 
     def test_scope_mapping(self):
         for name, scope in {
@@ -62,7 +86,7 @@ class PreparationContractTests(unittest.TestCase):
         package = json.loads((ROOT / "plugins/forgegui-roblox-builder/.claude-plugin/plugin.json").read_text())
         marketplace = json.loads((ROOT / ".claude-plugin/marketplace.json").read_text())
         self.assertEqual(package["version"], marketplace["plugins"][0]["version"])
-        self.assertEqual(package["version"], "1.6.0")
+        self.assertEqual(package["version"], "1.7.0")
         ledger = json.loads((ROOT / "plugins/forgegui-roblox-builder/skills/forgegui-roblox-builder/references/forgegui-project.example.json").read_text())
         self.assertEqual(ledger["version"], 2)
         self.assertEqual(ledger["assets"], [])

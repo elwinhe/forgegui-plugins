@@ -64,6 +64,12 @@ Defaults use engine-bundled textures (`sparkles_main`, `smoke_main`, `fire_main`
 
 All recipes emit from an Attachment position. A large owning Part does not turn `ambient_dust` into room-volume emission, and spherical shape settings on an attachment do not establish a volumetric portal. Room-volume effects need a separate reviewed emitter parented directly to a BasePart; verify that effect separately.
 
+## Placement and reruns
+
+Place effects at the visible source on an existing object, not automatically at its bounding-box center. Fit the recipe's offset and size to the object so particles are not hidden inside opaque geometry. Capture the effect in Play; trigger bursts through the actual action. An emitter count alone does not establish visibility.
+
+Retain each persistent holder and reuse it on rerun. To replace a recipe, detach only its specific owned holder; detaching a scene root also removes other owned recipes below it. If an attachment already hosts several recipes, use a dedicated holder for effects that need independent replacement. Save the persistent setup in Edit after stopping Play.
+
 ## Performance caps
 
 Keep total live particles in view under a few thousand. Rules of thumb: looping recipes 4–20 particles/s each, at most one `ambient_dust` per room, bursts under 20 particles. `LightEmission = 1` with `LightInfluence = 0` reads bright in `night_neon` and `dungeon_torchlit` without adding lights.

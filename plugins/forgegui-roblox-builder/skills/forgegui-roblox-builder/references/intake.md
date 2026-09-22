@@ -24,7 +24,7 @@ If any one is false, do not ask. State the assumption in one line and build.
 
 ## Round one: the start of a project
 
-At most **five** questions, plus the fidelity pass question when a reference exists. Five is a
+At most **five** questions, plus a fidelity pass question asked conditionally when reference availability is not yet known. Five is a
 ceiling. Pick the ones still open after reading the request, most consequential first. Use the
 client's structured question tool when it has one (`AskUserQuestion` in Claude Code); otherwise the
 numbered format in `SKILL.md`. Every question carries likely options and your recommended answer, so
@@ -32,13 +32,13 @@ numbered format in `SKILL.md`. Every question carries likely options and your re
 
 | # | Question | Ask it when | Why it earns a slot |
 | --- | --- | --- | --- |
-| 1 | **Reference.** A game, a video, screenshots to match? | No reference was given | Decides the look more than any adjective. You cannot watch a video: ask for stills of the menu, the gameplay camera, the HUD and the end screen |
+| 1 | **Reference.** A game, a video, screenshots to match? | No reference was given | Decides the look more than any adjective. Prefer extracting frames from supplied videos or links with `scripts/reference_frames.py` (see `reference-capture.md`); ask for screenshots only if extraction is unavailable or fails. Retain the selected capture path in the ledger |
 | 2 | **Interface tone.** Restrained and flat (hairline edges, one accent colour, lots of air), or ornate and stylised (rims, crests, glow)? Name a game whose menus they like | The genre does not settle it | The stock panel and button prompts produce ornate gold rims. On a grounded game that is what users call "AI-looking", and it costs a full regeneration to undo |
 | 3 | **What is in the game.** Offer a checklist for the genre rather than an open question (below) | The request names a genre, not a feature list | Users assume features. A checklist turns an assumption into a decision in one reply |
 | 4 | **Players.** Solo against bots, multiplayer, or multiplayer with bots filling empty slots? | Not stated | Changes the server architecture, not just content |
 | 5 | **Spend.** How many paid generations, and is paid generation authorized? | Always, unless already given | Recommend a number. 0 is a valid recommendation |
 | 6 | **Finish.** Playable prototype, or a polished build that is checked screen by screen? | Not stated | Sets how much verification and iteration to plan |
-| 7 | **Fidelity pass.** | Only with a reference, and never folded into "finish" | See `fidelity-pass.md` |
+| 7 | **Fidelity pass.** | Ask plainly with a supplied reference; otherwise ask "if you have a reference, do you want a fidelity pass against it?" in the same round. A "none" reference answer also settles this as inapplicable; never fold it into "finish" or add a second intake round | See `fidelity-pass.md` |
 
 ### Feature checklists (question 3)
 
@@ -79,7 +79,7 @@ Ask when the prompt:
   a line.
 - **Is a wholesale redo.** "Redo everything": what must survive, what is the single biggest miss?
 - **Needs more paid generation than was authorized.** Say the new number and what it buys.
-- **Contradicts an earlier decision.** Confirm the change rather than silently following either one.
+- **Ambiguously contradicts an earlier decision.** Clarify only what is ambiguous. An explicit change supersedes the prior decision immediately; record it and proceed.
 
 Do not ask when the prompt is a bug report, a specified tweak ("make the buttons flat dark bars"),
 "continue", or anything whose answer is already in `decisions`. Do not ask about taste you can
@@ -88,8 +88,7 @@ project, in any wording.
 
 ## Record the answers
 
-Write each answer to `decisions` in `forgegui-project.json` as it is given (see
-`project-manifest.md`), including the ones answered with "defaults". A later session, a resumed job,
+Write answers to `decisions` in `forgegui-project.json` (see `project-manifest.md`). Record each resolved answer with its topic, date and source. When the user accepts "defaults", store the concrete recommendation they accepted (including the numeric paid-generation ceiling, explicit spending authorization, and selected/excluded features for the relevant topics), with `by: "defaults"`; never store only the word "defaults" or invent an unoffered recommendation. Append changes to preserve history; the latest entry in array order for a topic supersedes earlier entries. An explicit user change is the new decision: record it with `by: "user"` and proceed without redundant confirmation. Ask only when the change is ambiguous. A later session, a resumed job,
 or a context compaction then has the decision without the conversation. Read `decisions` at the
 start of every prompt, before deciding whether to ask anything.
 

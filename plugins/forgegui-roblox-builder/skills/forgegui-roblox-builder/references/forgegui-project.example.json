@@ -12,14 +12,7 @@
   ],
   "material_language": "matte painted wood, brushed steel, soft emissive accents",
   "style_refs": [],
-  "decisions": [
-    {
-      "asked": "2026-09-15",
-      "topic": "interface_tone",
-      "answer": "restrained and flat",
-      "by": "user"
-    }
-  ],
+  "decisions": [],
   "assets": [],
   "run": null
 }

@@ -257,6 +257,12 @@ end
 local function gui(className, name, props, children)
 	local node = props or {}
 	node.ClassName = className
+	node.IsA = function(_, name)
+		return name == className or (name == "GuiObject" and table.find({
+			"Frame", "ScrollingFrame", "CanvasGroup", "ImageLabel", "ImageButton",
+			"TextLabel", "TextButton", "TextBox", "ViewportFrame",
+		}, className) ~= nil)
+	end
 	node.Name = name
 	node.children = {}
 	if node.Visible == nil then
@@ -486,7 +492,7 @@ do
 	check(count(report, "unregistered_image") == 1, "the unrecorded image is reported as an error")
 	check(count(report, "primitive_surface") == 1, "AllowPrimitive silences the divider but not the health bar")
 	check(report.errors == 1 and report.warnings == 1, "an unrecorded image fails, a primitive only warns")
-	check(string.find(UiCheck.format(report), "40% generated", 1, true) ~= nil, "format prints the surface ratio")
+	check(string.find(UiCheck.format(report), "40% registry-backed attribution", 1, true) ~= nil, "format prints the surface ratio")
 end
 
 do
@@ -519,6 +525,7 @@ do
 		gui("ImageLabel", "Art", { Image = "rbxassetid://5", AbsoluteSize = px(100, 100) }),
 	})
 	local report = UiCheck.provenance(root, nil)
+	check(not report.provenance.registry_backed and string.find(UiCheck.format(report), "no verified coverage", 1, true) ~= nil, "missing registry output is explicitly unverified")
 	check(count(report, "provenance_no_registry") == 1, "a missing registry is called out")
 	check(report.provenance.coverage == 1 and report.errors == 0, "without a registry no image can be judged unattributed")
 
@@ -529,6 +536,54 @@ do
 	})
 	local matched = UiCheck.provenance(spelled, { a = "811", b = { id = "rbxassetid://822" } })
 	check(matched.provenance.art == 2 and matched.errors == 0, "bare digits and an asset URL match rbxassetid ids")
+end
+
+do
+	local registry = { art = "811" }
+	local art = gui("ImageLabel", "Art", { Image = "rbxassetid://811" })
+	local unknown = gui("ImageLabel", "Unknown", { Image = "rbxassetid://999" })
+	local root = gui("Frame", "Root", {}, { art, unknown })
+	local middle = gui("Frame", "Middle", {}, { root })
+	local ancestor = gui("ViewportFrame", "Ancestor", {}, { middle })
+	local screen = gui("ScreenGui", "Screen", { Enabled = true }, { ancestor })
+	local visible = UiCheck.provenance(root, registry)
+	check(visible.provenance.art == 1 and visible.provenance.unregistered == 1, "visible images are counted by registry membership")
+	check(count(visible, "unregistered_image") == 1, "visible unregistered image produces a finding")
+	for _, hidden in ipairs({ art, root, middle, ancestor }) do
+		hidden.Visible = false
+		local report = UiCheck.provenance(root, registry)
+		if hidden == art then
+			check(report.provenance.art == 0 and report.provenance.unregistered == 1, "own hidden state excludes only that image")
+		else
+			check(report.checked == 0 and report.provenance.surfaces == 0 and #report.findings == 0, "hidden root or ancestor excludes descendants and findings: " .. hidden.Name)
+			local whole = UiCheck.provenance(screen, registry)
+			check(whole.provenance.surfaces == 0 and #whole.findings == 0, "hidden descendant containers exclude images when auditing whole screen: " .. hidden.Name)
+		end
+		hidden.Visible = true
+		check(UiCheck.provenance(root, registry).provenance.surfaces == 2, "showing ancestor restores eligibility: " .. hidden.Name)
+	end
+	screen.Enabled = false
+	local disabled = UiCheck.provenance(root, registry)
+	check(disabled.checked == 0 and disabled.provenance.surfaces == 0 and #disabled.findings == 0, "disabled containing ScreenGui excludes descendants")
+	screen.Enabled = true
+	check(UiCheck.provenance(root, registry).provenance.surfaces == 2, "enabling ScreenGui restores descendants")
+	root.children[1].attributes = { UiCheckIgnore = true }
+	root.children[2].attributes = { UiCheckIgnore = true }
+	local filtered = UiCheck.provenance(screen, registry)
+	check(filtered.provenance.surfaces == 0 and #filtered.findings == 0, "ignore attributes and non-GUI descendants preserve filtering")
+end
+
+do
+	local root = gui("ScreenGui", "Coverage", {}, {
+		gui("ImageLabel", "Art", { Image = "rbxassetid://811" }),
+		gui("TextLabel", "Filled", { Text = "Filled", BackgroundTransparency = 0, attributes = { AllowPrimitive = true } }),
+		gui("TextLabel", "Transparent", { Text = "Transparent" }),
+		gui("Folder", "NonGui", { BackgroundTransparency = 0 }),
+	})
+	local report = UiCheck.provenance(root, { art = "811" })
+	local tally = report.provenance
+	check(tally.art == 1 and tally.primitive == 1 and tally.surfaces == 2 and tally.text == 2 and tally.coverage == 0.5, "filled label counts as a primitive surface and text; glyphs alone do not count as surfaces")
+	check(count(report, "primitive_surface") == 0, "AllowPrimitive suppresses warnings without changing coverage")
 end
 
 -- A page built on a CanvasGroup: the fault behind "the UI is super blurry".

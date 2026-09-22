@@ -1,21 +1,33 @@
 #!/usr/bin/env python3
-"""Measure how far a style reference moved the output, and render the evidence.
+"""Compare the palettes of two runs, and render the evidence.
 
     python references/tools/style_delta.py runs/ref-a/ runs/ref-b/ --contact-sheet delta.png
 
-A showcase has to demonstrate that a user-supplied reference
-image *measurably* changes the output's visual style. "Measurably" is the word
-that matters: two screenshots side by side are an opinion, and a reviewer is
-entitled to a number. So run the same prompt set twice, once under each style
-reference, drop the outputs in two directories with matching filenames, and
-point this at both.
+This is a diagnostic, not a test of whether a style reference worked. It
+measures one property -- colour -- of outputs you already have. Point it at two
+directories with matching filenames when two comparable runs exist; do not
+commission extra paid generations to produce a number.
 
-The number is CIELAB delta-E (CIE76) between the two runs' dominant palettes.
-Delta-E is the standard measure of perceived colour difference: about 2.3 is the
-just-noticeable difference, so the default threshold of 5.0 sits comfortably
-above "you would notice if shown both". Hue, saturation and value shifts are
-reported alongside because they say *which way* the style moved, which is what
-you write in the report.
+The number is an unweighted palette-center distance in CIELAB delta-E (CIE76).
+It ignores color proportions and spatial arrangement: near-zero means matched
+centers are close, not equal color distributions or style. Reversing 90/10
+red/blue shares can score nearly zero. Inspect the contact sheet as well.
+The default threshold of 5.0 is advisory, not a validated whole-image or style
+threshold; a single-color just-noticeable difference does not validate one.
+Absolute hue distance and signed saturation/value deltas are reported alongside.
+Successful measurements exit 0 regardless of magnitude; no matching pairs is an
+error. Fully transparent inputs contain insufficient color evidence, even if the
+legacy diagnostic returns zero; do not interpret that as equivalence.
+
+A palette distance cannot establish cause. Two runs of the same prompt differ on
+their own, so ordinary generation variance can clear the threshold with no style
+effect at all, and a reference that genuinely changed shape, material,
+composition or line weight while holding the colours can land below it. Judge
+adherence by comparing each output against the reference itself, alongside
+whatever conditioning evidence the call returned: the style pin echoed back, the
+`style_application` in force, which reference IDs were accepted, or an
+`unsupported_style_conditioning` rejection. Use these numbers to describe a
+difference, never to prove one.
 
 Only pixels above the alpha floor are measured. Generated GUI art is mostly
 transparent background, and averaging that in drags every palette toward the
@@ -154,12 +166,14 @@ def measure(image: Image.Image, colors: int = DEFAULT_COLORS) -> dict:
 
 
 def hue_gap(first: float, second: float) -> float:
-    """Shortest angle between two hues, 0..180."""
+    """Absolute shortest hue distance, 0..180; symmetric and unsigned."""
     return abs((second - first + 180) % 360 - 180)
 
 
 def palette_distance(first: dict, second: dict) -> float:
-    """Mean delta-E over the best pairing of the two palettes.
+    """Unweighted mean delta-E over the best pairing of palette centers.
+
+    Calculated shares are ignored: this is not a mass-sensitive comparison.
 
     Both palettes are small, so every pairing is tried and the cheapest wins;
     matching by sorted lightness alone would punish a style that simply
@@ -225,7 +239,7 @@ def main() -> int:
     parser.add_argument("first", help="outputs generated under style reference A")
     parser.add_argument("second", help="outputs generated under style reference B")
     parser.add_argument("--colors", type=int, default=DEFAULT_COLORS, help="palette size per image")
-    parser.add_argument("--threshold", type=float, default=DEFAULT_THRESHOLD, help=f"mean delta-E to call the change measurable (JND is {JND})")
+    parser.add_argument("--threshold", type=float, default=DEFAULT_THRESHOLD, help="advisory comparison point for the mean delta-E, not a validated whole-image or style threshold")
     parser.add_argument("--contact-sheet", help="write a side-by-side PNG here")
     args = parser.parse_args()
 
@@ -235,7 +249,7 @@ def main() -> int:
         return 1
 
     deltas = []
-    print(f"{'asset':<28} {'deltaE':>8} {'hue':>8} {'sat':>8} {'val':>8}")
+    print(f"{'asset':<28} {'deltaE':>8} {'hue_gap':>8} {'sat':>8} {'val':>8}")
     for left, right in pairs:
         with Image.open(left) as a, Image.open(right) as b:
             result = compare_pair(a, b, args.colors)
@@ -246,16 +260,19 @@ def main() -> int:
         )
 
     mean = float(np.mean(deltas))
-    print(f"\nmean delta-E over {len(pairs)} asset(s): {mean:.2f}  (JND {JND}, threshold {args.threshold})")
+    print(f"\nunweighted palette-center mean delta-E over {len(pairs)} asset(s): {mean:.2f}  (advisory comparison point {args.threshold})")
     if args.contact_sheet:
         contact_sheet(pairs, pathlib.Path(args.contact_sheet))
         print(f"contact sheet: {args.contact_sheet}")
 
-    if mean >= args.threshold:
-        print("MEASURABLE: the style reference changed the output.")
-        return 0
-    print("NOT MEASURABLE: the two runs are within the threshold; the reference did not move the style.", file=sys.stderr)
-    return 1
+    side = "at or above" if mean >= args.threshold else "below"
+    print(
+        f"advisory: the palettes sit {side} the comparison point. This metric ignores color proportions and spatial arrangement. Colour distance alone neither "
+        "proves nor disproves that the reference conditioned the output -- generation variance "
+        "moves it, and a change to shape, material or composition may not. Compare the outputs "
+        "against the reference and report the conditioning evidence the calls returned."
+    )
+    return 0
 
 
 if __name__ == "__main__":

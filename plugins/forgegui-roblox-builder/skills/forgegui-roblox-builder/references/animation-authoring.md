@@ -1,6 +1,10 @@
 # Animation authoring for the standard R15 rig
 
-An agent-authored `KeyframeSequence` uploaded as an `Animation` (the upload route arrives with the Open Cloud upload change; see `references/asset-upload.md` once it lands) plays on any standard R15 avatar with no rigging step. These are the rules that make one read as motion rather than a pose slideshow. Measured September 20, 2026 on a looping dance emote in the showcase place; the numbers are a starting point, not a law.
+An agent-authored `KeyframeSequence` targeting the standard R15 hierarchy does not require a separate rigging step for that rig. Playback still requires a supported Animation upload route, an asset the intended experience is permitted to use, and verification on the actual character in client Play. Upload approval alone does not establish access or working playback. Discover the live tools and follow the import preflight in `SKILL.md` §4; if no supported Animation upload route is available, report that delivery blocker rather than assuming ForgeGUI exposes one.
+
+This page covers authored standard-R15 animation, not provider-rig animation from `generation_rig_3d` / `generation_animate_3d`. Those outputs do not establish Roblox R15 compatibility or retargeting; follow `references/3d-assets.md` for that separate flow.
+
+These are the rules that make an authored sequence read as motion rather than a pose slideshow. Measured September 20, 2026 on a looping dance emote in the showcase place; the numbers are a starting point, not a law.
 
 ## What is addressable
 
@@ -60,13 +64,13 @@ Set `Priority` on the sequence (`Action` for emotes, `Idle` for idles) and set i
 
 ## The measurement that proves it played
 
-A moderation state of `Approved` proves an upload, not motion. In Play, on the actual character:
+A moderation state of `Approved` proves an upload, not access or motion. Confirm the intended experience can load the asset, then verify in client Play on the actual character:
 
 1. `track.IsPlaying == true` after `Play()`.
 2. `track.Length` within a few ms of the authored cycle.
 3. A joint delta on more than one limb: sample part positions in root space over one cycle and report the min–max range of at least one hand, one knee angle and the torso. A hand range of zero with `IsPlaying == true` means the priority lost to another track.
 
-`run_script_in_play_mode` on the server can do all three (client-owned characters replicate their animation transforms); the client-side numbers are the same to two decimals.
+Server-side `run_script_in_play_mode` measurements are supporting evidence, not a substitute for client playback verification. Record the animation asset ID, target experience, actual character, client-observed motion and checks performed; retain failed probes and report access or playback failures explicitly.
 
 ## Prose is not a reference
 

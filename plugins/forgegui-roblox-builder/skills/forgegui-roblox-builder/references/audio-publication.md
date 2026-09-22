@@ -12,9 +12,9 @@ Both generators already produce MP3. The generation service holds its provider k
 
 ## Prefer integrated delivery for new Roblox audio
 
-For newly generated Roblox audio, prefer `delivery: {"mode": "publish", "platform": "roblox", "connection_id": "rpc_example"}` on `generation_music` or `generation_sound_effect` when that generator's live schema advertises it and account capabilities report Audio publication usable. Require `generation:write` and `publication:write` before paid submission, plus `generation:read` for job polling and `publication:read` for individual publication polling. Resolve the intended creator and experience access first. Use the selector only when live supported. The original selector-free publish shape is retained solely for an explicitly chosen usable legacy shared group; it is never a fallback. This does not activate OAuth.
+For newly generated Roblox audio, prefer `delivery: {"mode": "publish", "platform": "roblox", "connection_id": "rpc_example"}` on `generation_music` or `generation_sound_effect` when that generator's live schema advertises it and account capabilities report Audio publication usable. Require `generation:write` and `publication:write` before paid submission, plus `generation:read` for job polling and `publication:read` for individual publication polling. Resolve the intended creator and experience access first. Use the selector only when live supported. The original selector-free publish shape is replay-only for previously accepted work; it is never a new-work option or fallback. This does not activate OAuth.
 
-Omitting delivery or passing `delivery: {"mode": "direct"}` preserves file delivery without publishing. Use direct delivery when files are wanted, and standalone publication below for existing owned artifacts. Pinned legacy examples for omitted, direct and explicitly selected shared-group publish requests for both generators are in `tests/preparation-requests.json`.
+Omitting delivery or passing `delivery: {"mode": "direct"}` preserves file delivery without publishing. Use direct delivery when files are wanted, and standalone publication below for existing owned artifacts. Pinned examples for omitted, direct and connected publish requests for both generators, plus separately marked replay-only legacy shapes, are in `tests/preparation-requests.json`.
 
 Direct music supports up to 600 seconds; integrated publication requires a requested duration strictly below 420 seconds. Measured audio validation still applies after generation. Do not silently shorten the request or switch delivery modes on rejection.
 
@@ -30,9 +30,9 @@ Never call `artifact_publish` for outputs already submitted by integrated delive
 
 ## Publish existing artifacts through ForgeGUI
 
-Require all of the following: the live `artifact_publish` input enum includes `Audio`, the selected connection route (or explicitly chosen legacy shared-group route) is usable for this account, its capabilities include Audio, and the intended experience has an authorized access path. A Model/Image-only publisher is not an Audio publisher.
+Require all of the following: the live `artifact_publish` input enum includes `Audio`, the selected connection route is usable for this account, its capabilities include Audio, and the intended experience has an authorized access path. A Model/Image-only publisher is not an Audio publisher.
 
-Use `publication:write` for submission and `publication:read` for polling. `generation:write` is needed only for new generation. Pass an owned `run_id` when recording the operation in a run. For a live connection selector, use `destination: {"platform":"roblox","connection_id":"rpc_example"}`; never combine it with `creator`. The pinned example below is the explicit legacy shared-group choice only:
+Use `publication:write` for submission and `publication:read` for polling. `generation:write` is needed only for new generation. Pass an owned `run_id` when recording the operation in a run. For a live connection selector, use `destination: {"platform":"roblox","connection_id":"rpc_example"}`; never combine it with `creator`. The pinned example below uses an explicitly selected connection:
 
 ```json
 {
@@ -41,12 +41,12 @@ Use `publication:write` for submission and `publication:read` for polling. `gene
   "asset_type": "Audio",
   "destination": {
     "platform": "roblox",
-    "creator": "configured_shared_group"
+    "connection_id": "00000000-0000-4000-8000-000000000010"
   }
 }
 ```
 
-Replace the placeholder with the owned returned reference. For this legacy example only, the group and credentials are server-configured. This is not a user-OAuth upload, does not publish to the Creator Store and does not grant arbitrary experiences access. Never silently change destination.
+Replace the placeholder with the owned returned reference. Replace the connection placeholder with the user-selected usable connection ID; credentials remain server-only. This is not a user-OAuth upload, does not publish to the Creator Store and does not grant arbitrary experiences access. Never silently change destination.
 
 Save the returned `publication_id` immediately and poll `publication_status`. Keep the Roblox asset ID as a decimal string. Pending moderation is not ready for installation. On a failed publication, retain the generated artifact; use only an explicitly supported publication-only retry. For `needs_reconciliation`, `outcome_unknown`, a lost response or unfamiliar state, follow `asset-upload.md` and SKILL.md §4: preserve evidence, reconcile the original operation and never submit a replacement or switch upload routes automatically.
 

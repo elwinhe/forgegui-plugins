@@ -1,7 +1,7 @@
 # Roblox publishing connections
 
 The request examples match backend contract **1.9.0**, pinned in
-`tests/backend-preparation-contract.json`. This is local contract validation,
+`tests/backend-preparation-contract.json` at backend commit `7f21d40aeb556528f28d38c228282c1ea0eb5177`. This is local contract validation,
 not deployment or Studio acceptance. Discover live schemas and account
 capabilities before using a connection tool or field.
 
@@ -38,8 +38,10 @@ linking is not publication authorization. Do not advertise unavailable routes.
 
 Direct/omitted delivery requires no connection and never publishes. For work
 requiring Roblox publication, missing discovery or selector support means the
-connection route is unavailable. The user may explicitly choose the legacy
-shared-group route if it is live and suitable, or a verified manual handoff.
+connection route is unavailable. New publication requires an explicitly selected usable `connection_id`.
+The legacy shared-group request shapes are replay-only for this backend, even
+with explicit consent or stale capabilities advertising the shared route.
+A verified manual handoff remains a separate choice before new work.
 Never fall back to the shared group, another connection, local upload or a
 different creator after failure. A future destination change is a new explicit
 decision for new work; accepted operations retain their original destination.
@@ -51,8 +53,13 @@ decision for new work; accepted operations retain their original destination.
 | `generation_model_3d`, `generation_music`, `generation_sound_effect` | Optional `delivery: {"mode":"publish","platform":"roblox","connection_id":"00000000-0000-4000-8000-000000000010"}`; `generation:write` plus `publication:write`, `generation:read` for polling |
 | Direct generation | Omit `delivery` or use `{"mode":"direct"}`; no connection or publication scope required |
 | Existing owned Model/Image/Audio via `artifact_publish` | `destination: {"platform":"roblox","connection_id":"00000000-0000-4000-8000-000000000010"}`; `publication:write`, `publication:read` for polling |
-| Explicit legacy standalone publication | `destination: {"platform":"roblox","creator":"configured_shared_group"}` with the same publication scopes |
-| Explicit legacy integrated publication | Original `delivery: {"mode":"publish","platform":"roblox"}` only when live legacy admissions remain enabled and the user chose that group |
+| Replay-only legacy standalone publication | `destination: {"platform":"roblox","creator":"configured_shared_group"}` with the original request ID and arguments; no new submissions |
+| Replay-only legacy integrated publication | Original `delivery: {"mode":"publish","platform":"roblox"}` with the original request ID and arguments; no new submissions |
+
+The input schema retains replay compatibility; schema validity does not establish
+new-work admission. Replay lookup precedes admission checks; without an accepted
+matching operation, legacy publication returns `capability_unavailable` before
+new work. Never submit a fresh legacy request to test whether it was accepted.
 
 Standalone destination is a **strict union**: `connection_id` OR
 `creator: configured_shared_group`, never both. No raw keys, arbitrary creator
@@ -113,7 +120,8 @@ writes for that member without discarding other ready receipts.
 | type_or_route_unavailable | report_unavailable | paid_work, shared_fallback |
 | scope_missing | report_scope | paid_work, broaden_scopes |
 | credential_requested | settings_only | chat_key, mcp_key, command_key, ledger_key |
-| legacy_explicit_usable | submit_legacy | infer_consent |
+| legacy_new_request | report_unavailable | submit_legacy, paid_work, shared_fallback |
+| legacy_accepted | read_original_or_reconcile | change_arguments, new_request_id, change_creator |
 | integrated_pending | poll_original | standalone_publish, local_upload, regenerate |
 | pending_moderation | poll_original | insert, regenerate |
 | partial_audio | inspect_members | republish_ready, regenerate_batch, discard_receipts |
@@ -140,7 +148,7 @@ spend again merely because a topology diagnostic reports open edges.
 
 [Connection fixtures](../../../../../tests/publishing-connections.json) cover
 discovery, direct and connected Model/music/SFX generation, standalone
-Model/Image/Audio publication, legacy delivery and partial audio receipts.
+Model/Image/Audio publication, replay-only legacy delivery and partial audio receipts.
 Request fixtures are validated against the pinned backend input schemas;
 receipt examples and guidance assertions are not portable output schemas or
 proof of installed-agent behavior.
@@ -149,4 +157,9 @@ Run `tests/test_publishing_connections.py` and `tests/test_preparation_contract.
 Set `FORGEGUI_BACKEND_CONTRACT` to the exact backend export to check its hash
 and every pinned tool definition. Staging still requires dedicated user/group
 credentials, actual uploads and recovery, followed by Studio insertion/playback
-verification. Installation of this package does not enable the backend gates.
+verification. Personal and group publication, rotation during pending work,
+disconnect and interrupted-worker recovery remain unverified in hosted acceptance.
+All unknown quota owners still share one bucket, the default global upload limit
+is two, and a bucket-level 429 can pause that shared bucket. User-supplied keys
+change ownership, not independent publishing capacity.
+Installation of this package does not enable the backend gates.

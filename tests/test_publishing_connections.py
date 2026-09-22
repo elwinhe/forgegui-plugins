@@ -49,7 +49,8 @@ class PublishingConnectionsGuidanceTests(unittest.TestCase):
             ("type_or_route_unavailable", "report_unavailable", {"paid_work", "shared_fallback"}),
             ("scope_missing", "report_scope", {"paid_work", "broaden_scopes"}),
             ("credential_requested", "settings_only", {"chat_key", "mcp_key", "command_key", "ledger_key"}),
-            ("legacy_explicit_usable", "submit_legacy", {"infer_consent"}),
+            ("legacy_new_request", "report_unavailable", {"submit_legacy", "paid_work", "shared_fallback"}),
+            ("legacy_accepted", "read_original_or_reconcile", {"change_arguments", "new_request_id", "change_creator"}),
             ("integrated_pending", "poll_original", {"standalone_publish", "local_upload", "regenerate"}),
             ("pending_moderation", "poll_original", {"insert", "regenerate"}),
             ("partial_audio", "inspect_members", {"republish_ready", "regenerate_batch", "discard_receipts"}),
@@ -103,6 +104,31 @@ class PublishingConnectionsGuidanceTests(unittest.TestCase):
         schema = Draft7Validator(tools["artifact_publish"]["input_schema"], format_checker=FormatChecker())
         for extra in [{"creator": "configured_shared_group"}, {"group_id": "123"}, {"api_key": "forbidden"}]:
             self.assertFalse(schema.is_valid({**request, "destination": {**request["destination"], **extra}}))
+
+    def test_new_publication_examples_require_connections_and_legacy_is_replay_only(self):
+        pinned = json.loads((ROOT / "tests/backend-preparation-contract.json").read_text())
+        self.assertEqual(pinned["backend_commit"], "7f21d40aeb556528f28d38c228282c1ea0eb5177")
+        for filename in ["publishing-connections.json", "preparation-requests.json"]:
+            cases = json.loads((ROOT / "tests" / filename).read_text())["cases"]
+            legacy = []
+            for case in cases:
+                args = case["arguments"]
+                selector = args.get("destination") if case["tool"] == "artifact_publish" else args.get("delivery", {})
+                if not selector or (case["tool"] != "artifact_publish" and selector.get("mode") != "publish"):
+                    continue
+                with self.subTest(filename=filename, case=case["name"]):
+                    if "connection_id" not in selector:
+                        self.assertTrue(case["name"].startswith("legacy-"))
+                        self.assertEqual(case["admission"], "replay_only")
+                        legacy.append(case["name"])
+                    else:
+                        self.assertNotIn("creator", selector)
+                        self.assertNotEqual(case.get("admission"), "replay_only")
+            self.assertEqual(set(legacy), {"legacy-model", "legacy-audio"})
+        for rule in ["even\nwith explicit consent or stale capabilities", "schema validity does not establish",
+                     "Replay lookup precedes admission checks", "`capability_unavailable` before",
+                     "Never submit a fresh legacy request"]:
+            self.assertIn(rule, GUIDE)
 
     def test_discovery_and_all_three_generators(self):
         self.assertEqual(CASES["discover-connections"]["tool"], "publication_connections_list")

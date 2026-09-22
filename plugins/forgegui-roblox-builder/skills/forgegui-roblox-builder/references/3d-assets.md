@@ -172,8 +172,8 @@ Establish the route when you plan the kit, not after generating (SKILL.md §4):
    schema and available capability information before spending. If supported
    and enabled, use publish/roblox with the selected `connection_id` only when
    that selector is live supported. The original selector-free shape
-   `delivery: {"mode": "publish", "platform": "roblox"}` is the explicit legacy
-   **server-configured group** choice only. Never pass arbitrary user/group
+   `delivery: {"mode": "publish", "platform": "roblox"}` is replay-only for previously accepted
+   **server-configured group** work, never a new publication choice. Never pass arbitrary user/group
    overrides. Verify the destination and target experience's access first.
    Omitted delivery or `delivery: {"mode": "direct"}` returns files only.
    Poll `generation_status` until `delivery.status == "ready"`, verify access,

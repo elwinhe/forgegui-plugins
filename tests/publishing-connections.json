@@ -170,7 +170,8 @@
           "mode": "publish",
           "platform": "roblox"
         }
-      }
+      },
+      "admission": "replay_only"
     },
     {
       "name": "legacy-audio",
@@ -183,7 +184,8 @@
           "platform": "roblox",
           "creator": "configured_shared_group"
         }
-      }
+      },
+      "admission": "replay_only"
     }
   ],
   "ledger_example": {

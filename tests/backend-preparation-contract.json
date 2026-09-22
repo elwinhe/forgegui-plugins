@@ -1,6 +1,6 @@
 {
-  "backend_commit": "946a45b2d3cefac03a5c5d0cb7d6ea1ef3be0a84",
-  "export_sha256": "b71fab2ae3c0a87388005780a875ebb6cfab1a5af71161665d3dbb31343b7511",
+  "backend_commit": "7f21d40aeb556528f28d38c228282c1ea0eb5177",
+  "export_sha256": "7a42e8b497a19d41ff0d463093437f0c1e4c553d57e77ae6c10669743fdcf8f0",
   "schema_version": "1.9.0",
   "tools": [
     {
@@ -11,7 +11,7 @@
           "publication:write"
         ]
       },
-      "description": "Generate a textured 3D model through ForgeGUI's private provider pipeline. Optional delivery mode publish/roblox additionally publishes the finished model as a Roblox Model asset owned by the selected connection creator (legacy configured group if omitted); direct or omitted delivery returns file results only and never publishes.",
+      "description": "Generate a textured 3D model through ForgeGUI's private provider pipeline. Optional delivery mode publish/roblox additionally publishes the finished model as a Roblox Model asset owned by the selected connection creator (connection_id required for new publish requests; no shared-group fallback); direct or omitted delivery returns file results only and never publishes.",
       "input_schema": {
         "type": "object",
         "properties": {
@@ -125,7 +125,7 @@
                 "additionalProperties": false
               }
             ],
-            "description": "How the finished model is delivered. Omitted or direct returns ForgeGUI file results only. publish/roblox additionally publishes the finished GLB as a Roblox Model asset owned by the explicitly selected connection creator, or the legacy server-configured group when connection_id is omitted; credentials remain server-only, and published results report a decimal-string asset id once ready."
+            "description": "How the finished model is delivered. Omitted or direct returns ForgeGUI file results only. publish/roblox additionally publishes the finished GLB as a Roblox Model asset owned by the explicitly selected connection creator, with connection_id required for new publish requests (legacy requests remain replayable); credentials remain server-only, and published results report a decimal-string asset id once ready."
           }
         },
         "required": [
@@ -197,7 +197,7 @@
                 "additionalProperties": false
               }
             ],
-            "description": "How finished audio is delivered. Omitted or direct returns ForgeGUI file results only. publish/roblox additionally publishes each retained MP3 output as a Roblox Audio asset owned by the explicitly selected connection creator, or the legacy server-configured group when connection_id is omitted; credentials remain server-only, and each output reports its own publication status and decimal-string asset id once ready."
+            "description": "How finished audio is delivered. Omitted or direct returns ForgeGUI file results only. publish/roblox additionally publishes each retained MP3 output as a Roblox Audio asset owned by the explicitly selected connection creator, with connection_id required for new publish requests (legacy requests remain replayable); credentials remain server-only, and each output reports its own publication status and decimal-string asset id once ready."
           },
           "prompt": {
             "type": "string",
@@ -293,7 +293,7 @@
                 "additionalProperties": false
               }
             ],
-            "description": "How finished audio is delivered. Omitted or direct returns ForgeGUI file results only. publish/roblox additionally publishes each retained MP3 output as a Roblox Audio asset owned by the explicitly selected connection creator, or the legacy server-configured group when connection_id is omitted; credentials remain server-only, and each output reports its own publication status and decimal-string asset id once ready."
+            "description": "How finished audio is delivered. Omitted or direct returns ForgeGUI file results only. publish/roblox additionally publishes each retained MP3 output as a Roblox Audio asset owned by the explicitly selected connection creator, with connection_id required for new publish requests (legacy requests remain replayable); credentials remain server-only, and each output reports its own publication status and decimal-string asset id once ready."
           },
           "prompt": {
             "type": "string",
@@ -1168,7 +1168,7 @@
     {
       "name": "artifact_publish",
       "scope": "publication:write",
-      "description": "Publish one owned immutable Model GLB, PNG Image, or MP3 Audio artifact to Roblox as a durable job owned by an explicitly selected connection creator or the legacy configured shared group. Destination credentials are server-only, OAuth is unavailable, no generation is repeated or charged, and group upload does not prove experience access or audible playback. Audio must be under 20,000,000 bytes and 420 seconds, at most 48 kHz, mono/stereo; no transcoding or seamless-loop verification. Returns truthful processing/moderation state and a decimal-string asset_id only when Roblox supplies one.",
+      "description": "Publish one owned immutable Model GLB, PNG Image, or MP3 Audio artifact to Roblox as a durable job owned by an explicitly selected connection creator; new requests require destination.connection_id. The legacy configured shared-group destination is accepted only for replay of existing requests. Destination credentials are server-only, OAuth is unavailable, no generation is repeated or charged, and group upload does not prove experience access or audible playback. Audio must be under 20,000,000 bytes and 420 seconds, at most 48 kHz, mono/stereo; no transcoding or seamless-loop verification. Returns truthful processing/moderation state and a decimal-string asset_id only when Roblox supplies one.",
       "input_schema": {
         "type": "object",
         "properties": {

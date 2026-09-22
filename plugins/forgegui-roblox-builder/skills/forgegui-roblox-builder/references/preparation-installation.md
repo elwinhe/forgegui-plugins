@@ -91,7 +91,7 @@ slice definition, use ordinary aspect-preserving art rather than guessing.
 
 Use `artifact_publish` for one owned prepared `Model` GLB or PNG `Image`.
 When live supported, use `destination: {platform: roblox, connection_id: <selected ID>}`.
-The explicit legacy option is `destination: {platform: roblox, creator: configured_shared_group}`.
+The legacy shape `destination: {platform: roblox, creator: configured_shared_group}` is replay-only for previously accepted work; never use it for a new publication.
 These selectors form a strict union: never combine them, supply arbitrary creator
 overrides, or fall back to the shared group after failure. Confirm creator and
 target-experience access before spending. Roblox publishing keys go only through

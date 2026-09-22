@@ -123,7 +123,7 @@ For each asset, add `publishing_destination` only after an explicit user choice
 (or a prior unambiguous recorded choice). Allowlist safe fields: `route`
 (`connection` or `legacy_shared_group`), `connection_id`, `label`, `auth_type`,
 `creator: {type, id}`, discovery `status`, `asset_types`, `last_validated_at`
-and `selected_at` when known. A legacy selection has no invented connection ID.
+and `selected_at` when known. A historical legacy selection has no invented connection ID and is retained for replay/reconciliation only; new publication selections require a connection.
 Creator IDs are decimal strings. Never cache entire discovery/provider responses,
 secret-store paths, credential versions/context, keys, tokens or signed URLs.
 Selection describes intent; it is not a server admission or ownership receipt.

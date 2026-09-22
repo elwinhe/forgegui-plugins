@@ -109,7 +109,7 @@
         "asset_type": "Model",
         "destination": {
           "platform": "roblox",
-          "creator": "configured_shared_group"
+          "connection_id": "00000000-0000-4000-8000-000000000010"
         },
         "run_id": "00000000-0000-4000-8000-000000000001"
       }
@@ -123,7 +123,7 @@
         "asset_type": "Image",
         "destination": {
           "platform": "roblox",
-          "creator": "configured_shared_group"
+          "connection_id": "00000000-0000-4000-8000-000000000010"
         },
         "run_id": "00000000-0000-4000-8000-000000000001"
       }
@@ -222,7 +222,7 @@
         "asset_type": "Audio",
         "destination": {
           "platform": "roblox",
-          "creator": "configured_shared_group"
+          "connection_id": "00000000-0000-4000-8000-000000000010"
         },
         "run_id": "00000000-0000-4000-8000-000000000001"
       }
@@ -276,7 +276,8 @@
         "count": 1,
         "delivery": {
           "mode": "publish",
-          "platform": "roblox"
+          "platform": "roblox",
+          "connection_id": "00000000-0000-4000-8000-000000000010"
         }
       }
     },
@@ -307,7 +308,8 @@
         "count": 1,
         "delivery": {
           "mode": "publish",
-          "platform": "roblox"
+          "platform": "roblox",
+          "connection_id": "00000000-0000-4000-8000-000000000010"
         }
       }
     },
@@ -448,7 +450,8 @@
           "mode": "publish",
           "platform": "roblox"
         }
-      }
+      },
+      "admission": "replay_only"
     },
     {
       "name": "legacy-audio",
@@ -461,7 +464,8 @@
           "platform": "roblox",
           "creator": "configured_shared_group"
         }
-      }
+      },
+      "admission": "replay_only"
     }
   ]
 }

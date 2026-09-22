@@ -9,6 +9,7 @@ Requires Pillow and numpy.
 from __future__ import annotations
 
 import pathlib
+import subprocess
 import sys
 import tempfile
 
@@ -17,6 +18,8 @@ from PIL import Image, ImageDraw
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
+import make_tileable  # noqa: E402
+import palette_check  # noqa: E402
 import paste_module  # noqa: E402
 import separate_sheet  # noqa: E402
 import slice_metadata  # noqa: E402
@@ -205,7 +208,193 @@ def test_style_delta_pairs_directories_and_draws_a_sheet() -> None:
             check(rendered.size == (128, 128), f"the sheet is one row per pair, two columns wide (got {rendered.size})")
 
 
-for test in (test_slice_avoids_decoration, test_render_keeps_rim_thickness, test_measures_at_roblox_stored_size, test_slice_rejects_all_decorated, test_separate_sheet_splits_and_trims, test_paste_module, test_style_delta_separates_two_style_references, test_style_delta_ignores_transparent_background, test_style_delta_reports_direction, test_style_delta_palette_is_deterministic, test_style_delta_pairs_directories_and_draws_a_sheet):
+
+# Palette conformance ----------------------------------------------------------
+
+IRONFRONT = ["#111820", "#1D2933", "#DCE2E3", "#7D929B", "#D9A54A", "#6BADB4", "#CB5F59"]
+
+
+def swatch(color: tuple[int, int, int], size: int = 32) -> Image.Image:
+    return Image.new("RGBA", (size, size), color + (255,))
+
+
+def test_palette_flags_an_invented_hue() -> None:
+    green = palette_check.analyse(swatch((10, 216, 8)), IRONFRONT, palette_check.DEFAULT_TOLERANCE)
+    check(green["share"] == 1.0, "pure green against an amber/steel palette is wholly off-palette")
+    check(green["offenders"] and green["offenders"][0]["degrees"] > 45, "and is reported tens of degrees from the nearest palette hue")
+    amber = palette_check.analyse(swatch((217, 165, 74)), IRONFRONT, palette_check.DEFAULT_TOLERANCE)
+    check(amber["share"] == 0.0, "a palette colour itself is on-palette")
+
+
+def test_palette_allows_shading_of_a_palette_hue() -> None:
+    # The reason the check measures hue angle and not colour distance: these are
+    # the same amber lit differently, and a delta-E check condemns all of them.
+    for name, rgb in (("darker", (120, 90, 40)), ("lighter", (245, 210, 140)), ("punchier", (224, 176, 32))):
+        result = palette_check.analyse(swatch(rgb), IRONFRONT, palette_check.DEFAULT_TOLERANCE)
+        check(result["share"] == 0.0, f"a {name} amber is still amber")
+
+
+def test_palette_keeps_desaturated_entries_in_the_comparison() -> None:
+    # #111820 is chroma 7. A cutoff that calls it neutral drops the project's own
+    # darks from the comparison and then condemns every shadow drawn from them.
+    result = palette_check.analyse(swatch((16, 32, 48)), IRONFRONT, palette_check.DEFAULT_TOLERANCE)
+    check(result["share"] == 0.0, "a dark blue-grey matches the palette's desaturated navy")
+    check(palette_check.NEUTRAL_CHROMA < 6.7, "the neutral cutoff sits below the palette's least saturated hued entry")
+    grey = palette_check.analyse(swatch((136, 136, 136)), IRONFRONT, palette_check.DEFAULT_TOLERANCE)
+    check(grey["share"] == 0.0, "a true neutral passes because the palette contains one")
+
+
+def test_palette_repair_rotates_hue_and_keeps_lightness() -> None:
+    import numpy as np
+
+    contaminated = Image.new("RGBA", (16, 16), (10, 216, 8, 255))
+    before = palette_check.analyse(contaminated, IRONFRONT, palette_check.DEFAULT_TOLERANCE)
+    repaired, changed = palette_check.repair(contaminated, IRONFRONT, palette_check.DEFAULT_TOLERANCE)
+    after = palette_check.analyse(repaired, IRONFRONT, palette_check.DEFAULT_TOLERANCE)
+    check(before["share"] == 1.0 and after["share"] == 0.0, "repair clears the off-palette pixels")
+    check(changed == 16 * 16, "repair reports how many pixels it rewrote")
+
+    lab_before = palette_check.srgb_to_lab(np.array([[10 / 255, 216 / 255, 8 / 255]]))
+    sample = np.asarray(repaired.convert("RGBA"), dtype=np.float64)[0, 0, :3] / 255
+    lab_after = palette_check.srgb_to_lab(sample.reshape(1, 3))
+    check(abs(lab_after[0][0] - lab_before[0][0]) < 1.5, "lightness is preserved, so shading survives the repair")
+
+    clean = Image.new("RGBA", (8, 8), (217, 165, 74, 255))
+    _, untouched = palette_check.repair(clean, IRONFRONT, palette_check.DEFAULT_TOLERANCE)
+    check(untouched == 0, "art already on palette is left alone")
+
+
+def test_palette_lab_inverse_is_exact_at_8_bit() -> None:
+    import numpy as np
+
+    rng = np.random.default_rng(11)
+    rgb = rng.integers(0, 256, (4000, 3)) / 255.0
+    back = palette_check.lab_to_srgb(palette_check.srgb_to_lab(rgb))
+    check(int(np.abs((rgb * 255).round() - (back * 255).round()).max()) == 0, "sRGB survives a Lab round trip unchanged at 8-bit")
+
+
+def test_palette_ignores_transparent_pixels() -> None:
+    art = Image.new("RGBA", (32, 32), (0, 0, 0, 0))
+    art.paste(swatch((10, 216, 8), 8), (4, 4))
+    result = palette_check.analyse(art, IRONFRONT, palette_check.DEFAULT_TOLERANCE)
+    check(result["pixels"] == 64, "only the opaque region is measured")
+    check(result["share"] == 1.0, "and it is judged on its own, not diluted by the empty canvas")
+
+
+def flat_panel(width: int = 1024, height: int = 320) -> Image.Image:
+    """A restrained panel: hairline edge, small radius, soft vertical gradient, fine grain."""
+    import numpy as np
+
+    rng = np.random.default_rng(5)
+    ramp = np.linspace(46, 28, height)[:, None, None] * np.ones((1, width, 3))
+    ramp[..., 2] += 12
+    noisy = np.clip(ramp + rng.normal(0, 1.1, ramp.shape), 0, 255).astype("uint8")
+    body = Image.fromarray(noisy, "RGB").convert("RGBA")
+    mask = Image.new("L", (width, height), 0)
+    ImageDraw.Draw(mask).rounded_rectangle((0, 0, width - 1, height - 1), radius=8, fill=255)
+    body.putalpha(mask)
+    ImageDraw.Draw(body).rounded_rectangle((0, 0, width - 1, height - 1), radius=8, outline=(125, 146, 155, 255), width=1)
+    return body
+
+
+def test_slice_grows_through_a_flat_gradient() -> None:
+    data = slice_metadata.compute(flat_panel())
+    check(data["fixedHeight"] < 80, f"a flat gradient panel is nearly all stretchable vertically (fixed {data['fixedHeight']})")
+    check(data["fixedWidth"] < 120, f"and horizontally (fixed {data['fixedWidth']})")
+    x0, y0, x1, y1 = data["sliceCenter"]
+    check(x0 >= 8 and y0 >= 8, "but the band still stops short of the rounded corner and hairline")
+    ornate = slice_metadata.compute(panel())
+    check(ornate["fixedWidth"] > 100, "and the noise allowance does not let an ornate panel grow into its trim")
+
+
+def cracked(size: int = 256) -> Image.Image:
+    """An organic material: grain with a few long dark cracks that run off the edges."""
+    import numpy as np
+
+    rng = np.random.default_rng(3)
+    grain = np.clip(rng.normal(110, 9, (size, size, 3)), 0, 255).astype("uint8")
+    image = Image.fromarray(grain, "RGB")
+    draw = ImageDraw.Draw(image)
+    draw.line([(0, 40), (size, 170)], fill=(30, 30, 34), width=3)
+    draw.line([(90, 0), (150, size)], fill=(30, 30, 34), width=3)
+    return image
+
+
+def seam_error(tile: Image.Image) -> float:
+    """Mean step across the wrap seam, relative to the mean step between ordinary neighbours."""
+    import numpy as np
+
+    a = np.asarray(tile.convert("RGB"), dtype=np.float32)
+    wrap = (np.abs(a[:, 0] - a[:, -1]).mean() + np.abs(a[0] - a[-1]).mean()) / 2
+    inner = (np.abs(np.diff(a, axis=1)).mean() + np.abs(np.diff(a, axis=0)).mean()) / 2
+    return float(wrap / inner)
+
+
+def test_tileable_modes_close_the_seam() -> None:
+    import numpy as np
+
+    raw = cracked()
+    check(seam_error(raw) > 0.9, "the raw image wraps no better than two unrelated edges")  # sanity
+    mirrored = make_tileable.mirror(raw, 256)
+    blended = make_tileable.blend(raw, 256)
+    check(mirrored.size == (256, 256) and blended.size == (256, 256), "both modes return the requested size")
+    a = np.asarray(mirrored.convert("RGB"), dtype=np.int16)
+    check(int(np.abs(a[:, 0] - a[:, -1]).max()) == 0 and int(np.abs(a[0] - a[-1]).max()) == 0, "mirror is seam-exact: each edge is its opposite edge")
+    check(seam_error(blended) < 1.6, f"blend wraps as smoothly as its own interior ({seam_error(blended):.2f}x an ordinary step)")
+    left, right = a[:, : 128], a[:, 128:][:, ::-1]
+    check(int(np.abs(left - right).max()) == 0, "mirror is symmetric about its centre, which is why it suits only regular patterns")
+    b = np.asarray(blended.convert("RGB"), dtype=np.int16)
+    check(float(np.abs(b[:, :128] - b[:, 128:][:, ::-1]).mean()) > 3, "blend is not, so cracks do not meet their own reflection")
+
+
+def test_tileable_blend_flattens_lighting() -> None:
+    import numpy as np
+
+    size = 256
+    rng = np.random.default_rng(9)
+    vignette = np.linspace(60, 170, size)[None, :, None] * np.ones((size, 1, 3))
+    raw = Image.fromarray(np.clip(vignette + rng.normal(0, 6, vignette.shape), 0, 255).astype("uint8"), "RGB")
+    out = np.asarray(make_tileable.blend(raw, size), dtype=np.float32)
+    columns = out.mean(axis=(0, 2))
+    check(float(columns.max() - columns.min()) < 30, "a left-to-right lighting ramp of 110 levels is flattened, so forty tiles do not checkerboard")
+
+
+def test_tileable_rejects_transparency_before_writing() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        root = pathlib.Path(td)
+        rgba = Image.new("RGBA", (16, 16), (255, 255, 255, 0))
+        rgba.putpixel((8, 8), (255, 255, 255, 255))
+        indexed = Image.new("P", (16, 16), 0)
+        indexed.putpalette([255, 255, 255] * 256)
+        indexed.info["transparency"] = 0
+        for name, source in (("rgba", rgba), ("indexed", indexed),
+                             ("partial", Image.new("RGBA", (16, 16), (255, 255, 255, 128))),
+                             ("gray", Image.new("LA", (16, 16), (255, 0)))):
+            src = root / (name + ".png")
+            source.save(src)
+            for mode in ("mirror", "blend"):
+                out = root / "out.png"
+                preview = root / "preview.png"
+                out.write_bytes(b"existing tile")
+                result = subprocess.run([sys.executable, str(pathlib.Path(make_tileable.__file__)),
+                                         str(src), str(out), "--mode", mode, "--size", "32",
+                                         "--preview", str(preview)], capture_output=True, text=True)
+                check(result.returncode != 0 and "fully opaque" in result.stderr,
+                      f"{mode} rejects {name} transparency clearly")
+                check(out.read_bytes() == b"existing tile" and not preview.exists(),
+                      f"{mode} preserves prior output and writes no preview for {name}")
+        for mode in ("mirror", "blend"):
+            src = root / "opaque.png"
+            Image.new("RGBA", (16, 16), (100, 120, 140, 255)).save(src)
+            result = subprocess.run([sys.executable, str(pathlib.Path(make_tileable.__file__)),
+                                     str(src), str(root / "out.png"), "--mode", mode,
+                                     "--size", "32"], capture_output=True, text=True)
+            check(result.returncode == 0, f"{mode} still accepts opaque RGBA")
+            with Image.open(root / "out.png") as output:
+                check(output.size == (32, 32), f"{mode} writes opaque tile")
+
+
+for test in (test_tileable_rejects_transparency_before_writing, test_slice_avoids_decoration, test_render_keeps_rim_thickness, test_measures_at_roblox_stored_size, test_slice_rejects_all_decorated, test_separate_sheet_splits_and_trims, test_paste_module, test_style_delta_separates_two_style_references, test_style_delta_ignores_transparent_background, test_style_delta_reports_direction, test_style_delta_palette_is_deterministic, test_style_delta_pairs_directories_and_draws_a_sheet, test_palette_flags_an_invented_hue, test_palette_allows_shading_of_a_palette_hue, test_palette_keeps_desaturated_entries_in_the_comparison, test_palette_repair_rotates_hue_and_keeps_lightness, test_palette_lab_inverse_is_exact_at_8_bit, test_palette_ignores_transparent_pixels, test_slice_grows_through_a_flat_gradient, test_tileable_modes_close_the_seam, test_tileable_blend_flattens_lighting):
     test()
 
 print(f"\n{checks} checks, {failures} failures")

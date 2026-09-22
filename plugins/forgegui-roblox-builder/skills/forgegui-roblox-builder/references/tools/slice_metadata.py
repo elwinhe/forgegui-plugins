@@ -44,6 +44,16 @@ EDGE_MARGIN = 0.12
 WINDOW_FRACTION = 0.06
 GROW_RATIO = 1.5
 PAD_FRACTION = 0.02
+# Line scores are mean absolute differences in 0-255 units. Flat art defeats a
+# purely relative growth rule: its calmest window scores about the same as every
+# other interior line (grain, dither, a soft gradient -- all ~1-2 units), so
+# "1.5x the calmest" stops at the first line that is a hair noisier, and a panel
+# whose only fixed parts are 8 px corners is reported as 270 px of fixed height.
+# So the limit is never allowed below twice the interior's own typical line,
+# capped so an ornate interior (where the typical line IS detail) cannot use the
+# allowance to grow into its decoration.
+NOISE_MULTIPLE = 2.0
+NOISE_CAP = 3.0
 
 
 def _line_scores(pixels: np.ndarray, axis: int) -> np.ndarray:
@@ -85,10 +95,14 @@ def _best_band(scores: np.ndarray) -> tuple[int, int]:
     sums = np.convolve(scores[lo:hi], np.ones(window), mode="valid")
     begin = lo + int(np.argmin(sums))
     end = begin + window
-    limit = (sums.min() / window) * GROW_RATIO
-    while begin > lo and scores[begin - 1] <= limit:
+    noise = min(float(np.median(scores[lo:hi])) * NOISE_MULTIPLE, NOISE_CAP)
+    limit = max((sums.min() / window) * GROW_RATIO, noise)
+    # The margin keeps the SEARCH off the rim; growth may run past it, because the
+    # rim's own scores are what stop it. Holding growth at the margin reported a
+    # 12% fixed border on art whose rim is a one-pixel hairline.
+    while begin > 1 and scores[begin - 1] <= limit:
         begin -= 1
-    while end < hi and scores[end] <= limit:
+    while end < total - 1 and scores[end] <= limit:
         end += 1
     # The first lines of a decoration score low -- the tip of a gem or crest is only a
     # few pixels wide -- so the band keeps a safety pad from wherever it stopped.

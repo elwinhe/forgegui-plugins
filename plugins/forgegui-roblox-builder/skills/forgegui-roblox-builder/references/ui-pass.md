@@ -78,11 +78,11 @@ Then classify every overlay before you build it:
 | --- | --- |
 | U1 Classes | Every overlay is tagged Class A or Class B in the report |
 | U2 Lint | `UiCheck.lintSource` over every client script finds no `modal_closes_on_stray_click` |
-| U3 Structure | `UiCheck.audit` over each ScreenGui, with every modal open, finds no `art_background`, `art_stroke`, `bordered_icon`, `icon_on_plate` or `stroke_in_framed_art`. Each `text_overflow` warning is fixed or explained |
+| U3 Structure | `UiCheck.audit` over each ScreenGui, with every modal open, finds no `art_background`, `art_stroke`, `bordered_icon`, `icon_on_plate`, `stroke_in_framed_art` or `canvasgroup_text`. Each `text_overflow` warning is fixed or explained |
 | U4 Stray clicks | For each Class A modal, click every point from `UiCheck.strayClickPoints`, inside the panel and around it, including over HUD buttons under the backdrop. The modal stays open and nothing under it fires. Then the close button closes it |
 | U5 Class B | An outside tap closes it; an inside tap does not |
 | U6 Keys | Each modal's key toggles it. Gamepad B closes it: read the handler, which must handle B even when the input is marked processed |
-| U7 States | A capture exists for every state in rule 6 |
+| U7 States | A capture exists for every state in rule 6, taken from a real `ScreenGui` under `StarterGui` in Edit (not a SurfaceGui mirror), and at a second aspect ratio as well as 16:9 |
 | U8 Targets | Interactive targets are at least 44x44 px at the smallest viewport, and none are in the thumbstick or jump zones |
 | U9 Consistency | Every modal uses one close-button asset in one position, and only one modal is open at a time |
 | U10 Evidence | Captures of the Studio window only, with the player list covered; the audit and lint output; the stray-click result; and the reviewer's sign-off |

@@ -586,6 +586,25 @@ do
 	check(count(report, "primitive_surface") == 0, "AllowPrimitive suppresses warnings without changing coverage")
 end
 
+-- A page built on a CanvasGroup: the fault behind "the UI is super blurry".
+do
+	local page = gui("CanvasGroup", "MainMenu", { AbsoluteSize = px(1920, 1080) }, {
+		gui("TextLabel", "Title", { Text = "IRONFRONT", TextFits = true, AbsoluteSize = px(600, 100) }),
+	})
+	local report = UiCheck.audit(gui("ScreenGui", "UI", {}, { page }))
+	check(count(report, "canvasgroup_text") == 1 and report.errors == 1, "text inside a CanvasGroup is an error: it rasterises soft")
+
+	local decorative = gui("CanvasGroup", "Glow", { AbsoluteSize = px(200, 200) }, {
+		gui("ImageLabel", "Halo", { Image = "rbxassetid://1", AbsoluteSize = px(200, 200) }),
+	})
+	check(count(UiCheck.audit(gui("ScreenGui", "UI", {}, { decorative })), "canvasgroup_text") == 0, "a CanvasGroup with no text in it is left alone")
+
+	local fixed = gui("Frame", "MainMenu", { AbsoluteSize = px(1920, 1080) }, {
+		gui("TextLabel", "Title", { Text = "IRONFRONT", TextFits = true, AbsoluteSize = px(600, 100) }),
+	})
+	check(UiCheck.audit(gui("ScreenGui", "UI", {}, { fixed })).errors == 0, "the same page on a Frame passes")
+end
+
 print(("\n%d checks, %d failures"):format(checks, failures))
 if failures > 0 then
 	process.exit(1)

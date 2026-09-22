@@ -159,6 +159,23 @@ local function checkFrameInFrame(report: Report, object: any)
 	end
 end
 
+-- A CanvasGroup is drawn to an off-screen texture and composited, and Roblox
+-- sizes that texture by the client's graphics quality: below the top setting,
+-- every label inside it is visibly soft. One used as a page root (so the page can
+-- fade through GroupTransparency) blurs the whole interface, and nothing else in
+-- this module can see it -- layout, fills and provenance are all still correct.
+local function checkCanvasGroup(report: Report, object: any)
+	if object.ClassName ~= "CanvasGroup" then
+		return
+	end
+	for _, inner in ipairs(object:GetDescendants()) do
+		if TEXT_CLASSES[inner.ClassName] and inner.Visible ~= false and inner.Text ~= "" and not ignored(inner) then
+			add(report, "canvasgroup_text", "error", object, ("text (%q) inside a CanvasGroup renders below native resolution and reads as blurry; make this a Frame and fade with a curtain or per-element transparency instead."):format(inner.Text))
+			return
+		end
+	end
+end
+
 function UiCheck.audit(root: Instance, options: Options?): Report
 	local settings = options or {}
 	local report: Report = { findings = {}, errors = 0, warnings = 0, checked = 0 }
@@ -167,6 +184,7 @@ function UiCheck.audit(root: Instance, options: Options?): Report
 			continue
 		end
 		report.checked += 1
+		checkCanvasGroup(report, object)
 		if isImage(object) then
 			checkImage(report, object, settings)
 		else

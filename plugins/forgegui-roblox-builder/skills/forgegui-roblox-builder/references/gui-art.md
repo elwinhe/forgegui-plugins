@@ -25,6 +25,10 @@ their provenance separately.
    `python references/tools/separate_sheet.py sheet.png --out-dir pieces/` writes one trimmed PNG
    per object and prints each native aspect. Objects are found by fully transparent rows and
    columns, so the "wide transparent gaps" clause in the icon template is what makes it work.
+   An icon drawn as *disconnected strokes* — a crosshair, a dashed ring — gets split apart by the
+   same rule. The tell is a piece with an extreme aspect ratio and a grid index that skips a row.
+   Raise `--min-gap` above the gaps inside the icon but below the gaps between icons (80 worked on a
+   1520 px sheet with 250 px icons), or ask the prompt for one connected shape.
 3. **Measure slices** for anything that must resize (panels, wide buttons):
    `python references/tools/slice_metadata.py panel.png --preview 720x400` prints `size` and
    `sliceCenter` and renders a preview at that size to check by eye. Roblox stores an upload at no
@@ -133,7 +137,10 @@ border around the artwork".
 `gui_frame`. The four below have been exercised on real builds. `gui_frame` has not — it is in the
 live schema and presumably returns a border or window chrome, but nothing here has tested what it
 returns or how it slices, so treat a first use as an experiment and write down what comes back
-rather than assuming it behaves like `gui_panel`.
+rather than assuming it behaves like `gui_panel`. (Submit GUI jobs one at a time and wait for each to finish. Twice, a second job submitted within a
+few seconds of the first ended `outcome_unknown` while the first succeeded. The one `gui_frame` attempt so far, a hairline window frame
+referenced to an existing button, ended `outcome_unknown` with `retryable: false`. Per the job
+rules it was not retried, so the type is still unverified.)
 
 ### `gui_button`: a matched pair
 
@@ -174,6 +181,43 @@ The panel carries its own rim, so it is the whole window background; never put i
 frame that has its own background or stroke. Decoration painted into the interior (clouds, scenery)
 limits how far it can stretch: past roughly 1.5 times its native aspect, generate a plain interior.
 
+### `gui_panel`, restrained: when the brief is not a fantasy game
+
+The template above asks for "an ornate rim", a corner motif and a crest, and that is exactly what
+comes back. For a stylized casual game it is right. For anything grounded (a military shooter, a
+sim, a productivity-flavoured tycoon) it is the single biggest source of the "AI-looking UI"
+complaint: a thick gold rim with corner ornaments around every window. Ask for the opposite, in as
+many words, and reference the project's flat button so the two are one family:
+
+```text
+A large empty menu window panel for a <genre and setting>, in the same family as the reference flat
+<colour> button bar: one wide rectangle with a small <n> pixel corner radius, a flat <interior
+colour> interior shading very slightly darker toward the bottom, and a single thin one-pixel
+<hairline colour> edge with a faintly brighter top edge. Completely restrained and flat: no ornate
+rim, no gold, no corner brackets, no rivets, no crest, no notches, no bevel, no glow, no scanlines,
+no inner frame. The interior is perfectly empty and uniform so it can be nine-slice stretched to any
+size. Clean flat vector UI, centered, fully transparent background outside the panel, no text, no
+buttons, no icons, no drop shadow outside the shape, no surrounding frame or border around the
+artwork.
+```
+
+The negatives are doing the work; each one names something the model adds by default. Generate
+`count: 2` and choose by **how it slices**, not by eye: on the tested pair one variant carried two
+stray marks on its bottom edge that were invisible at a glance and pinned the stretchable band at
+x = 266 of 1024. Run `slice_metadata.py` on each and keep the one with the small fixed border.
+
+Once the panel changes family, sweep every other surface still on the old one: the square icon
+button, selection cards, the modal. A flat menu in front of an ornate loadout screen reads as two
+games. `GuiArt` accepts any 9-slice art, so a flat bar sliced square replaces the square plate with
+no new generation.
+
+`slice_metadata.py` grows the stretchable band while neighbouring lines stay calm. On flat art the
+calmest window scores about the same as every other interior line (grain, dither, a soft gradient),
+so a purely relative rule stops at the first line a hair noisier and reports most of the panel as
+fixed border. The band therefore also grows through anything below twice the interior's own
+typical line score, capped so an ornate interior cannot use the allowance to grow into its
+decoration, and growth may run past the search margin because the rim's own scores stop it.
+
 ### `gui_asset`: logos and ribbons
 
 ```text
@@ -203,6 +247,84 @@ but soft, lots of open sky in the upper third for a logo, no text, no characters
 ```
 
 Place it with `ScaleType.Crop`; it is the one piece of art that should fill the screen at any aspect.
+
+The same call makes map cards and mode tiles. Ask for "calm darker space on the left for overlaid
+interface text" and lay the title over a bottom-up gradient; a card built from generated key art and
+real config values (mode, team size, score limit) fills the dead half of a title screen with
+something true. It also gives you a **lighting target**: if the key art shows overcast dusk with
+sodium floods and the playable map is lit like a stock noon baseplate, the map is the thing that is
+wrong.
+
+### Tiling materials: inspect the result, then prepare the tile
+
+In the 2026-09-20 showcase tests, the same "flat weathered concrete wall, edge
+to edge, no objects" prompt produced these results:
+
+| `type` | Observed result |
+| --- | --- |
+| `mixed` | A gold dollar coin on transparency. |
+| `thumbnail` | An edge-to-edge photograph of formwork concrete with tie holes. |
+
+These are dated observations, not guarantees about either type. Other tested
+runs produced painted textures with both types, sometimes with borders. Check
+the deployed schema and inspect each result. `thumbnail` with
+`game_style: "general"` is a tested starting point; request "flat, straight-on
+orthographic", even lighting, uniform density, and no objects, horizon, text or
+perspective. Verify the actual content and seams before use.
+
+For opaque materials that need tiling, `tools/make_tileable.py` offers two
+methods. It rejects non-opaque input (including indexed-PNG transparency) before
+writing a tile or preview; do not flatten transparent artwork to bypass this.
+
+```bash
+python references/tools/make_tileable.py raw.png tile.png --mode mirror --preview check.jpg
+python references/tools/make_tileable.py raw.png tile.png --mode blend  --preview check.jpg
+```
+
+- `mirror` (a 2x2 of the image and its reflections) is seam-exact by construction and right for
+  **regular** patterns: corrugated sheet, formwork panels, planks, brick.
+- `blend` (the image cross-faded with itself rolled by half) is right for **organic** materials:
+  asphalt, dirt, rust, plaster. Mirroring those makes every crack meet its own reflection, and the
+  result reads as a kaleidoscope from across the map. `blend` also flattens large-scale lighting
+  first, because a gradient invisible in one tile is a checkerboard across forty.
+
+Always look at the 3x3 preview before uploading. In Studio, apply the tile as `Texture` instances at
+a fixed `StudsPerTile` on the faces of ordinary Parts, so a 60-stud wall is as sharp as a 6-stud one
+and the collision stays exact. Do not generate a building-sized mesh to carry a wall material: one
+1024 px map across a whole building goes soft the moment a player walks up to it.
+
+## Colour the generator invented
+
+Every sheet from a real IRONFRONT run came back carrying a hue the project never
+asked for. A weapon sheet prompted for off-white and amber was **21% off-palette**,
+mostly pure green. Adding "absolutely no green" to the next prompt worked — and
+the sheet came back with magenta instead. The contamination sits in **opaque**
+pixels, not in the anti-aliased edge, so it is painted by the generator rather
+than prompted, and negative prompts only move it.
+
+This is the single most reliable tell that a UI was generated rather than
+authored. At icon size it reads as dirt on the silhouette; across a screen it is
+what makes a set look assembled instead of designed.
+
+Check it, and repair it rather than re-rolling:
+
+```sh
+python references/tools/palette_check.py art/*.png --project forgegui-project.json
+python references/tools/palette_check.py art/*.png --project forgegui-project.json --fix
+```
+
+It judges **hue angle only** — lightness and saturation are ignored on purpose, so
+shading, highlights and a punchier accent all pass while a foreign hue fails.
+`--fix` rotates each off-palette pixel onto the nearest palette hue, keeping its
+lightness and clamping chroma to the palette's own maximum, so the silhouette and
+shading survive. On that run it took five sheets from 3–21% off-palette to 0.00%.
+
+Two things to keep straight. Keep the originals: the repair is lossy and a
+reviewer may want the before. And set the project palette's darks carefully —
+the check treats an entry below chroma 4 as a neutral with no hue, and a moody
+palette's darks are desaturated but *still hued* (`#111820` is chroma 7 at hue
+265), so a higher cutoff drops them from the comparison and then condemns every
+shadow drawn from them.
 
 ## Placing art: `GuiArt`
 
@@ -354,7 +476,7 @@ afford it.
 - `python references/tools/test_tools.py` checks the splitter and the slice tool on synthetic art.
   The slice centre avoids a crest, side gems and painted clouds, a sliced preview keeps its rim
   thickness, and a split icon closer than `--min-gap` stays whole. It also checks
-  `paste_module.py`. That is 38 checks, with no arguments and no network.
+  `paste_module.py`. That is 65 checks, with no arguments and no network.
 - `lune run references/tests/qa`, run from the skill root, checks `UiCheck` against stubbed GUI
   trees. `UiCheck` audits a live ScreenGui against the screen templates above: art chrome, icons in
   chips or on plates, strokes inside framed art, and backdrops wired to close. The same run checks

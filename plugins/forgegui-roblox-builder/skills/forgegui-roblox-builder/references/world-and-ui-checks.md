@@ -32,6 +32,7 @@ explain in the report.
 | `icon_on_plate` | error | An icon is laid on other framed art (a plate), so it is framed twice |
 | `stroke_in_framed_art` | error | A stroked container or label sits inside art that already frames it |
 | `text_overflow` | warning | Visible text does not fit its box |
+| `canvasgroup_text` | error | Visible text sits inside a `CanvasGroup`, which rasterises below native resolution and reads as blurry |
 | `modal_closes_on_stray_click` | error | Source connects a click or input signal on a backdrop, scrim, overlay or dimmer |
 | `unregistered_image` | error | An image element shows an asset that is not in the art registry, so its provenance cannot be shown |
 | `primitive_surface` | warning | A container or label draws its own Roblox fill or border where generated art was expected. Mark deliberate chrome `AllowPrimitive = true` |
@@ -264,6 +265,127 @@ ground. The next run showed `0 error(s), 0 warning(s)` with `spawns=1`.
   the input handler instead, and say that in the report. `GuiObject.Active` does not reliably stop
   clicks reaching UI underneath, and `InputSink` is documented but not enabled. What stops the
   clicks is a full-screen `GuiButton` backdrop, so test it.
+
+## Seeing the UI: what can and cannot be captured
+
+`screen_capture` photographs the Studio viewport at edit time. Three facts, each learned the hard
+way:
+
+- **A `ScreenGui` under `StarterGui` IS captured** in Edit mode, composited over the 3D view exactly
+  as a player would see it. Mount the real screen modules into a throwaway `StarterGui.DevPreview`
+  and capture that. It is the same class the game ships, so colours, `ViewportFrame`s, `CanvasGroup`
+  fades and letterboxing are all real.
+- **A Play-mode capture comes back black**, and a `ScreenGui` in a player's `PlayerGui` is not
+  reachable from Edit. Verify Play-mode UI by reading properties (`Visible`, `AbsolutePosition`,
+  `IsLoaded`, text) and by running `UiCheck` inside the running client.
+- **Do not mirror the UI onto a `SurfaceGui`** to look at it. An earlier version of this workflow
+  did, believing a ScreenGui could not be captured. The mirror is lossy in ways that hide real
+  defects: world `ColorCorrection`, `Atmosphere` and `Bloom` tint it, and a SurfaceGui does not draw
+  `ViewportFrame`s at all, so a 3D weapon preview showed as an empty panel. A mirror also scales to
+  fit its part, which hid every letterboxing bug below.
+
+**Studio only steps tweens and finishes image loads while its viewport is actually drawing.** With
+the display asleep or the window covered, `screen_capture` hangs for minutes, `PreloadAsync` never
+returns, and every screen sits at `GroupTransparency = 1` with the previous screen still on top of
+it, so a layout check reports phantom overlaps between two screens. Keep the display awake
+(`caffeinate -d -u` on macOS), and run layout checks with the UI's reduced-motion path on, which
+applies every tween goal at once and needs no frames. The same stall is a robustness lesson for the
+game itself: never make a screen's removal depend on its exit tween completing.
+
+Delete the preview gui before saving or publishing. Because it lives in `StarterGui` it would
+otherwise ship to every player.
+
+## Blurry UI: do not build pages out of CanvasGroups
+
+A `CanvasGroup` is drawn to an off-screen texture and then composited, and Roblox sizes that
+texture by the client's graphics quality. At anything below the top setting, every label and
+hairline inside it is visibly soft. Using one as a screen root (so the whole page can fade through
+`GroupTransparency`) makes the ENTIRE interface blurry, and nothing reports it: layout, palette and
+provenance checks all pass, and a 1080p Studio capture at maximum quality looks fine. The user's
+report was simply "the UI is super blurry".
+
+- Screen roots, cards and bleed layers are plain `Frame`s. Use `ClipsDescendants` plus a `UICorner`
+  on the image itself where a rounded card was the reason for the CanvasGroup.
+- Replace the group fade with a **curtain**: a host-sized sheet in the ground colour that snaps
+  opaque and fades off the new screen (the dip-to-black every console shooter uses). Give it a
+  `task.delay` fallback that clears it, because tweens do not step when the client is not drawing.
+- `UiCheck.audit` reports this as `canvasgroup_text`.
+
+## The lighting is not ready on the frame after a camera jump
+
+`screen_capture` with `camera_position` moves the camera and photographs the next frame. Local
+lights (SpotLight, PointLight) had not been evaluated for that region yet: a set lit by three
+spotlights captured pitch black, and adding more lights changed nothing. Park the Studio camera at
+the shot first (`CurrentCamera.CFrame = ...`, wait two or three seconds), then capture without
+moving it. Judging a lighting setup from a jump-capture will send you chasing a bug that is not
+there.
+
+## Fixed-stage layouts: four bugs that pass every per-screen check
+
+Laying screens out on a fixed 1920x1080 stage and scaling it to fit the window is a sound way to get
+consistent composition. It has four characteristic failures. None is visible at exactly 16:9, which
+is where screens are usually designed and reviewed, so **capture at a second aspect (4:3 or a
+phone) before calling any screen done.**
+
+1. **The world shows through the letterbox.** Behind a ScreenGui the bars are not black, they are
+   the live game. A full-screen menu needs a host-sized layer behind the stage, and the screen's
+   backdrop and scrims belong in that layer (where "edge" means the edge of the window), not inside
+   the stage. A flat-colour fill still reads as bars when it does not match the art between them.
+2. **HUDs and overlays must not be letterboxed.** A HUD is furniture on the glass: ammo belongs in
+   the corner of the window, and a modal's dim must reach the window's edges. Give them the same
+   scale but let the stage grow to cover the host, so edge-anchored children land on real edges.
+   The checker then has to judge those stages against their own size, not against 1920x1080, or it
+   reports the ammo counter as off-screen.
+3. **An entrance tween can throw the centring away.** `fitToHost` centred the stage; one line later
+   the present animation tweened `Position` to (0, 0). On every window that was not 16:9 the whole
+   interface sat in the top-left. Animate from and to the fitted position.
+4. **Scaling 9-slice art: multiply, never overwrite.** Slice borders draw at native texture size, so
+   the stage scale must be applied to `SliceScale`. Writing it over the image's own value discards
+   the radius-matched scale each button asked for. At 1080p that put 106 px of fixed border into an
+   84 px button, which drew with its lower edge crushed. Store the base value once and set
+   `base * stageScale`.
+
+Two checker lessons from the same pass:
+
+- **Overlap checks must respect layers.** A modal is supposed to cover the screen that opened it.
+  Compare elements only within one screen, or between two ordinary screens, never across an overlay
+  boundary; otherwise every modal reports the title underneath as "printed over" its own heading.
+- **Nothing reports dead motion code.** A staggered menu entrance was written, reviewed and never
+  called; the screen simply appeared and every check passed. When a screen module exports `show` or
+  `entrance`, grep for a call site.
+
+## Flow bugs that only show up when someone else presses the buttons
+
+Three from one build, all invisible to per-screen checks and to a developer who always takes the
+same path:
+
+- **"It queues me immediately."** The server turned `Players.CharacterAutoLoads` off near the END
+  of its bootstrap. Building the map took long enough that a player could finish joining first, get
+  a default body, and the client took "I have a body" to mean "I deployed". Turn auto-load off on
+  the FIRST line (and save the place with it off), and route the client off an explicit
+  server-set attribute, never off `CharacterAdded`.
+- **"Changing loadout immediately disappears."** Screens were routed by server phase every second:
+  "phase is Live and you are not on the HUD, so go to the HUD". Opening the loadout screen from the
+  death screen lasted under a second. Anything the player opens deliberately must be exempt from
+  phase routing; here it became a stand-down (body removed, redeploy from the screen).
+- **Streaming hides your set.** A menu stage built 400 studs from the map existed on the server and
+  not on the client: `StreamingEnabled` was on, parts that far from the player never arrived, and
+  the camera looked at an empty spot. Publish positions as attributes on a Folder (folders always
+  replicate) and set `Player.ReplicationFocus` to the set while the player is in the menus.
+
+Click through the real flow with `user_mouse_input` and an `instance_path`, as a new player would,
+before calling any of it done.
+
+## Self-tests that tell the truth
+
+A Studio-only self-test that drives the live services is worth having, and its failures are harness
+bugs at least as often as game bugs. From one project: a check fired during the weapon's 0.45 s
+draw time and blamed the raycast; another aimed from a character that a phase change had already
+respawned elsewhere; a third waited a fixed 15 s for a loadout that is granted a 20 s intermission
+after joining. The rule that fixes all three: **wait for the thing being tested, not for a guess at
+how long it takes**, re-acquire anything a respawn can replace, and print `NOT RUN` with the reason
+rather than a false pass or a false fail. When AI combatants exist, stand them down for the
+duration: a bot shooting the tester corrupts every exact-damage assertion.
 
 ## Evidence and hygiene
 

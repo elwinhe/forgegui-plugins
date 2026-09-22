@@ -18,7 +18,7 @@ For a new game or a large feature, ask one round of questions before planning. S
 
 Pick from these, in order of importance:
 
-1. **Reference.** A game, video, or screenshots to match? Pasted images and links are welcome; none is fine. You cannot watch a video: ask for a few screenshots (menus, gameplay camera, HUD, win screen) when a link alone would decide the look.
+1. **Reference.** A game, video, or screenshots to match? Pasted images and links are welcome; none is fine. Prefer extracting frames from supplied videos or links with `scripts/reference_frames.py` (see `references/reference-capture.md`). Ask for screenshots only if extraction is unavailable or fails. Retain the selected capture path in the project ledger.
 2. **Scope.** Which screens and systems are in (menus, shop, progression, economy) and which are out.
 3. **Players.** Solo against AI bots, or multiplayer?
 4. **Spend.** How many paid generations, and is paid generation authorized? Recommend a specific number (0 is a valid recommendation) so a "defaults" reply sets a real ceiling. Say the cost is unknown unless billing evidence gives a number.
@@ -36,6 +36,7 @@ After the answers, play back a brief of three to five lines: what you will build
 - **Look for leftovers from an interrupted session** before building: test scripts, temporary GUI, teleport or currency helpers, an unfinished `.forgegui-fidelity`. A run that was cut short never cleaned up after itself. Report what you find; remove only what is clearly test scaffolding.
 - **Load project memory first.** Look for `forgegui-project.json` in the working directory (see `references/project-manifest.md`). If it exists, read `game_style` (routing type), `art_direction`, `palette`, `material_language`, and the `assets` ledger before planning. If it does not exist and the task will generate more than one asset, create it from the brief before the first paid call.
 - Inspect the existing scene and relevant scripts before planning additions. Reuse existing objects for ordinary geometry.
+- For a likeness request ("like X", "same style as"), use and measure the supplied reference per `references/reference-capture.md`; prefer frame extraction from supplied videos/links. If none is supplied, ask for one. If the user declines or is unavailable, proceed with a style-only build, record `"reference": { "supplied": false }` in the ledger, make no likeness claim, and report no likeness percentage.
 
 ## 2. Plan assets before spending
 
@@ -206,3 +207,5 @@ Based on the connected tool inventory of September 14–15, 2026, the ForgeGUI c
 - `references/ui-motion.md` — reveals, presses, counters and modals (`luau/Motion.luau`)
 - `references/lighting-presets.md` — six looks, the `glow`/`haze`/`reduced` dials and reversible apply (`luau/LightingPresets.luau`)
 - `references/particle-recipes.md`, `references/sound-placement.md`, `references/mechanical-polish.md` — VFX, audio placement and game feel
+- `references/reference-capture.md` — turning a user-supplied reference into frames, scale, palette and HUD numbers
+- `scripts/reference_frames.py`, `scripts/palette.py` — frame extraction and Lab palette / ΔE comparison (`--selftest` on each)

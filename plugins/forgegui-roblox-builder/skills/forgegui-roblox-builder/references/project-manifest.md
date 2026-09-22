@@ -48,6 +48,7 @@ Fields:
 | --- | --- |
 | `game_style` | Backend routing type passed as `game_style` on every generation that accepts it: `roblox`, `fortnite`, `minecraft`, or `general`. Default `roblox`; use `general` for non-Roblox-looking art. The other two routes are not fully built out, so do not pick them without a reason. Never put descriptive styling here. |
 | `art_direction` | The descriptive look of the world (silhouette language, shading, mood). Goes into every prompt verbatim, never into `game_style`. |
+| `reference` | Optional local reference selection: `supplied`, `capture_path`, and `manifest_path`. Retain the exact selected capture directory and its extraction manifest; preserve prior captures when selecting another. No reference supplied: `{ "supplied": false }`. |
 | `palette` | Hex colors named in prompts and used for Studio UI/lighting choices. |
 | `material_language` | Sentence used verbatim in 3D and GUI prompts. |
 | `style_refs` | Relevant theme-pack or hero-asset references passed in `reference_asset_ids` when the tool accepts them. Each must resolve to an image; a finished 3D model is not a valid reference, so use its concept image or the prompt instead. |

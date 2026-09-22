@@ -9,14 +9,15 @@ If both status IDs are missing, preserve the request ID and evidence and block f
 operator recovery of a queryable identifier, as described in SKILL.md §4. Never replay the
 submission, switch routes or create a new request to resolve an ambiguous publication.
 
-Open Cloud is an **explicitly chosen fallback**, after checking the intended owner and route.
-It is not an automatic response to a ForgeGUI failure. The Python implementation below is
+For separate legacy local use, Open Cloud is an **explicitly chosen route**, after checking the intended owner.
+It is not a publishing-connection fallback or a response to a ForgeGUI failure. The Python implementation below is
 also the sole implementation behind the compatibility shell entry point.
 
-## Credentials and destination
+For the connection workflow, follow [publishing connections](publishing-connections.md): Roblox publishing keys go only through authenticated ForgeGUI settings, never agent chat, MCP arguments, commands or the ledger. Discover/select safe connection identity before paid work. Never use this local helper to configure a connection or recover a failed/ambiguous ForgeGUI publication. The remaining sections document the retained, separate legacy uploader; they do not authorize agent credential handling for connections.
 
-Supply `ROBLOX_API_KEY` through the process environment using a trusted secret manager or
-masked shell input. Never put the key in arguments, logs, receipts, or checked-in files.
+## Credentials and destination (legacy local users only)
+
+The retained helper expects an already provisioned `ROBLOX_API_KEY` in its process environment. Connection callers must not ask for it, populate it, or run credential-introspection commands. Never put the key in arguments, logs, receipts, or checked-in files.
 No `.env` is loaded. Choose exactly one explicit `--user-id` or `--group-id`; no account is
 assumed. There is no credential command-line flag.
 

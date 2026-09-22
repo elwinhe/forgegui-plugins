@@ -70,7 +70,7 @@ Fields:
 2. Write the planned ledger entry and stable `request_id` before the paid call; add the returned `job_id` immediately on acceptance and update the same entry on completion, so an interrupted session can reconcile the request instead of duplicating it.
 3. Keep `style_refs` short (one to three). A style reference is not a content reference; do not put every generated asset in `style_refs`.
 4. Verify an existing pin with `style_get(style_id, version: style_version)`. A confirmed missing or wrong-account revision is stale: clear both pin fields, tell the user, and re-resolve. Missing tools, authorization errors, or transient failures do not prove staleness; retain the pin while resolving access, and use the text-only fallback for calls without style support.
-5. Never store keys, tokens, headers, or account ids in the manifest.
+5. Never store keys, tokens, headers, private ForgeGUI account IDs or credential references in the manifest. Safe publication connection IDs and Roblox creator type/decimal-string ID are allowed only as selected or returned metadata, following [publishing connections](publishing-connections.md).
 6. When a ForgeGUI listing tool becomes available, the server record wins over the manifest; reconcile and keep the manifest as a cache.
 
 ## Fidelity pass state: `.forgegui-fidelity`
@@ -91,7 +91,7 @@ The file on disk is a request, not consent: if the current user did not ask for 
 ## Version 2: preparation and installation
 
 Migrate v1 by preserving every existing field and asset identifier, changing
-`version` to 2, and adding `run: null` until a server run exists. Never clear old
+`version` to 2, and adding `run: null` only if no run field exists. Preserve an existing run, unknown extension fields, decisions and every receipt. Never clear old
 entries or regenerate to migrate. A run cache holds returned `run_id` and
 `revision`; refresh from the server before appending or continuing a session.
 
@@ -110,3 +110,40 @@ Cache stable IDs/hashes and the non-secret metadata, not expiring URLs from the
 bundle. Unknown fields remain absent, not zero-valued measurements. Server
 structural validation and caller visual verification stay separate. See
 `preparation-installation.md` for field paths and recovery.
+
+## Version 2: publishing connection identity and receipts
+
+This is an additive ledger convention, not a backend response schema. Existing
+v2 ledgers stay at version 2. Preserve all prior data; do not invent a connection,
+creator or user decision when migrating v1/v2. The starter example keeps
+`decisions: []` and `assets: []`. Missing selection stays absent. Read recorded
+decisions before asking; discovery alone never writes a selected decision.
+
+For each asset, add `publishing_destination` only after an explicit user choice
+(or a prior unambiguous recorded choice). Allowlist safe fields: `route`
+(`connection` or `legacy_shared_group`), `connection_id`, `label`, `auth_type`,
+`creator: {type, id}`, discovery `status`, `asset_types`, `last_validated_at`
+and `selected_at` when known. A historical legacy selection has no invented connection ID and is retained for replay/reconciliation only; new publication selections require a connection.
+Creator IDs are decimal strings. Never cache entire discovery/provider responses,
+secret-store paths, credential versions/context, keys, tokens or signed URLs.
+Selection describes intent; it is not a server admission or ownership receipt.
+
+Keep accepted request IDs/arguments and selected identity immutable for that
+operation. Add returned safe receipts separately: `publication` for standalone
+top-level results, `delivery` for integrated Model or audio results, preserving
+the existing shape. Audio `delivery.outputs[]` retains every original index,
+optional artifact ref, publication ID, string asset ID, status, moderation and
+safe errors; missing/null IDs stay missing/null. Do not collapse a batch into one
+`roblox_asset_id`, renumber missing outputs or drop ready receipts during recovery.
+Keep `generation_status`, delivery status, experience access and
+`installation_observed` checks separate. Map a single ready model/standalone
+`asset_id` to `roblox_asset_id` only for that asset's reuse; never invent IDs.
+
+On resume, read the original jobs/publications even if a connection is now
+expired or revoked. Preserve the selected snapshot and prior receipts; do not
+rewrite them from today's discovery/defaults or claim migration verifies Studio.
+Returned creator mismatches require reconciliation, not a ledger overwrite.
+See [publishing connections](publishing-connections.md) for failure handling and
+[the contract fixtures](../../../../../tests/publishing-connections.json)
+for illustrative selection and partial-batch ledger entries. Those fixtures are
+documentation only, never user decisions to copy into a real project.

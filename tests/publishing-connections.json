@@ -1,0 +1,247 @@
+{
+  "status": "input_contract_validated_hosted_not_verified",
+  "note": "PRD-shaped offline examples only. No deployment claim, paid calls or selected user decisions. Replace placeholders only after live discovery and explicit selection. Final export parity pending.",
+  "discovery_example": {
+    "connections": [
+      {
+        "connection_id": "00000000-0000-4000-8000-000000000010",
+        "label": "Studio team",
+        "auth_type": "api_key",
+        "creator": {
+          "type": "group",
+          "id": "12345"
+        },
+        "status": "active",
+        "asset_types": [
+          "Model",
+          "Image",
+          "Audio"
+        ],
+        "last_validated_at": "2026-09-22T00:00:00Z"
+      },
+      {
+        "connection_id": "rpc_personal_example",
+        "label": "Personal",
+        "auth_type": "api_key",
+        "creator": {
+          "type": "user",
+          "id": "67890"
+        },
+        "status": "revoked",
+        "asset_types": []
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "discover-connections",
+      "tool": "publication_connections_list",
+      "arguments": {}
+    },
+    {
+      "name": "model-connection",
+      "tool": "generation_model_3d",
+      "arguments": {
+        "request_id": "model-connection-v1",
+        "prompt": "One isolated prop",
+        "quality": "standard",
+        "delivery": {
+          "mode": "publish",
+          "platform": "roblox",
+          "connection_id": "00000000-0000-4000-8000-000000000010"
+        }
+      }
+    },
+    {
+      "name": "direct-model",
+      "tool": "generation_model_3d",
+      "arguments": {
+        "request_id": "model-direct-v1",
+        "prompt": "Standalone file delivery",
+        "quality": "standard",
+        "delivery": {
+          "mode": "direct"
+        }
+      }
+    },
+    {
+      "name": "music-connection",
+      "tool": "generation_music",
+      "arguments": {
+        "request_id": "music-connection-v1",
+        "prompt": "Quiet exploration ambience",
+        "music_length_seconds": 30,
+        "count": 2,
+        "delivery": {
+          "mode": "publish",
+          "platform": "roblox",
+          "connection_id": "00000000-0000-4000-8000-000000000010"
+        }
+      }
+    },
+    {
+      "name": "direct-music",
+      "tool": "generation_music",
+      "arguments": {
+        "request_id": "music-direct-v1",
+        "prompt": "Standalone file delivery",
+        "music_length_seconds": 30,
+        "count": 2,
+        "delivery": {
+          "mode": "direct"
+        }
+      }
+    },
+    {
+      "name": "sfx-connection",
+      "tool": "generation_sound_effect",
+      "arguments": {
+        "request_id": "sfx-connection-v1",
+        "prompt": "Quiet exploration ambience",
+        "duration_seconds": 2,
+        "count": 2,
+        "delivery": {
+          "mode": "publish",
+          "platform": "roblox",
+          "connection_id": "00000000-0000-4000-8000-000000000010"
+        }
+      }
+    },
+    {
+      "name": "direct-sfx",
+      "tool": "generation_sound_effect",
+      "arguments": {
+        "request_id": "sfx-direct-v1",
+        "prompt": "Standalone file delivery",
+        "duration_seconds": 2,
+        "count": 2,
+        "delivery": {
+          "mode": "direct"
+        }
+      }
+    },
+    {
+      "name": "publish-model-connection",
+      "tool": "artifact_publish",
+      "arguments": {
+        "request_id": "publish-model-connection-v1",
+        "artifact_ref": "mcp-artifact:00000000-0000-4000-8000-000000000002:0",
+        "asset_type": "Model",
+        "destination": {
+          "platform": "roblox",
+          "connection_id": "00000000-0000-4000-8000-000000000010"
+        }
+      }
+    },
+    {
+      "name": "publish-image-connection",
+      "tool": "artifact_publish",
+      "arguments": {
+        "request_id": "publish-image-connection-v1",
+        "artifact_ref": "mcp-artifact:00000000-0000-4000-8000-000000000002:0",
+        "asset_type": "Image",
+        "destination": {
+          "platform": "roblox",
+          "connection_id": "00000000-0000-4000-8000-000000000010"
+        }
+      }
+    },
+    {
+      "name": "publish-audio-connection",
+      "tool": "artifact_publish",
+      "arguments": {
+        "request_id": "publish-audio-connection-v1",
+        "artifact_ref": "mcp-artifact:00000000-0000-4000-8000-000000000002:0",
+        "asset_type": "Audio",
+        "destination": {
+          "platform": "roblox",
+          "connection_id": "00000000-0000-4000-8000-000000000010"
+        }
+      }
+    },
+    {
+      "name": "legacy-model",
+      "tool": "generation_model_3d",
+      "arguments": {
+        "request_id": "legacy-model-v1",
+        "prompt": "One isolated prop",
+        "quality": "standard",
+        "delivery": {
+          "mode": "publish",
+          "platform": "roblox"
+        }
+      },
+      "admission": "replay_only"
+    },
+    {
+      "name": "legacy-audio",
+      "tool": "artifact_publish",
+      "arguments": {
+        "request_id": "legacy-audio-v1",
+        "artifact_ref": "mcp-artifact:00000000-0000-4000-8000-000000000003:0",
+        "asset_type": "Audio",
+        "destination": {
+          "platform": "roblox",
+          "creator": "configured_shared_group"
+        }
+      },
+      "admission": "replay_only"
+    }
+  ],
+  "ledger_example": {
+    "version": 2,
+    "decisions": [],
+    "run": null,
+    "assets": [
+      {
+        "key": "audio.ambience",
+        "request_id": "music-connection-v1",
+        "job_id": "00000000-0000-4000-8000-000000000001",
+        "publishing_destination": {
+          "route": "connection",
+          "connection_id": "00000000-0000-4000-8000-000000000010",
+          "label": "Studio team",
+          "auth_type": "api_key",
+          "creator": {
+            "type": "group",
+            "id": "12345"
+          },
+          "status": "active",
+          "asset_types": [
+            "Model",
+            "Image",
+            "Audio"
+          ],
+          "last_validated_at": "2026-09-22T00:00:00Z"
+        },
+        "generation_status": "succeeded",
+        "delivery": {
+          "status": "partially_ready",
+          "outputs": [
+            {
+              "index": 0,
+              "publication_id": "00000000-0000-4000-8000-000000000004",
+              "asset_id": "9007199254740993",
+              "status": "ready",
+              "moderation_state": "approved"
+            },
+            {
+              "index": 1,
+              "publication_id": null,
+              "asset_id": null,
+              "status": "needs_reconciliation"
+            }
+          ]
+        },
+        "installation_observed": {
+          "checks": [
+            {
+              "name": "audible-playback",
+              "outcome": "not_performed"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

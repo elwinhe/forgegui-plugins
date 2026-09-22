@@ -1,8 +1,141 @@
 {
-  "backend_commit": "36b26158b2a076ad5abd0ba4a9e89df65053434e",
-  "export_sha256": "ea876c46a494c9d9017053e565dac27799a248abd078c95c615bf4cfa09e8ce6",
-  "schema_version": "1.8.0",
+  "backend_commit": "7f21d40aeb556528f28d38c228282c1ea0eb5177",
+  "export_sha256": "7a42e8b497a19d41ff0d463093437f0c1e4c553d57e77ae6c10669743fdcf8f0",
+  "schema_version": "1.9.0",
   "tools": [
+    {
+      "name": "generation_model_3d",
+      "scope": "generation:write",
+      "conditional_scopes": {
+        "delivery.mode=publish": [
+          "publication:write"
+        ]
+      },
+      "description": "Generate a textured 3D model through ForgeGUI's private provider pipeline. Optional delivery mode publish/roblox additionally publishes the finished model as a Roblox Model asset owned by the selected connection creator (connection_id required for new publish requests; no shared-group fallback); direct or omitted delivery returns file results only and never publishes.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._:-]+$",
+            "description": "Stable caller-chosen idempotency key. Reuse only with identical parameters."
+          },
+          "run_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "prompt": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "quality": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "high"
+            ],
+            "default": "high"
+          },
+          "pose_mode": {
+            "type": "string",
+            "enum": [
+              "a-pose",
+              "t-pose"
+            ]
+          },
+          "reference_asset_ids": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/properties/run_id"
+                },
+                {
+                  "type": "string",
+                  "pattern": "^mcp-artifact:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}:(0|[1-9][0-9]{0,2})$"
+                }
+              ],
+              "description": "An account-owned asset UUID or mcp-artifact reference. Object and style references must resolve to images."
+            },
+            "maxItems": 4,
+            "default": []
+          },
+          "style_id": {
+            "$ref": "#/properties/run_id"
+          },
+          "style_version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "style_brief": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "style_reference_asset_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/properties/reference_asset_ids/items"
+            },
+            "maxItems": 4,
+            "default": []
+          },
+          "game_style": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "delivery": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "const": "direct"
+                  }
+                },
+                "required": [
+                  "mode"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "const": "publish"
+                  },
+                  "platform": {
+                    "type": "string",
+                    "const": "roblox"
+                  },
+                  "connection_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": [
+                  "mode",
+                  "platform"
+                ],
+                "additionalProperties": false
+              }
+            ],
+            "description": "How the finished model is delivered. Omitted or direct returns ForgeGUI file results only. publish/roblox additionally publishes the finished GLB as a Roblox Model asset owned by the explicitly selected connection creator, with connection_id required for new publish requests (legacy requests remain replayable); credentials remain server-only, and published results report a decimal-string asset id once ready."
+          }
+        },
+        "required": [
+          "request_id",
+          "prompt"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
     {
       "name": "generation_sound_effect",
       "scope": "generation:write",
@@ -51,6 +184,10 @@
                   "platform": {
                     "type": "string",
                     "const": "roblox"
+                  },
+                  "connection_id": {
+                    "type": "string",
+                    "format": "uuid"
                   }
                 },
                 "required": [
@@ -60,7 +197,7 @@
                 "additionalProperties": false
               }
             ],
-            "description": "How finished audio is delivered. Omitted or direct returns ForgeGUI file results only. publish/roblox additionally publishes each retained MP3 output as a Roblox Audio asset owned by ForgeGUI's server-configured group; the destination group and credentials are trusted server configuration and cannot be chosen per call, and each output reports its own publication status and decimal-string asset id once ready."
+            "description": "How finished audio is delivered. Omitted or direct returns ForgeGUI file results only. publish/roblox additionally publishes each retained MP3 output as a Roblox Audio asset owned by the explicitly selected connection creator, with connection_id required for new publish requests (legacy requests remain replayable); credentials remain server-only, and each output reports its own publication status and decimal-string asset id once ready."
           },
           "prompt": {
             "type": "string",
@@ -143,6 +280,10 @@
                   "platform": {
                     "type": "string",
                     "const": "roblox"
+                  },
+                  "connection_id": {
+                    "type": "string",
+                    "format": "uuid"
                   }
                 },
                 "required": [
@@ -152,7 +293,7 @@
                 "additionalProperties": false
               }
             ],
-            "description": "How finished audio is delivered. Omitted or direct returns ForgeGUI file results only. publish/roblox additionally publishes each retained MP3 output as a Roblox Audio asset owned by ForgeGUI's server-configured group; the destination group and credentials are trusted server configuration and cannot be chosen per call, and each output reports its own publication status and decimal-string asset id once ready."
+            "description": "How finished audio is delivered. Omitted or direct returns ForgeGUI file results only. publish/roblox additionally publishes each retained MP3 output as a Roblox Audio asset owned by the explicitly selected connection creator, with connection_id required for new publish requests (legacy requests remain replayable); credentials remain server-only, and each output reports its own publication status and decimal-string asset id once ready."
           },
           "prompt": {
             "type": "string",
@@ -213,7 +354,7 @@
     {
       "name": "publication_status",
       "scope": "publication:read",
-      "description": "Read an account-owned durable Roblox publication by publication_id, including actual asset type, configured group, processing/moderation state, and a decimal-string asset_id only after Roblox supplies one.",
+      "description": "Read an account-owned durable Roblox publication by publication_id, including actual asset type, accepted user/group creator and safe connection identity, processing/moderation state, and a decimal-string asset_id only after Roblox supplies one.",
       "input_schema": {
         "type": "object",
         "properties": {
@@ -225,6 +366,17 @@
         "required": [
           "publication_id"
         ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      }
+    },
+    {
+      "name": "publication_connections_list",
+      "scope": "publication:read",
+      "description": "List this ForgeGUI account\u2019s Roblox publishing connections, verified creator destinations, eligibility and available asset types. No credentials are returned. Manage connections in ForgeGUI settings. This read does not charge credits.",
+      "input_schema": {
+        "type": "object",
+        "properties": {},
         "additionalProperties": false,
         "$schema": "http://json-schema.org/draft-07/schema#"
       }
@@ -1016,7 +1168,7 @@
     {
       "name": "artifact_publish",
       "scope": "publication:write",
-      "description": "Publish one owned immutable Model GLB, PNG Image, or MP3 Audio artifact to Roblox as a durable job owned by the server-configured shared group. Destination credentials and group are server configuration, OAuth is unavailable, no generation is repeated or charged, and group upload does not prove experience access or audible playback. Audio must be under 20,000,000 bytes and 420 seconds, at most 48 kHz, mono/stereo; no transcoding or seamless-loop verification. Returns truthful processing/moderation state and a decimal-string asset_id only when Roblox supplies one.",
+      "description": "Publish one owned immutable Model GLB, PNG Image, or MP3 Audio artifact to Roblox as a durable job owned by an explicitly selected connection creator; new requests require destination.connection_id. The legacy configured shared-group destination is accepted only for replay of existing requests. Destination credentials are server-only, OAuth is unavailable, no generation is repeated or charged, and group upload does not prove experience access or audible playback. Audio must be under 20,000,000 bytes and 420 seconds, at most 48 kHz, mono/stereo; no transcoding or seamless-loop verification. Returns truthful processing/moderation state and a decimal-string asset_id only when Roblox supplies one.",
       "input_schema": {
         "type": "object",
         "properties": {
@@ -1049,22 +1201,44 @@
             ]
           },
           "destination": {
-            "type": "object",
-            "properties": {
-              "platform": {
-                "type": "string",
-                "const": "roblox"
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "platform": {
+                    "type": "string",
+                    "const": "roblox"
+                  },
+                  "creator": {
+                    "type": "string",
+                    "const": "configured_shared_group"
+                  }
+                },
+                "required": [
+                  "platform",
+                  "creator"
+                ],
+                "additionalProperties": false
               },
-              "creator": {
-                "type": "string",
-                "const": "configured_shared_group"
+              {
+                "type": "object",
+                "properties": {
+                  "platform": {
+                    "type": "string",
+                    "const": "roblox"
+                  },
+                  "connection_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": [
+                  "platform",
+                  "connection_id"
+                ],
+                "additionalProperties": false
               }
-            },
-            "required": [
-              "platform",
-              "creator"
-            ],
-            "additionalProperties": false
+            ]
           },
           "run_id": {
             "type": "string",

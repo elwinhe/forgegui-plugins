@@ -2,6 +2,8 @@
 
 This workflow supports integrated generation-time publication and standalone Audio `artifact_publish`. Discover each route independently; standalone Audio support alone does not establish integrated delivery support. Check live tool schemas and `asset_capabilities` before planning dependent work. The package version and this document do not prove deployment, provider entitlement, Roblox moderation or playback.
 
+First follow [publishing connections](publishing-connections.md) for live discovery, user-selected creator, usable route/type/scopes and safe ledger identity before paid work. Its selectors match pinned contract 1.9.0; do not infer deployment. Roblox publishing keys go only through authenticated ForgeGUI settings, never agent chat, MCP arguments, commands or the ledger.
+
 ## Generate or reuse
 
 Prefer an existing owned audio artifact when suitable. Otherwise use `generation_sound_effect` for short effects or `generation_music` for a soundtrack with an authorized budget. Save the exact request and stable request ID before submission, then retain the generation job ID and poll `generation_status`. For direct delivery or reuse, select the returned audio artifact reference for the intended batch member; never substitute a download URL or assume index zero represents every result.
@@ -10,9 +12,9 @@ Both generators already produce MP3. The generation service holds its provider k
 
 ## Prefer integrated delivery for new Roblox audio
 
-For newly generated Roblox audio, prefer `delivery: {"mode": "publish", "platform": "roblox"}` on `generation_music` or `generation_sound_effect` when that generator's live schema advertises it and account capabilities report Audio publication usable. Require `generation:write` and `publication:write` before paid submission, plus `generation:read` for job polling and `publication:read` for individual publication polling. Confirm the configured shared-group destination and intended experience access first; this does not select user OAuth.
+For newly generated Roblox audio, prefer `delivery: {"mode": "publish", "platform": "roblox", "connection_id": "rpc_example"}` on `generation_music` or `generation_sound_effect` when that generator's live schema advertises it and account capabilities report Audio publication usable. Require `generation:write` and `publication:write` before paid submission, plus `generation:read` for job polling and `publication:read` for individual publication polling. Resolve the intended creator and experience access first. Use the selector only when live supported. The original selector-free publish shape is replay-only for previously accepted work; it is never a new-work option or fallback. This does not activate OAuth.
 
-Omitting delivery or passing `delivery: {"mode": "direct"}` preserves file delivery without publishing. Use direct delivery when files are wanted, and standalone publication below for existing owned artifacts. Executable examples for omitted, direct and publish requests for both generators are in `tests/preparation-requests.json`.
+Omitting delivery or passing `delivery: {"mode": "direct"}` preserves file delivery without publishing. Use direct delivery when files are wanted, and standalone publication below for existing owned artifacts. Pinned examples for omitted, direct and connected publish requests for both generators, plus separately marked replay-only legacy shapes, are in `tests/preparation-requests.json`.
 
 Direct music supports up to 600 seconds; integrated publication requires a requested duration strictly below 420 seconds. Measured audio validation still applies after generation. Do not silently shorten the request or switch delivery modes on rejection.
 
@@ -28,9 +30,9 @@ Never call `artifact_publish` for outputs already submitted by integrated delive
 
 ## Publish existing artifacts through ForgeGUI
 
-Require all of the following: the live `artifact_publish` input enum includes `Audio`, the configured shared-group publication route is usable for this account, its capabilities include Audio, and the intended experience has an authorized access path. A Model/Image-only publisher is not an Audio publisher.
+Require all of the following: the live `artifact_publish` input enum includes `Audio`, the selected connection route is usable for this account, its capabilities include Audio, and the intended experience has an authorized access path. A Model/Image-only publisher is not an Audio publisher.
 
-Use `publication:write` for submission and `publication:read` for polling. `generation:write` is needed only for new generation. Pass an owned `run_id` when recording the operation in a run.
+Use `publication:write` for submission and `publication:read` for polling. `generation:write` is needed only for new generation. Pass an owned `run_id` when recording the operation in a run. For a live connection selector, use `destination: {"platform":"roblox","connection_id":"rpc_example"}`; never combine it with `creator`. The pinned example below uses an explicitly selected connection:
 
 ```json
 {
@@ -39,12 +41,12 @@ Use `publication:write` for submission and `publication:read` for polling. `gene
   "asset_type": "Audio",
   "destination": {
     "platform": "roblox",
-    "creator": "configured_shared_group"
+    "connection_id": "00000000-0000-4000-8000-000000000010"
   }
 }
 ```
 
-Replace the placeholder with the owned returned reference. The group and credentials are selected by the server. This is not a user-OAuth upload, does not publish to the Creator Store and does not grant arbitrary experiences access. Never silently change destination.
+Replace the placeholder with the owned returned reference. Replace the connection placeholder with the user-selected usable connection ID; credentials remain server-only. This is not a user-OAuth upload, does not publish to the Creator Store and does not grant arbitrary experiences access. Never silently change destination.
 
 Save the returned `publication_id` immediately and poll `publication_status`. Keep the Roblox asset ID as a decimal string. Pending moderation is not ready for installation. On a failed publication, retain the generated artifact; use only an explicitly supported publication-only retry. For `needs_reconciliation`, `outcome_unknown`, a lost response or unfamiliar state, follow `asset-upload.md` and SKILL.md §4: preserve evidence, reconcile the original operation and never submit a replacement or switch upload routes automatically.
 
@@ -54,4 +56,4 @@ For a ready Audio publication, verify its asset type, creator, moderation and ta
 
 In the intended experience, check loading errors, duration and actual audible playback. For spatial effects, move toward and away from the emitter; for loops, listen across the seam. A property such as `IsPlaying` alone is not audible verification. Record the instance path, source artifact, generation/publication IDs, creator and checks in ledger v2; append playback checks to the owned run as caller-reported evidence using `preparation-installation.md`. Leave unperformed checks marked `not_performed` and do not upgrade server verification flags.
 
-If shared-group access is unsuitable, stop and explain the destination limitation. OAuth remains unavailable until the live server explicitly supports it. The local Open Cloud helper remains an explicit fallback with user-approved credentials/destination and durable receipts, not a recovery mechanism for an ambiguous ForgeGUI submission.
+If the selected destination cannot serve the intended experience, stop and explain the access blocker. Never fall back to the shared group or change creator on failure. OAuth remains unavailable for this release. The local Open Cloud helper is retained for separate legacy use, not connection setup or recovery of an ambiguous ForgeGUI submission; do not collect Roblox keys for this workflow.

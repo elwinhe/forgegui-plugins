@@ -109,7 +109,7 @@
         "asset_type": "Model",
         "destination": {
           "platform": "roblox",
-          "creator": "configured_shared_group"
+          "connection_id": "00000000-0000-4000-8000-000000000010"
         },
         "run_id": "00000000-0000-4000-8000-000000000001"
       }
@@ -123,7 +123,7 @@
         "asset_type": "Image",
         "destination": {
           "platform": "roblox",
-          "creator": "configured_shared_group"
+          "connection_id": "00000000-0000-4000-8000-000000000010"
         },
         "run_id": "00000000-0000-4000-8000-000000000001"
       }
@@ -222,7 +222,7 @@
         "asset_type": "Audio",
         "destination": {
           "platform": "roblox",
-          "creator": "configured_shared_group"
+          "connection_id": "00000000-0000-4000-8000-000000000010"
         },
         "run_id": "00000000-0000-4000-8000-000000000001"
       }
@@ -276,7 +276,8 @@
         "count": 1,
         "delivery": {
           "mode": "publish",
-          "platform": "roblox"
+          "platform": "roblox",
+          "connection_id": "00000000-0000-4000-8000-000000000010"
         }
       }
     },
@@ -307,9 +308,164 @@
         "count": 1,
         "delivery": {
           "mode": "publish",
-          "platform": "roblox"
+          "platform": "roblox",
+          "connection_id": "00000000-0000-4000-8000-000000000010"
         }
       }
+    },
+    {
+      "name": "discover-connections",
+      "tool": "publication_connections_list",
+      "arguments": {}
+    },
+    {
+      "name": "model-connection",
+      "tool": "generation_model_3d",
+      "arguments": {
+        "request_id": "model-connection-v1",
+        "prompt": "One isolated prop",
+        "quality": "standard",
+        "delivery": {
+          "mode": "publish",
+          "platform": "roblox",
+          "connection_id": "00000000-0000-4000-8000-000000000010"
+        }
+      }
+    },
+    {
+      "name": "direct-model",
+      "tool": "generation_model_3d",
+      "arguments": {
+        "request_id": "model-direct-v1",
+        "prompt": "Standalone file delivery",
+        "quality": "standard",
+        "delivery": {
+          "mode": "direct"
+        }
+      }
+    },
+    {
+      "name": "music-connection",
+      "tool": "generation_music",
+      "arguments": {
+        "request_id": "music-connection-v1",
+        "prompt": "Quiet exploration ambience",
+        "music_length_seconds": 30,
+        "count": 2,
+        "delivery": {
+          "mode": "publish",
+          "platform": "roblox",
+          "connection_id": "00000000-0000-4000-8000-000000000010"
+        }
+      }
+    },
+    {
+      "name": "direct-music",
+      "tool": "generation_music",
+      "arguments": {
+        "request_id": "music-direct-v1",
+        "prompt": "Standalone file delivery",
+        "music_length_seconds": 30,
+        "count": 2,
+        "delivery": {
+          "mode": "direct"
+        }
+      }
+    },
+    {
+      "name": "sfx-connection",
+      "tool": "generation_sound_effect",
+      "arguments": {
+        "request_id": "sfx-connection-v1",
+        "prompt": "Quiet exploration ambience",
+        "duration_seconds": 2,
+        "count": 2,
+        "delivery": {
+          "mode": "publish",
+          "platform": "roblox",
+          "connection_id": "00000000-0000-4000-8000-000000000010"
+        }
+      }
+    },
+    {
+      "name": "direct-sfx",
+      "tool": "generation_sound_effect",
+      "arguments": {
+        "request_id": "sfx-direct-v1",
+        "prompt": "Standalone file delivery",
+        "duration_seconds": 2,
+        "count": 2,
+        "delivery": {
+          "mode": "direct"
+        }
+      }
+    },
+    {
+      "name": "publish-model-connection",
+      "tool": "artifact_publish",
+      "arguments": {
+        "request_id": "publish-model-connection-v1",
+        "artifact_ref": "mcp-artifact:00000000-0000-4000-8000-000000000002:0",
+        "asset_type": "Model",
+        "destination": {
+          "platform": "roblox",
+          "connection_id": "00000000-0000-4000-8000-000000000010"
+        }
+      }
+    },
+    {
+      "name": "publish-image-connection",
+      "tool": "artifact_publish",
+      "arguments": {
+        "request_id": "publish-image-connection-v1",
+        "artifact_ref": "mcp-artifact:00000000-0000-4000-8000-000000000002:0",
+        "asset_type": "Image",
+        "destination": {
+          "platform": "roblox",
+          "connection_id": "00000000-0000-4000-8000-000000000010"
+        }
+      }
+    },
+    {
+      "name": "publish-audio-connection",
+      "tool": "artifact_publish",
+      "arguments": {
+        "request_id": "publish-audio-connection-v1",
+        "artifact_ref": "mcp-artifact:00000000-0000-4000-8000-000000000002:0",
+        "asset_type": "Audio",
+        "destination": {
+          "platform": "roblox",
+          "connection_id": "00000000-0000-4000-8000-000000000010"
+        }
+      }
+    },
+    {
+      "name": "legacy-model",
+      "tool": "generation_model_3d",
+      "arguments": {
+        "request_id": "legacy-model-v1",
+        "prompt": "One isolated prop",
+        "quality": "standard",
+        "delivery": {
+          "mode": "publish",
+          "platform": "roblox"
+        }
+      },
+      "admission": "replay_only"
+    },
+    {
+      "name": "legacy-audio",
+      "tool": "artifact_publish",
+      "arguments": {
+        "request_id": "legacy-audio-v1",
+        "artifact_ref": "mcp-artifact:00000000-0000-4000-8000-000000000003:0",
+        "asset_type": "Audio",
+        "destination": {
+          "platform": "roblox",
+          "creator": "configured_shared_group"
+        }
+      },
+      "admission": "replay_only"
     }
   ]
 }

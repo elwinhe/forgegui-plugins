@@ -98,7 +98,7 @@ class PreparationContractTests(unittest.TestCase):
         package = json.loads((ROOT / "plugins/forgegui-roblox-builder/.claude-plugin/plugin.json").read_text())
         marketplace = json.loads((ROOT / ".claude-plugin/marketplace.json").read_text())
         self.assertEqual(package["version"], marketplace["plugins"][0]["version"])
-        self.assertEqual(package["version"], "1.7.0")
+        self.assertEqual(package["version"], "1.8.0")
         ledger = json.loads((ROOT / "plugins/forgegui-roblox-builder/skills/forgegui-roblox-builder/references/forgegui-project.example.json").read_text())
         self.assertEqual(ledger["version"], 2)
         self.assertEqual(ledger["assets"], [])

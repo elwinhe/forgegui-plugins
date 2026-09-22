@@ -6,7 +6,7 @@ evidence that hosted conversion, publication or Studio acceptance passed.
 
 ## Preflight and recovery
 
-Discover tools and call `asset_capabilities`. Check route usability for this
+Follow [publishing connections](publishing-connections.md) before publication-dependent paid work: discover live connections, resolve the user-selected creator, and retain safe identity. Proposed connection fields await final export parity. Discover tools and call `asset_capabilities`. Check route usability for this
 account, not just whether a schema contains a variant. Preparation requires
 `generation:write`, job polling `generation:read`, publication
 `publication:write/read`, and run recording `runs:write/read`. Never broaden a
@@ -89,13 +89,16 @@ slice definition, use ordinary aspect-preserving art rather than guessing.
 
 ## Publish the prepared member
 
-Use `artifact_publish` for one owned `Model` GLB or PNG `Image`, with
-`destination: {platform: roblox, creator: configured_shared_group}`. The
-destination is server-selected; no OAuth, arbitrary creator or whole-bundle
-publication is implied. Generated MP3 music/SFX can use the separate Audio
-extension only when the live schema and capabilities advertise it; follow
-`audio-publication.md`. Audio is not a model/image preparation variant. Confirm shared-group ownership fits the
-task and verify target-experience access. Do not switch destinations silently.
+Use `artifact_publish` for one owned prepared `Model` GLB or PNG `Image`.
+When live supported, use `destination: {platform: roblox, connection_id: <selected ID>}`.
+The legacy shape `destination: {platform: roblox, creator: configured_shared_group}` is replay-only for previously accepted work; never use it for a new publication.
+These selectors form a strict union: never combine them, supply arbitrary creator
+overrides, or fall back to the shared group after failure. Confirm creator and
+target-experience access before spending. Roblox publishing keys go only through
+authenticated ForgeGUI settings, never chat, MCP, commands or the ledger.
+No OAuth or whole-bundle publication is implied. Generated MP3 music/SFX can
+use the separate Audio route only when live advertised and usable; follow
+[audio publication](audio-publication.md). Audio is not a preparation variant.
 
 The standalone tool and `publication_status` return a **top-level**
 `publication_id`, `status`, `asset_id`, `asset_type`, `creator: {type, id}`,

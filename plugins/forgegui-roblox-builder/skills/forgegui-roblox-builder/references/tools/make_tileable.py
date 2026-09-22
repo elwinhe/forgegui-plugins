@@ -4,6 +4,8 @@
     python3 tools/make_tileable.py raw.png out.png --mode blend
     python3 tools/make_tileable.py raw.png out.png --mode mirror
 
+Only fully opaque inputs are supported; transparent inputs are rejected before output is written.
+
 Two methods, because each fails on the other's material:
 
 mirror  2x2 of the image and its reflections. Seam-exact by construction, and
@@ -24,6 +26,12 @@ import numpy as np
 from PIL import Image, ImageOps
 
 
+def opaque_rgb(im: Image.Image) -> Image.Image:
+    if im.convert("RGBA").getchannel("A").getextrema() != (255, 255):
+        raise ValueError("Tile preparation requires fully opaque input; transparency is not supported")
+    return im.convert("RGB")
+
+
 def square(im: Image.Image, size: int) -> Image.Image:
     w, h = im.size
     s = min(w, h)
@@ -32,7 +40,7 @@ def square(im: Image.Image, size: int) -> Image.Image:
 
 
 def mirror(im: Image.Image, size: int) -> Image.Image:
-    q = square(im, size // 2)
+    q = square(opaque_rgb(im), size // 2)
     out = Image.new("RGB", (size, size))
     out.paste(q, (0, 0))
     out.paste(ImageOps.mirror(q), (size // 2, 0))
@@ -42,7 +50,7 @@ def mirror(im: Image.Image, size: int) -> Image.Image:
 
 
 def blend(im: Image.Image, size: int) -> Image.Image:
-    a = np.asarray(square(im, size), dtype=np.float32)
+    a = np.asarray(square(opaque_rgb(im), size), dtype=np.float32)
     # Flatten large-scale lighting first: a vignette or gradient the eye cannot
     # see in one tile becomes an obvious checkerboard across forty of them.
     low = np.asarray(Image.fromarray(a.astype(np.uint8)).resize((8, 8), Image.BILINEAR)
@@ -65,7 +73,11 @@ def main() -> None:
     ap.add_argument("--preview", help="also write a 3x3 tiling here, to look at before uploading")
     args = ap.parse_args()
 
-    im = Image.open(args.src).convert("RGB")
+    with Image.open(args.src) as source:
+        try:
+            im = opaque_rgb(source)
+        except ValueError as exc:
+            ap.error(str(exc))
     out = mirror(im, args.size) if args.mode == "mirror" else blend(im, args.size)
     out.save(args.out)
     if args.preview:

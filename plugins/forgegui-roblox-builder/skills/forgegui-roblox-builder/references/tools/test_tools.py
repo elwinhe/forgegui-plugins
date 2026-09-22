@@ -9,6 +9,7 @@ Requires Pillow and numpy.
 from __future__ import annotations
 
 import pathlib
+import subprocess
 import sys
 import tempfile
 
@@ -358,7 +359,42 @@ def test_tileable_blend_flattens_lighting() -> None:
     check(float(columns.max() - columns.min()) < 30, "a left-to-right lighting ramp of 110 levels is flattened, so forty tiles do not checkerboard")
 
 
-for test in (test_slice_avoids_decoration, test_render_keeps_rim_thickness, test_measures_at_roblox_stored_size, test_slice_rejects_all_decorated, test_separate_sheet_splits_and_trims, test_paste_module, test_style_delta_separates_two_style_references, test_style_delta_ignores_transparent_background, test_style_delta_reports_direction, test_style_delta_palette_is_deterministic, test_style_delta_pairs_directories_and_draws_a_sheet, test_palette_flags_an_invented_hue, test_palette_allows_shading_of_a_palette_hue, test_palette_keeps_desaturated_entries_in_the_comparison, test_palette_repair_rotates_hue_and_keeps_lightness, test_palette_lab_inverse_is_exact_at_8_bit, test_palette_ignores_transparent_pixels, test_slice_grows_through_a_flat_gradient, test_tileable_modes_close_the_seam, test_tileable_blend_flattens_lighting):
+def test_tileable_rejects_transparency_before_writing() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        root = pathlib.Path(td)
+        rgba = Image.new("RGBA", (16, 16), (255, 255, 255, 0))
+        rgba.putpixel((8, 8), (255, 255, 255, 255))
+        indexed = Image.new("P", (16, 16), 0)
+        indexed.putpalette([255, 255, 255] * 256)
+        indexed.info["transparency"] = 0
+        for name, source in (("rgba", rgba), ("indexed", indexed),
+                             ("partial", Image.new("RGBA", (16, 16), (255, 255, 255, 128))),
+                             ("gray", Image.new("LA", (16, 16), (255, 0)))):
+            src = root / (name + ".png")
+            source.save(src)
+            for mode in ("mirror", "blend"):
+                out = root / "out.png"
+                preview = root / "preview.png"
+                out.write_bytes(b"existing tile")
+                result = subprocess.run([sys.executable, str(pathlib.Path(make_tileable.__file__)),
+                                         str(src), str(out), "--mode", mode, "--size", "32",
+                                         "--preview", str(preview)], capture_output=True, text=True)
+                check(result.returncode != 0 and "fully opaque" in result.stderr,
+                      f"{mode} rejects {name} transparency clearly")
+                check(out.read_bytes() == b"existing tile" and not preview.exists(),
+                      f"{mode} preserves prior output and writes no preview for {name}")
+        for mode in ("mirror", "blend"):
+            src = root / "opaque.png"
+            Image.new("RGBA", (16, 16), (100, 120, 140, 255)).save(src)
+            result = subprocess.run([sys.executable, str(pathlib.Path(make_tileable.__file__)),
+                                     str(src), str(root / "out.png"), "--mode", mode,
+                                     "--size", "32"], capture_output=True, text=True)
+            check(result.returncode == 0, f"{mode} still accepts opaque RGBA")
+            with Image.open(root / "out.png") as output:
+                check(output.size == (32, 32), f"{mode} writes opaque tile")
+
+
+for test in (test_tileable_rejects_transparency_before_writing, test_slice_avoids_decoration, test_render_keeps_rim_thickness, test_measures_at_roblox_stored_size, test_slice_rejects_all_decorated, test_separate_sheet_splits_and_trims, test_paste_module, test_style_delta_separates_two_style_references, test_style_delta_ignores_transparent_background, test_style_delta_reports_direction, test_style_delta_palette_is_deterministic, test_style_delta_pairs_directories_and_draws_a_sheet, test_palette_flags_an_invented_hue, test_palette_allows_shading_of_a_palette_hue, test_palette_keeps_desaturated_entries_in_the_comparison, test_palette_repair_rotates_hue_and_keeps_lightness, test_palette_lab_inverse_is_exact_at_8_bit, test_palette_ignores_transparent_pixels, test_slice_grows_through_a_flat_gradient, test_tileable_modes_close_the_seam, test_tileable_blend_flattens_lighting):
     test()
 
 print(f"\n{checks} checks, {failures} failures")

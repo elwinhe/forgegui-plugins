@@ -255,22 +255,26 @@ something true. It also gives you a **lighting target**: if the key art shows ov
 sodium floods and the playable map is lit like a stock noon baseplate, the map is the thing that is
 wrong.
 
-### Tiling materials: `thumbnail` again, then make it tile
+### Tiling materials: inspect the result, then prepare the tile
 
-There is no texture or material type. The type decides what kind of image comes back far more than
-the prompt does:
+In the 2026-09-20 showcase tests, the same "flat weathered concrete wall, edge
+to edge, no objects" prompt produced these results:
 
-| `type` | The same "flat weathered concrete wall, edge to edge, no objects" prompt returned |
+| `type` | Observed result |
 | --- | --- |
-| `mixed` | A gold dollar coin on transparency. It is an object generator; a material is not an object. |
-| `thumbnail` | A true edge-to-edge photograph of formwork concrete, tie holes and all. |
+| `mixed` | A gold dollar coin on transparency. |
+| `thumbnail` | An edge-to-edge photograph of formwork concrete with tie holes. |
 
-So generate materials as `thumbnail` with `game_style: "general"`, and say "flat, straight-on
-orthographic", "even overcast lighting with no shadows and no vignette", "uniform density across the
-whole image so it can tile", and list what must not appear (objects, horizon, text, perspective).
+These are dated observations, not guarantees about either type. Other tested
+runs produced painted textures with both types, sometimes with borders. Check
+the deployed schema and inspect each result. `thumbnail` with
+`game_style: "general"` is a tested starting point; request "flat, straight-on
+orthographic", even lighting, uniform density, and no objects, horizon, text or
+perspective. Verify the actual content and seams before use.
 
-Nothing comes back seamless, whatever the prompt says. `tools/make_tileable.py` fixes that, and the
-method has to match the material:
+For opaque materials that need tiling, `tools/make_tileable.py` offers two
+methods. It rejects non-opaque input (including indexed-PNG transparency) before
+writing a tile or preview; do not flatten transparent artwork to bypass this.
 
 ```bash
 python references/tools/make_tileable.py raw.png tile.png --mode mirror --preview check.jpg

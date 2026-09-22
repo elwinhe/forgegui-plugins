@@ -273,20 +273,25 @@ publication test requires authorization. Studio's native 3D Importer remains a m
 
 Measured across a six-piece weapon kit on 2026-09-20 (five weapons plus a
 magazine, `quality: "high"`, uploaded through Open Cloud and inserted with
-`insert_asset`). Every one behaved identically, so treat these as the shape of
-the problem rather than as one bad import.
+`insert_asset`). These are observations from that kit and deployment, not
+universal properties of current model outputs.
 
-**Triangle counts are unchanged.** The hero rifle came back at **100,508
-triangles** — five times Roblox's 20,000 per-mesh limit. The provider-side 20k
-cap reported on PR #12 is *not* in effect on this endpoint, so budget a
-`generation_remesh_3d` for every single model. Remesh hit its target exactly
-(12000, 8000, 6000, 14000 requested and delivered) and preserved all three
-texture maps on 6 of 6.
+**Triangle counts in that kit.** The hero rifle had **100,508 triangles**.
+Remesh hit the requested targets (12000, 8000, 6000, 14000) and preserved all
+three texture maps on 6 of 6. This does not establish current endpoint defaults
+or justify remeshing every model. Use ForgeGUI preparation measurements when
+available, or inspect actual per-mesh geometry in the source or Studio, against
+the intended import limits and scene budget. Request paid remeshing only when
+those measurements show a need and the user has authorized the cost. If
+measurements are unavailable, report the gap rather than remeshing speculatively.
 
-**Scale is gone.** Every GLB is normalised so its longest side is 1.0 stud,
-whatever the object is. A 90 cm rifle and a 20 cm pistol both arrive the same
-size. Restore it from the real-world dimension you prompted for; Roblox is
-roughly 28 cm to the stud, so `scale = (realCm / 28) / longestSide`.
+**Scale in that kit.** The imported models had a longest side of about 1 stud.
+Do not assume that normalization for other models. Measure the actual imported
+bounds and choose the intended dimensions in studs from the scene's scale.
+Use `scaleFactor = intendedDimensionStuds / measuredImportedDimensionStuds`
+on the corresponding axis, retaining proportions; for `Model:ScaleTo`, multiply
+the current `GetScale()` by that factor. Verify the resulting bounds in Studio.
+Real-world prompt dimensions express intent, not a guaranteed import scale.
 
 **Textures are not on `TextureID`.** They arrive as a `SurfaceAppearance` child
 carrying four separate maps (ColorMap, NormalMap, RoughnessMap, MetalnessMap).

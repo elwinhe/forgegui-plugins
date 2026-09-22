@@ -86,7 +86,7 @@ result carries `audio_urls` / an `artifact_ref` of kind `audio`: a plain public 
 returns the same shape, but no run of it was kept, so treat that as untested.) Measured on
 September 19–20, 2026: request `audio-route-test-2026-09-19-a`,
 job `b948de0a-2dff-4fb9-9c5c-4dffa9c1baed`, a 2 s clip, 33 KB, 128 kbps 44.1 kHz stereo. Download it, upload it
-as `Audio` — that run went through `tools/roblox-upload.sh`, a helper of the same shape, not through this
+as `Audio` — that run went through an earlier helper of the same shape, not through this
 script — and the operation returned **assetId 76875404707631**, `Reviewing` at upload.
 That id is then a `Sound.SoundId`, and it was carried the rest of the way: a moderation re-check about ten
 minutes later returned `Approved`/`Active`, and in a Studio play session the `Sound` reported `IsLoaded = true`,
@@ -95,10 +95,7 @@ measured — no audio capture — and playback for any account other than the up
 asset here.
 
 **A library or licensed file.** The same command with the file you already have; the Roblox free audio library
-needs no upload at all, its ids go straight into `Sound.SoundId`.
-
-This means the "no import route for generated audio" line in the open PR #14 (§2) is no longer accurate as of
-September 20, 2026: the generation tools return a downloadable file and Open Cloud accepts it. What is still
+needs no upload at all, its ids go straight into `Sound.SoundId`.Generated audio does have an import route: the generation tools return a downloadable file and Open Cloud accepts it. What is still
 true is narrower and worth keeping: the connected MCP exposes no generation-side publishing step, so the bytes go
 through this script or its successor; moderation may still read `Reviewing`; and whether one account's audio
 plays for another is untested (above). Record the id, the source (generated job id or library id) and the route

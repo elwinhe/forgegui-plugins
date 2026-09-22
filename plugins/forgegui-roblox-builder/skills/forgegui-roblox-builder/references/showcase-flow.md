@@ -66,8 +66,10 @@ Decision point: for a small addition to an existing game, the grey-box is the ex
 - **Order the spend by what unblocks other work:** concepts and the style card, the sky and ground textures,
   then the hero objects, then set dressing. Generation limits exist (`SKILL.md` §5); the first assets should be
   the ones that let the rest of the build continue while later ones are pending.
-- **Sound** comes from the Roblox free library, from `generation_sound_effect` / `generation_music` uploaded
-  through `references/asset-upload.md`, or both; either way the ids belong in the ledger with their source.
+- **Sound** comes from the Roblox free library, from generated audio uploaded through
+  `references/asset-upload.md`, or both; either way the ids belong in the ledger with their source. Only
+  `generation_sound_effect` has been taken through that upload route (`SKILL.md` §4); `generation_music` is
+  untested, so verify it returns an uploadable file and a playable id before building on it.
 
 ## 4. Assemble, then verify by playing
 

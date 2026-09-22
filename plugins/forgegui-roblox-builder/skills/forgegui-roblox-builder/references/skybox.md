@@ -58,7 +58,6 @@ by construction.
    90° counter-clockwise, and the script already undoes all three. If a later Studio
    build changes this, fix it with `ROTATE` and `FACES` in `sky_faces.py`, not by
    hand in an image editor. `--selftest` pins the `ROTATE` table against an
-   accidental sign or index change, but only the in-Studio captures in
-   `evidence/spike-skybox/` show that those are the turns Studio actually needs;
-   re-capture there if you change them. Bring Studio to the front before capturing: a background
+   accidental sign or index change, but only in-Studio captures show that those are
+   the turns Studio actually needs; re-capture if you change them. Bring Studio to the front before capturing: a background
    window's viewport does not redraw.

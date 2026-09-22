@@ -252,6 +252,116 @@ function UiCheck.strayClickPoints(panel: GuiObject, screenSize: Vector2, grid: n
 	return points
 end
 
+-- Registry-backed attribution counts elements, not rendered pixels. The caller
+-- maintains the registry; ForgeGUI job/publication evidence belongs in the ledger.
+-- Glyphs are tallied separately, but a text label's fill/border is a primitive.
+-- AllowPrimitive suppresses warnings without changing classification.
+--
+--   UiCheck.provenance(playerGui.Main, require(ReplicatedStorage.Game.ArtRegistry))
+
+export type Provenance = {
+	registry_backed: boolean,
+	art: number,
+	unregistered: number,
+	primitive: number,
+	text: number,
+	surfaces: number,
+	coverage: number,
+}
+
+-- "rbxassetid://123", "123", and an asset URL all name the same upload.
+local function assetDigits(value: any): string?
+	if type(value) ~= "string" or value == "" then
+		return nil
+	end
+	return string.match(value, "[?&]id=(%d+)") or string.match(value, "(%d+)%s*$")
+end
+
+-- Accepts the GuiArt registry ({ coin = { id = "rbxassetid://..." } }), a plain
+-- list of ids, or a map of name to id string.
+local function registryIds(registry: any): { [string]: boolean }
+	local ids: { [string]: boolean } = {}
+	if type(registry) ~= "table" then
+		return ids
+	end
+	local function absorb(value: any)
+		local digits = assetDigits(value)
+		if digits then
+			ids[digits] = true
+		end
+	end
+	for _, entry in pairs(registry) do
+		if type(entry) == "table" then
+			absorb(entry.id)
+			absorb(entry.Image)
+		else
+			absorb(entry)
+		end
+	end
+	return ids
+end
+
+-- Structural visibility includes ancestors above the supplied root and is read
+-- afresh each audit. Only ScreenGui.Enabled is supported among LayerCollectors;
+-- this does not model occlusion, clipping, viewport area or transparency.
+local function effectivelyVisible(object: any): boolean
+	local ancestor = object
+	while ancestor ~= nil do
+		if ancestor:IsA("GuiObject") and ancestor.Visible == false then
+			return false
+		end
+		if ancestor.ClassName == "ScreenGui" and ancestor.Enabled == false then
+			return false
+		end
+		ancestor = ancestor.Parent
+	end
+	return true
+end
+
+function UiCheck.provenance(root: Instance, registry: any, options: Options?): Report
+	local _ = options
+	local ids = registryIds(registry)
+	local known = next(ids) ~= nil
+	local tally: Provenance = { registry_backed = known, art = 0, unregistered = 0, primitive = 0, text = 0, surfaces = 0, coverage = 0 }
+	local report: Report = { findings = {}, errors = 0, warnings = 0, checked = 0 }
+	;(report :: any).provenance = tally
+
+	if not known then
+		add(report, "provenance_no_registry", "warning", root, "no usable art registry was supplied; legacy image counts are diagnostic only and provenance is unverified. Pass the place's ArtRegistry.")
+	end
+
+	for _, object in ipairs(root:GetDescendants()) do
+		if not isGuiObject(object) or ignored(object) or not effectivelyVisible(object) then
+			continue
+		end
+		report.checked += 1
+		if isImage(object) then
+			tally.surfaces += 1
+			local digits = assetDigits(object.Image)
+			if known and (digits == nil or not ids[digits]) then
+				tally.unregistered += 1
+				add(report, "unregistered_image", "error", object, ("shows %s, which is not in the art registry; a generated asset is recorded there with its aspect, so an unlisted image is either an unrecorded upload or a Toolbox decal. Record it or replace it."):format(tostring(object.Image)))
+			else
+				tally.art += 1
+			end
+		elseif hasFill(object) or borderStroke(object) then
+			tally.surfaces += 1
+			tally.primitive += 1
+			if object:GetAttribute("AllowPrimitive") ~= true then
+				add(report, "primitive_surface", "warning", object, "draws a Roblox fill or border of its own. Chrome may do that — set AllowPrimitive = true to say so — but a panel, button or icon surface should be generated art.")
+			end
+		end
+		if TEXT_CLASSES[object.ClassName] and object.Text ~= nil and object.Text ~= "" then
+			tally.text += 1
+		end
+	end
+
+	if tally.surfaces > 0 then
+		tally.coverage = tally.art / tally.surfaces
+	end
+	return report
+end
+
 function UiCheck.merge(reports: { Report }): Report
 	local merged: Report = { findings = {}, errors = 0, warnings = 0, checked = 0 }
 	for _, report in ipairs(reports) do
@@ -267,6 +377,14 @@ end
 
 function UiCheck.format(report: Report): string
 	local lines = { ("UiCheck: %d error(s), %d warning(s), %d checked"):format(report.errors, report.warnings, report.checked) }
+	local tally = (report :: any).provenance
+	if tally then
+		if tally.registry_backed then
+			table.insert(lines, ("  surfaces: %d registered images, %d unattributed, %d primitive — %.0f%% registry-backed attribution (element count); %d text label(s)"):format(tally.art, tally.unregistered, tally.primitive, tally.coverage * 100, tally.text))
+		else
+			table.insert(lines, ("  provenance unverified: %d image(s), %d primitive surface(s), %d text label(s); no verified coverage"):format(tally.art, tally.primitive, tally.text))
+		end
+	end
 	for _, finding in ipairs(report.findings) do
 		table.insert(lines, ("[%s] %s %s: %s"):format(finding.severity, finding.check, finding.subject, finding.detail))
 	end

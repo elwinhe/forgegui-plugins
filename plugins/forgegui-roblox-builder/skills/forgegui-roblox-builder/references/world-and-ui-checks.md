@@ -33,12 +33,18 @@ explain in the report.
 | `stroke_in_framed_art` | error | A stroked container or label sits inside art that already frames it |
 | `text_overflow` | warning | Visible text does not fit its box |
 | `modal_closes_on_stray_click` | error | Source connects a click or input signal on a backdrop, scrim, overlay or dimmer |
+| `unregistered_image` | error | An image element shows an asset that is not in the art registry, so its provenance cannot be shown |
+| `primitive_surface` | warning | A container or label draws its own Roblox fill or border where generated art was expected. Mark deliberate chrome `AllowPrimitive = true` |
+| `provenance_no_registry` | warning | `UiCheck.provenance` ran without a registry, so its percentage is not evidence |
 
 When something is meant to be that way, mark it on the instance instead of ignoring the finding:
 
 - `AllowCovered = true` on a spawn with a roof over it. `spawn_clearance` still applies.
 - `MultipleSpawnsIntended = true` on a spawn in a pool that is supposed to have several.
 - `UiCheckIgnore = true` on UI chrome that is meant to be there.
+- `AllowPrimitive = true` on a frame or label that is meant to draw its own fill or border, such as a
+  progress bar, a glass pill or a divider. It silences `primitive_surface` and still counts toward
+  the primitive tally, so the ratio stays honest.
 
 ## When to run them
 
@@ -51,6 +57,27 @@ When something is meant to be that way, mark it on the instance instead of ignor
 - **`UiCheck.audit`**: after you build or restyle a screen. Run it in play on the Client, with every
   modal you are checking open. It reads rendered sizes, and it treats art as framing only when that
   art is visible.
+- **`UiCheck.provenance`**: establish generated-art provenance scope during planning, then audit
+  every in-scope screen in play on the Client, including primitive-only implementations, passing
+  the place's art registry. Open the state being audited. Include the registry, findings and
+  unresolved substitutions, not just a ratio. Out-of-scope screens need no new art generation.
+  Missing or empty registries emit `provenance_no_registry` and mean **unverified**, not PASS;
+  legacy numeric image counts without a registry are diagnostic only.
+
+  With a usable registry, coverage = **registered image surfaces / counted surfaces**. Counted
+  surfaces are registered images, unregistered images and primitive fills/borders. Text is tallied
+  separately: a filled text label counts as both text and a primitive surface; transparent glyphs
+  alone do not increase surfaces. One registered image, one filled label and one transparent label
+  yield art=1, primitive=1, surfaces=2, text=2, coverage=0.5. `AllowPrimitive` suppresses a warning,
+  not the primitive count. Approved native controls remain valid; no minimum art ratio applies.
+
+  This is **registry-backed attribution** using caller-maintained IDs, not proof of ForgeGUI
+  generation. Preserve actual job/artifact/publication links separately in the ledger/run.
+  Visibility is structural: invisible GuiObject ancestors (including the supplied root and those
+  above it) and disabled containing ScreenGuis exclude descendants. Visibility is read anew on
+  each audit. Other LayerCollector types' Enabled states are not supported. Occlusion, clipping,
+  viewport coverage, pixel area and transparency compositing are not calculated. The ratio counts
+  elements, not rendered pixels or stylistic quality.
 - **`UiCheck.lintSource`**: in Edit, over every client script, before and after a UI change.
 - **`UiCheck.strayClickPoints`**: in play, for each transactional modal. It returns points inside
   the panel that are not over a button, plus points on the screen around the panel. Click each
@@ -100,6 +127,25 @@ UI runners, each sent in its own call. Structure, in play on the Client, with th
 
 ```lua
 return UiCheck.format(UiCheck.audit(game.Players.LocalPlayer.PlayerGui.MainHUD))
+```
+
+Provenance, in the same call shape. The sandbox cannot `require` the place's registry module, so
+hand the ids over directly — `provenance` takes the GuiArt registry table, a map of name to id, or a
+plain list, and reads `rbxassetid://123`, a bare `123` and an asset URL as the same upload:
+
+```lua
+local ids = { "rbxassetid://18273645", "rbxassetid://18273699" } -- from ArtRegistry
+return UiCheck.format(UiCheck.provenance(game.Players.LocalPlayer.PlayerGui.MainHUD, ids))
+```
+
+In Edit, where script sources are readable, scrape them instead of pasting a list that can drift:
+
+```lua
+local ids = {}
+for id in string.gmatch(game.ReplicatedStorage.Game.ArtRegistry.Source, "rbxassetid://(%d+)") do
+	table.insert(ids, id)
+end
+return UiCheck.format(UiCheck.provenance(game.StarterGui, ids))
 ```
 
 Wiring, in Edit:

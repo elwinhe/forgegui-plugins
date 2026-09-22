@@ -234,4 +234,4 @@ Based on the connected tool inventory of September 14–15, 2026, the ForgeGUI c
 - `references/reference-capture.md` — turning a user-supplied reference into frames, scale, palette and HUD numbers
 - `scripts/reference_frames.py`, `scripts/palette.py` — frame extraction and Lab palette / ΔE comparison (`--selftest` on each)
 - `references/showcase-flow.md` — a vague prompt to a finished game: look-spec, grey-box, asset strategy, fidelity passes behind guards
-- `references/asset-upload.md` — Open Cloud upload route (`scripts/open_cloud_upload.sh`), formats, moderation, ownership caveats, forward path
+- `references/asset-upload.md` — ForgeGUI-first publishing and recovery of interrupted uploads, with an explicit Open Cloud fallback (`references/tools/oc_upload.py`, wrapper `scripts/open_cloud_upload.sh`)

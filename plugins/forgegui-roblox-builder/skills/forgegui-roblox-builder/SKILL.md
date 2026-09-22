@@ -75,7 +75,27 @@ Rules:
 
 Establish a supported route from the expected output format into Studio before spending. A standalone downloadable asset needs no route.
 
-Moss Louvan's September 15, 2026 [PR #1 findings](https://github.com/elwinhe/forgegui-plugins/pull/1) report image, audio and GLB uploads through Open Cloud `POST /assets/v1/assets` with the file, followed by polling the returned operation for `response.assetId`. Those tests used a personal account and an Open Cloud API key. They establish a tested API route, not that the connected MCP exposes it or that a hosted OAuth flow or production group permissions have been verified. Discover the live publishing tool and its execution permissions before relying on this route; `execute_luau` alone does not establish permission to import files or publish assets. When no publishing tool is exposed, `scripts/open_cloud_upload.sh` runs the route with the user's own key (`references/asset-upload.md`); record which route produced each id.
+Prefer discovered, deployed ForgeGUI publication when it supports both the asset type and
+intended destination owner. Check the actual schema and authority; do not assume universal
+account/key support. Open Cloud is an explicitly chosen fallback, documented in
+`references/asset-upload.md`, with mandatory destination and durable receipt flags. Its
+`references/tools/oc_upload.py` implementation also serves `scripts/open_cloud_upload.sh`.
+Use `--resume` with identical inputs to recover saved operations/IDs. An uncertain submission
+must be reconciled, never resubmitted with a new receipt. For ForgeGUI, persist `request_id`
+and the exact request in the ledger before submission, then save returned identifiers immediately.
+Reconcile with `generation_status({"job_id": "<saved job UUID>"})` or
+`publication_status({"publication_id": "<saved publication UUID>"})` as applicable.
+The currently exposed status schemas do **not** accept `request_id`; it is an idempotency key,
+not a client status-query key, and `asset_id` is not a substitute for either status UUID.
+If `outcome_unknown` or a lost response leaves neither status UUID, retain the request ID,
+tool name, inputs, timestamp and any returned correlation identifier for ForgeGUI operator
+reconciliation. Keep the entry blocked until the operator recovers the original job/publication
+UUID for the status query, or a discovered read-only lookup explicitly supports the saved
+correlation identifier. Do not invent a lookup or replay the submission to obtain an ID;
+never automatically switch to Open Cloud after an ambiguous ForgeGUI result.
+Record ID, moderation and Studio usability as separate facts.
+
+Moss Louvan's September 15, 2026 [PR #1 findings](https://github.com/elwinhe/forgegui-plugins/pull/1) report image, audio and GLB uploads through Open Cloud `POST /assets/v1/assets` with the file, followed by polling the returned operation for `response.assetId`. Those tests used a personal account and an Open Cloud API key. They establish a tested API route, not that the connected MCP exposes it or that a hosted OAuth flow or production group permissions have been verified. Discover the live publishing tool and its execution permissions before relying on this route; `execute_luau` alone does not establish permission to import files or publish assets.
 
 - `insert_asset` takes a numeric Roblox asset id. A GLB URL is not an id. Assigning an external URL to a mesh property is not an import. `upload_image` is not a model uploader. Inspect the publishing tool's actual schema, returned ID, asset type, moderation state and access rights; a completed upload alone does not prove an asset is usable.
 - **Images and GUI.** Prefer an exposed publishing route that returns a Roblox image ID. For Open Cloud GUI uploads, use `assetType: "Image"`; do not assign a Decal container ID as an image texture. PR #1 reported that a Decal upload could pass moderation yet fail `CreateEditableImageAsync` or render blank in an `ImageLabel`, so verify the rendered GUI. If using Studio `store_image` / `upload_image` instead, validate the download and accepted input URI; do not assume a remote fetcher can read a local path or localhost. Do not pass a ForgeGUI artifact URL to `upload_image`: the tested Studio route rejected it as untrusted ("Image Url is not trusted"). Serve only the intended file if an authorized HTTP handoff is necessary. If no reachable serving route exists, report the import blocker before spending.

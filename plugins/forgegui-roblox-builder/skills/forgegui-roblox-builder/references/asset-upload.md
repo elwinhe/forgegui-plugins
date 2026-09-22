@@ -1,118 +1,103 @@
-# Open Cloud asset upload
+# Publishing assets and recovering interrupted uploads
 
-The route that turns a file on disk into a numeric Roblox asset id. `SKILL.md` §4 documents it from PR #1; this
-page adds the runnable script, the accepted formats, and what was and was not tested about ownership.
+Discover deployed ForgeGUI publishing tools first. Prefer ForgeGUI when its live schema and
+permissions support **both the requested asset and destination owner**. Persist the caller's
+request ID before submission; persist job/publication IDs and the asset ID as soon as returned. A timeout or
+`outcome_unknown` requires reconciliation: query `generation_status` with the saved `job_id`
+or `publication_status` with the saved `publication_id`. Neither currently accepts `request_id`.
+If both status IDs are missing, preserve the request ID and evidence and block for ForgeGUI
+operator recovery of a queryable identifier, as described in SKILL.md §4. Never replay the
+submission, switch routes or create a new request to resolve an ambiguous publication.
 
-## The route
+Open Cloud is an **explicitly chosen fallback**, after checking the intended owner and route.
+It is not an automatic response to a ForgeGUI failure. The Python implementation below is
+also the sole implementation behind the compatibility shell entry point.
 
-`POST https://apis.roblox.com/assets/v1/assets` (multipart: a JSON `request` part and the `fileContent` part),
-then poll `GET /assets/v1/operations/{id}` until `done`, and read `response.assetId`, `response.assetType` and
-`response.moderationResult.moderationState`. `scripts/open_cloud_upload.sh` does exactly that:
+## Credentials and destination
+
+Supply `ROBLOX_API_KEY` through the process environment using a trusted secret manager or
+masked shell input. Never put the key in arguments, logs, receipts, or checked-in files.
+No `.env` is loaded. Choose exactly one explicit `--user-id` or `--group-id`; no account is
+assumed. There is no credential command-line flag.
+
+Before asset requests, the uploader uses Roblox's documented
+[API key introspection](https://create.roblox.com/docs/cloud/auth/api-keys):
+`POST https://apis.roblox.com/api-keys/v1/introspect` with JSON `apiKey`.
+It requires `enabled: true`, `expired: false`, and destination-scoped `asset` read/write
+operations. Personal uploads additionally require `authorizedUserId` to equal the destination,
+including when `userIds` contains `*`. Group uploads require explicit matching `groupIds` for
+both operations. A group wildcard alone cannot prove that user's authority for the requested
+group, so this helper refuses it. No undocumented membership endpoint is assumed.
+
+The [Assets usage guide](https://create.roblox.com/docs/cloud/guides/usage-assets) documents
+`creationContext.creator.userId` or `groupId`. Authority preflight is not a guarantee that
+Roblox will accept an asset or grant the target experience access.
+
+## Commands (run from the skill directory)
 
 ```sh
-scripts/open_cloud_upload.sh <file> <Image|Audio|Model|Animation> "<display name>"
-# -> assetId=76875404707631 assetType=Audio moderation=Reviewing   (later re-checked: Approved)
+python3 references/tools/oc_upload.py model.glb --type Model --name "Prop" \
+  --user-id 123456 --receipt prop-upload.json
+# Same files, ordering, destination and metadata; polls saved operations or returns saved IDs:
+python3 references/tools/oc_upload.py model.glb --type Model --name "Prop" \
+  --user-id 123456 --receipt prop-upload.json --resume
+
+scripts/open_cloud_upload.sh --dry-run chime.mp3 Audio "Chime" \
+  --group-id 654321 --receipt chime-upload.json
+scripts/open_cloud_upload.sh chime.mp3 Audio "Chime" \
+  --group-id 654321 --receipt chime-upload.json
+scripts/open_cloud_upload.sh chime.mp3 Audio "Chime" \
+  --group-id 654321 --receipt chime-upload.json --resume
+
+python3 references/tools/oc_upload.py art/*.png --type Image \
+  --user-id 123456 --receipt images-upload.json
+# Resume with the identical expanded file list:
+python3 references/tools/oc_upload.py art/*.png --type Image \
+  --user-id 123456 --receipt images-upload.json --resume
 ```
 
-Credentials come from the environment. The key is never printed, and never appears in a command line: the
-script pipes it to `curl` as a header on stdin (`-H @-`), so it does not show up in the process table for
-anyone running `ps` while an upload is in flight.
+Replace example destination IDs with the intended owner. Dry-run validates local inputs only,
+uses no network or credentials, and creates no receipt. The former optional `--json` export
+is replaced by the mandatory durable receipt; downstream consumers can read succeeded entries.
 
-```sh
-# .env (git-ignored; never commit it)
-ROBLOX_API_KEY=...            # Open Cloud key with Assets read+write scope
-ROBLOX_CREATOR_USER_ID=...    # the user id the key belongs to (uploads land in that account)
+## Recovery contract
 
-set -a; . ./.env; set +a      # load it for this shell
-```
+Keep the receipt and its `.lock` file on a durable local filesystem supporting `flock`, atomic
+rename and `fsync` (Linux/macOS). Do not delete, edit, relocate, or replace a receipt to retry.
+Use the same receipt for the same publication; a new receipt represents a new publication,
+not global deduplication. Do not run concurrent publishers using different receipt paths.
 
-The script refuses to run, with a clear message, if either variable is unset. It has a 20 MB size guard and
-no dependencies beyond `curl` and `python3`. A `Model` upload also has the 20k-triangle-per-mesh limit from
-PR #1; check with a local triangle count before uploading, not by waiting for a rejection.
+The receipt records canonical file paths, byte sizes, SHA-256 hashes, destination, type and
+name. The bytes hashed are the bytes submitted. Input, owner or metadata drift is refused on
+resume. An exclusive lock prevents concurrent writers to the same receipt. Writes use a
+private temporary file, file fsync, atomic replacement and directory fsync.
 
-This script was run against the live endpoint on 20 September 2026 with a 256x256 PNG as `Image`: it returned an asset id with moderation `Reviewing`, the ordinary state for a fresh upload. That run covers the `png → Image` mapping, the operation poll and the output line. The other three mappings were exercised against the same endpoint by an earlier helper of the same shape rather than by this script, and `.rbxm` as `Model` has not been exercised at all — the script warns when asked for it.
+States are `ready` → `submitting` → `polling` → `succeeded`. Intent is durable before POST,
+the returned operation before polling, and each ID before the next upload. A failed second
+file preserves the first file's success. No asset POST is automatically retried, even on
+HTTP rejection. A crash, lost response or malformed response can leave `submitting`:
+**this is ambiguous and blocks further submission**. Reconcile through Roblox's asset records
+or support; retain this receipt and do not create a replacement to retry. This helper has no
+manual override for ambiguous submissions. A crash before submission can conservatively
+produce the same blocked state.
 
-**Verify the script without credentials** with `--dry-run`, which prints the request it would send (file, size,
-content type, JSON body) and whether the key is set, never its value:
+`--resume` polls `polling` entries without POST, replays `succeeded` IDs, and may submit only
+previously untouched `ready` entries. Poll failures/timeouts keep the operation for a later
+resume. Completed failures require reconciliation, not a new upload. Receipts contain no
+credential or raw API response. API errors are deliberately sanitized; redirects and arbitrary
+operation URLs are refused.
 
-```sh
-scripts/open_cloud_upload.sh --dry-run star-chime.mp3 Audio "Star chime"
-```
+## Formats and readiness
 
-## Asset types and formats
+Local preflight accepts PNG as Image, GLB as Model, MP3 as Audio, and RBXM as
+Animation or Model, up to 20,000,000 bytes. Extension/type checks do not validate file contents.
+Historical project uploads exercised PNG, GLB, MP3 and RBXM Animation. RBXM as Model is
+accepted but unexercised. Both entry points conservatively refuse other formats, including
+JPG/JPEG, FBX and OGG; this is a local compatibility restriction, not a claim that Roblox
+rejects those formats. Inspect mesh limits before publication.
 
-Four mappings have been run end to end against this endpoint — one (`png -> Image`) through this script, the
-other three through an earlier helper of the same shape. The script accepts only those four:
-
-| `assetType` | Verified extension (content type) | Used as |
-| --- | --- | --- |
-| `Image` | `.png` (`image/png`) | `ImageLabel.Image`, `Decal.Texture`, `SurfaceAppearance` maps, `Sky` faces, `Shirt.ShirtTemplate` |
-| `Audio` | `.mp3` (`audio/mpeg`) | `Sound.SoundId` |
-| `Model` | `.glb` (`model/gltf-binary`) | `InsertService:LoadAsset(id)` → MeshPart(s) |
-| `Animation` | `.rbxm` (`model/x-rbxm`) holding a `KeyframeSequence` | `Animation.AnimationId` on an R15 `Animator` |
-
-**Everything else is untested here and the script refuses it**, so a run cannot spend an upload on a
-server-side rejection: `.jpg`, `.ogg`, `.fbx`, `.rbxmx`. Roblox's own docs list `.mp3` and `.ogg` for audio, so
-`.ogg` is likely fine — but likely is not measured, and `.wav`/`.flac` were asserted in an earlier draft of this
-page on no evidence at all. If you need one of them, upload a single throwaway file by hand first, record the
-result, then add the extension to the script's table and to this one.
-
-`.rbxm` is not exclusively an Animation container. The requested `assetType` decides, and the script only
-refuses combinations it knows are wrong: `.rbxm` may be uploaded as `Model` as well as `Animation` (it warns
-that the `Model` case is unexercised), while `.glb` as `Image` is refused outright. Use the id as
-`rbxassetid://<id>` where a content string is expected.
-
-## Moderation
-
-An id can be returned while `moderationState` is still `Reviewing`; in the showcase, images stayed `Reviewing`
-for hours while models were `Approved` at once. A `Reviewing` asset rendered in Play for the uploading account.
-That does not show it loads for anyone else: re-read moderation (`GET /assets/v1/assets/{id}`, or the exposed
-equivalent) before calling an asset ready, and record the state in the ledger beside the id.
-
-## Ownership: what is tested and what is not
-
-- Phase 1 (PR #1) found audio uploaded with a personal key was **private to the uploader**: it played in a place
-  owned by that account and was not verified for any other owner or group.
-- Whether `Image` and `Model` assets behave the same is **untested**. Every showcase place was owned by the
-  uploading account, so nothing here shows a generated texture or mesh loading in someone else's experience.
-  Treat every personal-key upload as account-scoped until a cross-account test says otherwise.
-- The key uploads into a user account. Group-owned experiences, hosted OAuth and production permissions were not
-  exercised.
-
-## Audio: two sources, one route
-
-**A generated clip.** `generation_sound_effect` returns a terminal `succeeded` job whose
-result carries `audio_urls` / an `artifact_ref` of kind `audio`: a plain public `.mp3` URL. (`generation_music`
-returns the same shape, but no run of it was kept, so treat that as untested.) Measured on
-September 19–20, 2026: request `audio-route-test-2026-09-19-a`,
-job `b948de0a-2dff-4fb9-9c5c-4dffa9c1baed`, a 2 s clip, 33 KB, 128 kbps 44.1 kHz stereo. Download it, upload it
-as `Audio` — that run went through an earlier helper of the same shape, not through this
-script — and the operation returned **assetId 76875404707631**, `Reviewing` at upload.
-That id is then a `Sound.SoundId`, and it was carried the rest of the way: a moderation re-check about ten
-minutes later returned `Approved`/`Active`, and in a Studio play session the `Sound` reported `IsLoaded = true`,
-a 2.0 s length and `IsPlaying` after `Play()`. Audible output was not
-measured — no audio capture — and playback for any account other than the uploader's is untested, as for every
-asset here.
-
-**A library or licensed file.** The same command with the file you already have; the Roblox free audio library
-needs no upload at all, its ids go straight into `Sound.SoundId`.Generated audio does have an import route: the generation tools return a downloadable file and Open Cloud accepts it. What is still
-true is narrower and worth keeping: the connected MCP exposes no generation-side publishing step, so the bytes go
-through this script or its successor; moderation may still read `Reviewing`; and whether one account's audio
-plays for another is untested (above). Record the id, the source (generated job id or library id) and the route
-in the ledger either way.
-
-## Forward compatibility: this script is the stopgap
-
-The MCP is moving to server-side publishing with OAuth and an asset library. When that lands, the upload step
-becomes a tool call and nothing around it changes: the ledger still records asset ids, moderation is still read
-before an id is called ready, verification still happens in Studio, and only "how the bytes get there" moves
-from a personal key on the agent's machine to the server.
-
-Rule for the next agent:
-
-1. Discover the live tools first. If a publishing tool is exposed (any tool that takes a file or artifact ref and
-   returns a Roblox asset id), prefer it; check its schema for the asset type and the returned moderation state.
-2. Otherwise fall back to `scripts/open_cloud_upload.sh` with the user's own key, and say so in the report as a
-   substitute route.
-3. Record which route produced each id in the ledger (`"route": "open_cloud_script"` or the tool name), so a
-   later session can tell personal-account assets from library assets when ownership questions come up.
+An **asset ID is not moderation approval or Studio usability**. The helper reports moderation
+as unverified. Re-read moderation through the exposed asset lookup and verify insertion,
+rendering/playback and access in the intended experience. Personal-account playback evidence
+does not establish access for another account or group. Record route, owner, ID, moderation
+and Studio verification separately in the asset ledger.

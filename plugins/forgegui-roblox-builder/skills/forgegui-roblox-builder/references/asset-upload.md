@@ -84,13 +84,13 @@ equivalent) before calling an asset ready, and record the state in the ledger be
 **A generated clip.** `generation_sound_effect` returns a terminal `succeeded` job whose
 result carries `audio_urls` / an `artifact_ref` of kind `audio`: a plain public `.mp3` URL. (`generation_music`
 returns the same shape, but no run of it was kept, so treat that as untested.) Measured on
-September 19–20, 2026 (`evidence/audio-route/` in the showcase repo): request `audio-route-test-2026-09-19-a`,
+September 19–20, 2026: request `audio-route-test-2026-09-19-a`,
 job `b948de0a-2dff-4fb9-9c5c-4dffa9c1baed`, a 2 s clip, 33 KB, 128 kbps 44.1 kHz stereo. Download it, upload it
 as `Audio` — that run went through `tools/roblox-upload.sh`, a helper of the same shape, not through this
 script — and the operation returned **assetId 76875404707631**, `Reviewing` at upload.
 That id is then a `Sound.SoundId`, and it was carried the rest of the way: a moderation re-check about ten
 minutes later returned `Approved`/`Active`, and in a Studio play session the `Sound` reported `IsLoaded = true`,
-a 2.0 s length and `IsPlaying` after `Play()` (`evidence/audio-route/RESULT.md`). Audible output was not
+a 2.0 s length and `IsPlaying` after `Play()`. Audible output was not
 measured — no audio capture — and playback for any account other than the uploader's is untested, as for every
 asset here.
 

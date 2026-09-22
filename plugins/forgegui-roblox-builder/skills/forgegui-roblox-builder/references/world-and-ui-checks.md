@@ -58,10 +58,27 @@ When something is meant to be that way, mark it on the instance instead of ignor
 - **`UiCheck.audit`**: after you build or restyle a screen. Run it in play on the Client, with every
   modal you are checking open. It reads rendered sizes, and it treats art as framing only when that
   art is visible.
-- **`UiCheck.provenance`**: after a screen is built, in play on the Client, passing the place's art
-  registry module. It reports where each visible surface came from and what share of them is
-  generated art. Without a registry every image counts as art and the number means nothing, which is
-  why running it bare emits `provenance_no_registry`.
+- **`UiCheck.provenance`**: establish generated-art provenance scope during planning, then audit
+  every in-scope screen in play on the Client, including primitive-only implementations, passing
+  the place's art registry. Open the state being audited. Include the registry, findings and
+  unresolved substitutions, not just a ratio. Out-of-scope screens need no new art generation.
+  Missing or empty registries emit `provenance_no_registry` and mean **unverified**, not PASS;
+  legacy numeric image counts without a registry are diagnostic only.
+
+  With a usable registry, coverage = **registered image surfaces / counted surfaces**. Counted
+  surfaces are registered images, unregistered images and primitive fills/borders. Text is tallied
+  separately: a filled text label counts as both text and a primitive surface; transparent glyphs
+  alone do not increase surfaces. One registered image, one filled label and one transparent label
+  yield art=1, primitive=1, surfaces=2, text=2, coverage=0.5. `AllowPrimitive` suppresses a warning,
+  not the primitive count. Approved native controls remain valid; no minimum art ratio applies.
+
+  This is **registry-backed attribution** using caller-maintained IDs, not proof of ForgeGUI
+  generation. Preserve actual job/artifact/publication links separately in the ledger/run.
+  Visibility is structural: invisible GuiObject ancestors (including the supplied root and those
+  above it) and disabled containing ScreenGuis exclude descendants. Visibility is read anew on
+  each audit. Other LayerCollector types' Enabled states are not supported. Occlusion, clipping,
+  viewport coverage, pixel area and transparency compositing are not calculated. The ratio counts
+  elements, not rendered pixels or stylistic quality.
 - **`UiCheck.lintSource`**: in Edit, over every client script, before and after a UI change.
 - **`UiCheck.strayClickPoints`**: in play, for each transactional modal. It returns points inside
   the panel that are not over a button, plus points on the screen around the panel. Click each

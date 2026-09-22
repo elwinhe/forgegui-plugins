@@ -11,6 +11,13 @@ art that went in without a stacked background, a nested border or a stretched co
 
 ## The pipeline
 
+Use `preparation-installation.md` first: server `asset_prepare` handles supported
+alpha conversion and resizing, and `artifact_publish` publishes the prepared
+PNG member. Do not repeat these transformations locally. The local tools below
+remain for sheet splitting and nine-slice measurement, which #606 does not
+provide. Re-register locally changed bytes before server publication; preserve
+their provenance separately.
+
 1. **Generate** with the template for the type (below). Carry one art direction through a session by
    passing the first accepted artifact as `reference_asset_ids` on every later `generation_gui`
    call; `generation_gui` has no `game_style`, so the style words belong in the prompt.
@@ -29,7 +36,8 @@ art that went in without a stacked background, a nested border or a stretched co
    measures at that size: a 1496x659 panel is measured as 1024x451 (checked against
    `AssetService:CreateEditableImageAsync`). Metadata taken from the original file slices the wrong
    pixels in game.
-4. **Upload** by a route the connected server actually exposes — see the skill's import-route step.
+4. **Publish** the prepared/registered member with `artifact_publish` when usable.
+   Otherwise upload by a route the connected server actually exposes — see the skill's import-route step.
    Studio's `upload_image` rejected a ForgeGUI storage URL as untrusted; serving the pieces locally
    (`python -m http.server --bind 127.0.0.1`) and uploading `http://localhost:<port>/<file>.png`
    worked, as did Open Cloud with `assetType: "Image"`.
@@ -41,12 +49,16 @@ and never call a network service.
 
 ## Style references, and the user's own image
 
-`generation_gui`'s whole live schema is `prompt`, `type`, `count`, `reference_asset_ids` and
+The inspected `generation_gui` contract accepts `prompt`, `type`, `count`, `reference_asset_ids` and
 `request_id`. There is no `game_style`, and there are no style fields — the schema is
 `additionalProperties: false`, so passing `style_id`, `style_version` or `style_brief` is a hard
 rejection rather than a silently ignored extra. Style words go in the prompt; style *images* go in
 `reference_asset_ids`, which holds up to **8** entries and accepts **owned asset UUIDs and
-`mcp-artifact:<job>:<index>` references only**.
+`mcp-artifact:<job>:<index>` references only**. Every reference must resolve to an image;
+finished model and audio artifacts are invalid even when their identifier format is valid.
+Re-check the live schema before use. Style pins on `generation_image` and `generation_model_3d`
+do not imply support on `generation_gui`; their separate limits and image-family restrictions
+are documented in `references/style-identity.md`.
 
 That last constraint is the one that shapes the whole procedure: **a file on disk is not a
 reference.** A PNG the user pasted, screenshotted or downloaded cannot be passed to
@@ -60,41 +72,60 @@ has the full procedure. Discover the live tool list first (SKILL.md §1) — do 
 
 ### When it is not: the style-plate substitute
 
-As of 2026-09-19 the connected staging server exposes neither the upload pair nor the `style_*`
-family, so there is no route from a user's image to a reference. Do not stall on this and do not
-hunt for a workaround that uploads the file somewhere else. Use a style plate:
+The 2026-09-19 staging discovery reported neither the upload pair nor the `style_*` family.
+Use this substitute only if fresh discovery still finds no supported upload route; this dated
+observation does not establish current availability. Do not hunt for a workaround that uploads
+the file somewhere else. Include the paid plate and any comparison generations in the approved
+asset/call budget before generating. Use a style plate:
 
 1. **Read the user's image and write it down.** Palette as hex, material language, line weight,
    shading, corner treatment, the mood in one sentence. This is the only step where the user's image
    is actually consulted, so be specific — everything downstream inherits these words.
 2. **Generate the plate.** One `generation_image` call, type `thumbnail`, prompting for a style
    sheet rather than a screen: a few swatches, a rim treatment, one representative shape. Keep the
-   returned `mcp-artifact:` ref.
+   completed job's image-backed `mcp-artifact:` ref. If a project style pin is available and the
+   live image schema supports it, apply it using `references/style-identity.md`.
 3. **Pin every GUI call to it.** Pass that ref in `reference_asset_ids` on every `generation_gui`
    call for the project, and record it as the manifest's `style_refs` entry. One plate, every
    screen.
 4. **Disclose it.** Say in the report that the reference was reconstructed from a description
    because no image-upload route was exposed, and name the two tools that would remove the step.
 
-This is a substitution, not a shortcut, and the distinction matters: the integration
-— a reference image measurably steering GUI output — is fully exercised, and only the *ingestion* of
-the user's file is stood in for. When the upload family lands, step 1 and 2 collapse into a register
-call and the rest is unchanged.
+This substitute tests generated-image references, not direct conditioning on the user's original
+image. Report measured results only after running the comparison; the recipe alone is not evidence.
+When the upload family is exposed, replace steps 1 and 2 with the full authorize → upload bytes →
+register sequence, then pass the returned owned image UUID to GUI calls.
 
 ### Show that it worked
 
-"The reference changed the style" is an opinion until it is a number. Generate the same prompt set
-twice, once per reference, into two directories with matching filenames, then:
+Adherence is judged against the reference itself: put each screen beside the reference image or
+plate, say where it follows and where it drifts, and record the conditioning evidence the calls
+returned, where supported — the style pin echoed back, the `style_application` in force, which
+reference IDs were accepted, or an `unsupported_style_conditioning` rejection. `generation_gui`
+has no style-identity fields: record accepted image references and the Studio comparison instead
+of requiring `style_application`. Accepted input does not demonstrate visual adherence.
+
+When two comparable runs already exist — one per reference, in two directories with matching
+filenames — the palette diagnostic adds a number:
 
 ```sh
 python references/tools/style_delta.py runs/ref-a/ runs/ref-b/ --contact-sheet delta.png
 ```
 
-It reports CIELAB delta-E between the two runs' dominant palettes, plus the hue, saturation and
-value shifts that say which way the style moved, and writes the side-by-side sheet. Delta-E's
-just-noticeable difference is about 2.3; the tool calls the change measurable at 5.0 and exits
-non-zero below it. Only opaque pixels are measured, because averaging in a transparent background
-drags every palette toward the same grey and makes two different styles look identical.
+It reports an **unweighted palette-center distance** in CIELAB delta-E, plus absolute hue distance
+and signed saturation/value deltas, and writes the side-by-side sheet. Hue is unsigned:
+350→10 and 10→350 both measure 20 degrees, not clockwise/counterclockwise motion.
+The palette distance ignores color proportions, spatial arrangement and causality. A near-zero
+value means matched centers are close, not that color distribution or style is the same; reversed
+90/10 red/blue shares can score nearly zero. Use the visual comparison/contact sheet as well.
+The tool's 5.0 is an advisory comparison point, not a validated whole-image or style-adherence
+threshold (nor is a single-color just-noticeable difference one): ordinary generation variance can
+clear it with no style effect, and a reference
+that moved shape, material or composition while holding the colours can land below it. Read it as a
+description of a colour difference, never as proof of one, and do not commission extra paid
+generations solely to produce it. Only opaque pixels are measured, because averaging in a
+transparent background drags every palette toward the same grey and makes two different styles look
+identical.
 
 ## Templates by type
 
@@ -441,15 +472,22 @@ afford it.
 - `python references/tools/test_tools.py` checks the splitter and the slice tool on synthetic art.
   The slice centre avoids a crest, side gems and painted clouds, a sliced preview keeps its rim
   thickness, and a split icon closer than `--min-gap` stays whole. It also checks
-  `paste_module.py`. That is 54 checks, with no arguments and no network.
+  `paste_module.py`. That is 65 checks, with no arguments and no network.
 - `lune run references/tests/qa`, run from the skill root, checks `UiCheck` against stubbed GUI
   trees. `UiCheck` audits a live ScreenGui against the screen templates above: art chrome, icons in
   chips or on plates, strokes inside framed art, and backdrops wired to close. The same run checks
-  `WorldCheck`. That is 63 checks.
+  `WorldCheck`. The suite includes provenance visibility and coverage regressions.
 - In Studio, run `UiCheck` on each screen you built, as described in `world-and-ui-checks.md`.
-- In Studio, run `UiCheck.provenance` on each screen against the art registry. It answers the
-  question a reviewer actually asks — is this built from generated images and text, or from Roblox
-  frames — as a percentage, and names every image it cannot trace to the registry.
+- In Studio, run `UiCheck.provenance` on every screen whose generated-art provenance was put in
+  scope during planning, even if it ended up primitive-only. Include the registry, findings and
+  unresolved substitutions. Coverage is registered image surfaces / counted surfaces (registered
+  images, unregistered images and primitive surfaces). Text is tallied separately, although a
+  label's fill/border also counts as a primitive. This is caller-maintained **registry-backed
+  attribution**, not proof of generation; retain ForgeGUI job/artifact/publication records in the
+  ledger. Missing registry means unverified provenance. `AllowPrimitive` suppresses a warning
+  without turning a primitive into art. There is no minimum ratio: valid native controls remain
+  allowed. The ratio counts structurally visible elements, not screen area, pixels or quality;
+  see `world-and-ui-checks.md` for visibility limits.
 - In Studio, `screen_capture` at the target viewport *and* at a phone-sized one. A HUD that is
   correct at 1920x1080 and broken at 390x844 is the normal failure.
 - Read the slice metadata off the `--preview` render before uploading, not off a panel that is

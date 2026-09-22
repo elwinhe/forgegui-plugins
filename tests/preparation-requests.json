@@ -1,0 +1,195 @@
+{
+  "note": "Illustrative placeholder IDs; replace with owned returned IDs. Independent examples, not a live execution transcript.",
+  "cases": [
+    {
+      "name": "discover",
+      "tool": "asset_capabilities",
+      "arguments": {}
+    },
+    {
+      "name": "inspect-model",
+      "tool": "asset_prepare",
+      "arguments": {
+        "request_id": "model-inspect-v1",
+        "run_id": "00000000-0000-4000-8000-000000000001",
+        "asset": {
+          "kind": "model",
+          "source_ref": "mcp-artifact:00000000-0000-4000-8000-000000000001:0"
+        }
+      }
+    },
+    {
+      "name": "prepare-model",
+      "tool": "asset_prepare",
+      "arguments": {
+        "request_id": "model-prepare-v1",
+        "run_id": "00000000-0000-4000-8000-000000000001",
+        "asset": {
+          "kind": "model",
+          "source_ref": "mcp-artifact:00000000-0000-4000-8000-000000000001:0",
+          "transform": {
+            "uniform_scale": 2,
+            "pivot": "bounds_bottom_center",
+            "orientation_degrees": [
+              0,
+              90,
+              0
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "prepare-image",
+      "tool": "asset_prepare",
+      "arguments": {
+        "request_id": "image-prepare-v1",
+        "run_id": "00000000-0000-4000-8000-000000000001",
+        "asset": {
+          "kind": "image",
+          "source_ref": "mcp-artifact:00000000-0000-4000-8000-000000000001:0",
+          "operations": [
+            {
+              "op": "color_key_to_alpha",
+              "key_rgb": [
+                0,
+                0,
+                0
+              ],
+              "tolerance": 0,
+              "existing_alpha": "preserve"
+            },
+            {
+              "op": "resize",
+              "width": 512,
+              "height": 512,
+              "fit": "contain",
+              "background_rgba": [
+                0,
+                0,
+                0,
+                0
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "prepare-sprite",
+      "tool": "asset_prepare",
+      "arguments": {
+        "request_id": "sprite-prepare-v1",
+        "asset": {
+          "kind": "image",
+          "source_ref": "mcp-artifact:00000000-0000-4000-8000-000000000001:0",
+          "operations": [
+            {
+              "op": "luminance_to_alpha",
+              "rgb": "white",
+              "existing_alpha": "multiply"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "poll-preparation",
+      "tool": "generation_status",
+      "arguments": {
+        "job_id": "00000000-0000-4000-8000-000000000002"
+      }
+    },
+    {
+      "name": "publish-model",
+      "tool": "artifact_publish",
+      "arguments": {
+        "request_id": "publish-model-v1",
+        "artifact_ref": "mcp-artifact:00000000-0000-4000-8000-000000000002:0",
+        "asset_type": "Model",
+        "destination": {
+          "platform": "roblox",
+          "creator": "configured_shared_group"
+        },
+        "run_id": "00000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "name": "publish-image",
+      "tool": "artifact_publish",
+      "arguments": {
+        "request_id": "publish-image-v1",
+        "artifact_ref": "mcp-artifact:00000000-0000-4000-8000-000000000002:0",
+        "asset_type": "Image",
+        "destination": {
+          "platform": "roblox",
+          "creator": "configured_shared_group"
+        },
+        "run_id": "00000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "name": "poll-publication",
+      "tool": "publication_status",
+      "arguments": {
+        "publication_id": "00000000-0000-4000-8000-000000000002"
+      }
+    },
+    {
+      "name": "create-run",
+      "tool": "run_create",
+      "arguments": {
+        "request_id": "run-create-v1",
+        "name": "Prepared asset installation"
+      }
+    },
+    {
+      "name": "report-check",
+      "tool": "run_append",
+      "arguments": {
+        "run_id": "00000000-0000-4000-8000-000000000001",
+        "request_id": "verify-v1",
+        "expected_revision": 1,
+        "events": [
+          {
+            "type": "verification_reported",
+            "test_profile": {
+              "id": "studio-install",
+              "version": 1
+            },
+            "observed_at": "2026-09-22T00:00:00Z",
+            "outcome": "not_performed",
+            "checks": [
+              {
+                "name": "textures-scale-play",
+                "outcome": "not_performed"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "resume-run",
+      "tool": "run_get",
+      "arguments": {
+        "run_id": "00000000-0000-4000-8000-000000000001",
+        "limit": 50
+      }
+    },
+    {
+      "name": "find-model-runs",
+      "tool": "run_list",
+      "arguments": {
+        "asset_kind": "model"
+      }
+    },
+    {
+      "name": "find-image-runs",
+      "tool": "run_list",
+      "arguments": {
+        "asset_kind": "image"
+      }
+    }
+  ]
+}

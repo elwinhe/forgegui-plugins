@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "project": "Example Project",
   "updated": "2026-09-15T00:00:00Z",
   "game_style": "roblox",
@@ -20,5 +20,6 @@
       "by": "user"
     }
   ],
-  "assets": []
+  "assets": [],
+  "run": null
 }

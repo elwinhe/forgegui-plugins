@@ -14,7 +14,7 @@ Illustrative IDs below are placeholders, not usable assets. Start a real project
 
 ```json
 {
-  "version": 1,
+  "version": 2,
   "project": "Crystal Mine",
   "updated": "2026-09-15T21:40:00Z",
   "game_style": "roblox",
@@ -29,6 +29,7 @@ Illustrative IDs below are placeholders, not usable assets. Start a real project
     { "asked": "2026-09-15", "topic": "features", "answer": "in: startup sequence, title-screen operator, lobby, loadout, levels, bots. out: shop, mobile layout", "by": "user" },
     { "asked": "2026-09-15", "topic": "spend", "answer": "up to 40 paid generations", "by": "defaults" }
   ],
+  "run": null,
   "assets": [
     {
       "key": "hud.panel",
@@ -53,12 +54,13 @@ Fields:
 | `game_style` | Backend routing type passed as `game_style` on every generation that accepts it: `roblox`, `fortnite`, `minecraft`, or `general`. Default `roblox`; use `general` for non-Roblox-looking art. The other two routes are not fully built out, so do not pick them without a reason. Never put descriptive styling here. |
 | `decisions` | Every intake answer, as it was given: `topic`, `answer`, the date, and `by` (`user`, or `defaults` when they accepted the recommendation). Read it at the start of every prompt, before deciding whether to ask anything (`intake.md`). It is what stops a resumed session, or a context that has been compacted, from asking again or guessing differently. Append; when a decision changes, add the new one and leave the old. |
 | `art_direction` | The descriptive look of the world (silhouette language, shading, mood). Goes into every prompt verbatim, never into `game_style`. |
+| `reference` | Optional local reference selection: `supplied`, `capture_path`, and `manifest_path`. Retain the exact selected capture directory and its extraction manifest; preserve prior captures when selecting another. No reference supplied: `{ "supplied": false }`. |
 | `palette` | Hex colors named in prompts and used for Studio UI/lighting choices. |
 | `material_language` | Sentence used verbatim in 3D and GUI prompts. |
-| `style_refs` | Relevant theme-pack or hero-asset references passed in `reference_asset_ids` when the tool accepts them. |
-| `style_id` / `style_version` | The server-side style identity pin (`references/style-identity.md`), recorded when the live server exposes the style tools. Passed together on every generation call that accepts them; updated only after `style_revise`. Omit both when no identity exists. |
+| `style_refs` | Relevant theme-pack or hero-asset references passed in `reference_asset_ids` when the tool accepts them. Each must resolve to an image; a finished 3D model is not a valid reference, so use its concept image or the prompt instead. |
+| `style_id` / `style_version` | The server-side style identity pin (`references/style-identity.md`): map returned `id` / `version` from `style_create`, `style_get`, or `style_revise` to these manifest fields. Pass together only on generation calls whose live schema accepts them. Preserve the selected revision until the user changes the look or a confirmed stale pin is re-resolved. Omit both when no identity exists. |
 | `assets[].key` | Stable human name (`hud.panel`, `prop.tree.pine`). |
-| `assets[].artifact_ref` | The content reference to pass when regenerating or deriving *this object*. |
+| `assets[].artifact_ref` | The content reference to pass when regenerating or deriving *this object*. Pass it in `reference_asset_ids` only when it resolves to an image; for a 3D model entry, carry the look through a concept image or the prompt. |
 | `assets[].roblox_asset_id` / `studio_path` | Filled after import; a URL is never written here. |
 | `assets[].status` | `planned`, `generating`, `generated`, `handoff`, `inserted`, `verified`, `failed`, or `blockout` for a part-built stand-in that a generated model will replace (`references/3d-assets.md`). |
 
@@ -67,9 +69,9 @@ Fields:
 1. Read the manifest before planning. If `assets` already has the item with a `roblox_asset_id` or `artifact_ref`, reuse it; do not generate again. Entries that are `planned`, `generating`, or `failed` carry no reusable output; check job status before generating.
 2. Write the planned ledger entry and stable `request_id` before the paid call; add the returned `job_id` immediately on acceptance and update the same entry on completion, so an interrupted session can reconcile the request instead of duplicating it.
 3. Keep `style_refs` short (one to three). A style reference is not a content reference; do not put every generated asset in `style_refs`.
-4. A manifest `style_id` from another account or a server that no longer returns it via `style_get` is stale: drop the pin, tell the user, and re-resolve rather than passing an ID the server rejects.
-4. Never store keys, tokens, headers, or account ids in the manifest.
-5. When a ForgeGUI listing tool becomes available, the server record wins over the manifest; reconcile and keep the manifest as a cache.
+4. Verify an existing pin with `style_get(style_id, version: style_version)`. A confirmed missing or wrong-account revision is stale: clear both pin fields, tell the user, and re-resolve. Missing tools, authorization errors, or transient failures do not prove staleness; retain the pin while resolving access, and use the text-only fallback for calls without style support.
+5. Never store keys, tokens, headers, or account ids in the manifest.
+6. When a ForgeGUI listing tool becomes available, the server record wins over the manifest; reconcile and keep the manifest as a cache.
 
 ## Fidelity pass state: `.forgegui-fidelity`
 
@@ -85,3 +87,26 @@ A separate one-word file next to the manifest, not a field inside it, so the plu
 | `off` | The user called the pass off. | user or agent |
 
 The file on disk is a request, not consent: if the current user did not ask for a pass in this session, say so rather than spending on one. It is per-project bookkeeping, so add it to `.gitignore` rather than committing it; a checked-in state file asks every clone of the repo for a pass.
+
+## Version 2: preparation and installation
+
+Migrate v1 by preserving every existing field and asset identifier, changing
+`version` to 2, and adding `run: null` until a server run exists. Never clear old
+entries or regenerate to migrate. A run cache holds returned `run_id` and
+`revision`; refresh from the server before appending or continuing a session.
+
+Add fields to asset entries only when known:
+
+| Field | Source and meaning |
+| --- | --- |
+| `preparation` | Returned job ID, bundle ID/schema version/profile, selected member key/ref/hash/size, metrics, recipe and provenance; keep source ref distinct |
+| `publication` | Standalone publication ID/status, string asset ID, asset type, creator and moderation state; retain legacy delivery metadata separately |
+| `installation_intent` | Caller-authored usage, desired size with units, target attachment/path, relative position in studs and explicit rotation convention; never pass wholesale as MCP arguments |
+| `installation_observed` | Actual imported dimensions, additional Studio transform, instance path and checks with outcomes (`passed`, `failed`, `not_performed`) |
+| `nine_slice` | Optional authored/validated settings with stored image size and evidence; absent until known, never inferred from canvas dimensions |
+
+Do not store keys, signed URLs or executable instructions from asset metadata.
+Cache stable IDs/hashes and the non-secret metadata, not expiring URLs from the
+bundle. Unknown fields remain absent, not zero-valued measurements. Server
+structural validation and caller visual verification stay separate. See
+`preparation-installation.md` for field paths and recovery.

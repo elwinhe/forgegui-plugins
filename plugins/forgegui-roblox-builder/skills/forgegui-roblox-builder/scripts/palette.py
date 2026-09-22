@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-"""Dominant palette of an image or a folder of frames, and mean ΔE between two palettes.
+"""Dominant palette of an image or a folder of frames, and one-way nearest-color distance.
 
 usage: palette.py <image-or-dir> [--k 6]                 -> k hex colours with rough proportions
-       palette.py <image-or-dir> --vs <ref-image-or-dir>  -> also prints mean ΔE to the reference
+       palette.py <image-or-dir> --vs <ref-image-or-dir>  -> also prints one-way nearest-color distance
        palette.py --selftest
 
 k-means in CIE Lab (CIE76 ΔE). Proportions are the share of sampled pixels per cluster.
-ΔE = mean over this palette of the distance to the nearest reference colour: build vs
-reference, ~<5 is a close match, >20 is a visibly different palette. numpy + Pillow only.
+One-way nearest-color distance = mean over build palette centres of the distance to
+the nearest reference colour. It ignores color proportions and missing reference colors;
+it cannot establish palette adherence. No match/pass/fail thresholds. numpy + Pillow only.
 """
 import sys
 from pathlib import Path
@@ -109,8 +110,27 @@ def selftest():
         pg, sg = palette(sub, k=2)
         assert set(hexes(pa)) == {"#ff0000", "#0000ff"}, hexes(pa)
         assert abs(sa[0] - 0.5) < 0.05 and abs(sg[0] - 0.5) < 0.05, (sa, sg)
-        assert delta_e(pa, pb) < 5 < delta_e(pa, pg), (delta_e(pa, pb), delta_e(pa, pg))
+        assert delta_e(pa, pb) < delta_e(pa, pg), (delta_e(pa, pb), delta_e(pa, pg))
         assert delta_e(pa, pa) < 1e-6
+        Image.new("RGB", (100, 100), "red").save(Path(d) / "red.png")
+        reference = Image.new("RGB", (100, 100), "blue")
+        ImageDraw.Draw(reference).rectangle([0, 0, 9, 99], fill="red")
+        reference.save(Path(d) / "mostly-blue.png")
+        build, build_share = palette(Path(d) / "red.png")
+        ref, ref_share = palette(Path(d) / "mostly-blue.png")
+        assert abs(build_share[0] - 1) < 1e-6
+        assert hexes(ref)[0] == "#0000ff" and abs(ref_share[0] - 0.9) < 1e-6
+        assert delta_e(build, ref) < 1e-6
+        import contextlib
+        import io
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            main([str(Path(d) / "red.png"), "--vs", str(Path(d) / "mostly-blue.png")])
+        text = output.getvalue()
+        assert "Build palette:" in text and "Reference palette:" in text
+        assert "90.0%" in text and "100.0%" in text
+        assert "one-way nearest-color distance" in text
+        assert "ignores color proportions and missing reference colors" in text
     print("selftest OK")
 
 
@@ -135,11 +155,16 @@ def main(argv):
     if not src or k < 1 or (ref is None and "--vs" in argv):
         sys.exit(__doc__)
     pal, share = palette(src, k)
+    print(f"Build palette: {src}")
     for h, s in zip(hexes(pal), share):
         print(f"{h}  {s:5.1%}")
     if ref:
-        rp, _ = palette(ref, k)
-        print(f"dE vs {ref}: {delta_e(pal, rp):.2f}")
+        rp, ref_share = palette(ref, k)
+        print(f"Reference palette: {ref}")
+        for h, s in zip(hexes(rp), ref_share):
+            print(f"{h}  {s:5.1%}")
+        print(f"one-way nearest-color distance (CIE76 ΔE): {delta_e(pal, rp):.2f}")
+        print("Diagnostic only: ignores color proportions and missing reference colors; cannot establish palette adherence.")
 
 
 if __name__ == "__main__":

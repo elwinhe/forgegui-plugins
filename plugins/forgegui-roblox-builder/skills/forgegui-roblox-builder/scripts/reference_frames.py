@@ -8,8 +8,11 @@ Point it at the reference the user provided: a local file or a link they gave. I
 search for footage and downloads nothing the user did not hand over; before pointing it at a
 link, confirm the user is entitled to that footage. A URL is fetched with yt-dlp; frames are extracted with ffmpeg. Frames are written as frame_001.png ... and tiled
 into sheet_00.png ... (rows x cols per --sheet). Keep the frames: the fidelity pass compares
-Studio captures against these same stills.
+Studio captures against these same stills. Each invocation creates a fresh capture directory
+under outdir and writes manifest.json; earlier captures are never removed.
 """
+import json
+from datetime import datetime, timezone
 import shutil
 import subprocess
 import sys
@@ -85,7 +88,10 @@ def sheets(paths, outdir, rows, cols):
 
 def capture(src, outdir, frames=30, width=1280, sheet="3x4"):
     rows, cols = (int(v) for v in sheet.lower().split("x"))
-    outdir = Path(outdir)
+    started = datetime.now(timezone.utc).isoformat()
+    parent = Path(outdir)
+    parent.mkdir(parents=True, exist_ok=True)
+    outdir = Path(tempfile.mkdtemp(prefix="capture-", dir=parent))
     with tempfile.TemporaryDirectory() as tmp:
         video = fetch(src, Path(tmp)) if "://" in src else Path(src)
         if not video.is_file():
@@ -93,7 +99,18 @@ def capture(src, outdir, frames=30, width=1280, sheet="3x4"):
         got = extract(video, outdir, frames, width)
     if not got:
         sys.exit("ffmpeg produced no frames")
-    return got, sheets(got, outdir, rows, cols)
+    contact_sheets = sheets(got, outdir, rows, cols)
+    manifest = {
+        "version": 1,
+        "source": str(src) if "://" in str(src) else str(Path(src).resolve()),
+        "parameters": {"frames": frames, "width": width, "sheet": sheet},
+        "started_at": started,
+        "completed_at": datetime.now(timezone.utc).isoformat(),
+        "frames": [p.name for p in got],
+        "sheets": [p.name for p in contact_sheets],
+    }
+    (outdir / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    return got, contact_sheets
 
 
 def selftest():
@@ -107,6 +124,17 @@ def selftest():
         assert len(got) == 12, [p.name for p in got]
         assert len(sh) == 2, [p.name for p in sh]
         assert got[0].name == "frame_001.png" and all(p.stat().st_size > 0 for p in got + sh)
+        original = {p: p.read_bytes() for p in got + sh + [got[0].parent / "manifest.json"]}
+        second, second_sheets = capture(str(clip), Path(tmp) / "out", frames=3, width=320, sheet="2x3")
+        assert len(second) == 3 and len(second_sheets) == 1
+        assert second[0].parent != got[0].parent
+        assert all(p.read_bytes() == data for p, data in original.items())
+        manifest = json.loads((second[0].parent / "manifest.json").read_text())
+        assert manifest["source"] == str(clip.resolve())
+        assert manifest["parameters"] == {"frames": 3, "width": 320, "sheet": "2x3"}
+        assert manifest["frames"] == [p.name for p in second]
+        assert manifest["sheets"] == [p.name for p in second_sheets]
+        assert datetime.fromisoformat(manifest["completed_at"]) >= datetime.fromisoformat(manifest["started_at"])
     print("selftest OK")
 
 
@@ -144,6 +172,7 @@ def main(argv):
     if opts["--width"] < 16:
         sys.exit(f"error: --width must be at least 16, got {opts['--width']}")
     got, sh = capture(pos[0], pos[1], opts["--frames"], opts["--width"], opts["--sheet"])
+    print(f"capture: {got[0].parent}\nmanifest: {got[0].parent / 'manifest.json'}")
     print(f"{len(got)} frames: {got[0]} .. {got[-1]}")
     for s in sh:
         print(f"sheet: {s}")

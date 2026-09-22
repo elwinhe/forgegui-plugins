@@ -18,7 +18,7 @@ For a new game or a large feature, ask one round of questions before planning. S
 
 Pick from these, in order of importance:
 
-1. **Reference.** A game, video, or screenshots to match? Pasted images and links are welcome; none is fine. You cannot watch a video: ask for a few screenshots (menus, gameplay camera, HUD, win screen) when a link alone would decide the look.
+1. **Reference.** A game, video, or screenshots to match? Pasted images and links are welcome; none is fine. Prefer extracting frames from supplied videos or links with `scripts/reference_frames.py` (see `references/reference-capture.md`). Ask for screenshots only if extraction is unavailable or fails. Retain the selected capture path in the project ledger.
 2. **Scope.** Which screens and systems are in (menus, shop, progression, economy) and which are out.
 3. **Players.** Solo against AI bots, or multiplayer?
 4. **Spend.** How many paid generations, and is paid generation authorized? Recommend a specific number (0 is a valid recommendation) so a "defaults" reply sets a real ceiling. Say the cost is unknown unless billing evidence gives a number.

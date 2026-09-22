@@ -16,16 +16,16 @@ handing it over for this build — the script downloads what it is pointed at an
 
 This is the part that makes a build converge. Descriptions drift; numbers do not.
 
-- **Extract:** `scripts/reference_frames.py <the user's clip or link> refs/ --frames 30` writes `frame_NNN.png` and contact sheets. Look at the sheets, then pick the four or five clearest frames: a wide shot of the play area, a ground-level shot, one showing the HUD, one mid-action.
+- **Extract:** `scripts/reference_frames.py <the user's clip or link> refs/ --frames 30` creates a fresh `refs/capture-.../` directory with `frame_NNN.png`, contact sheets, and `manifest.json` recording the source, extraction parameters, UTC timestamps, and output filenames. It returns only this invocation’s frames. Look at the sheets, then pick the four or five clearest frames: a wide shot of the play area, a ground-level shot, one showing the HUD, one mid-action.
 - **Scale ruler:** find an object of known size in frame (a car, a character, a door, a goal). Decide its length in studs once, and derive everything else from it: play-area length and width, wall height, key structure sizes, camera distance and height above the subject, field of view where it can be inferred from foreshortening.
-- **Palette:** `scripts/palette.py refs/ --k 6` prints hex values with proportions. Sample the play surface and each team or faction colour separately if they matter; record the hex values, not colour names.
+- **Palette:** `scripts/palette.py refs/<selected-capture>/ --k 6` prints hex values with proportions. Sample the play surface and each team or faction colour separately if they matter; record the hex values, not colour names.
 - **HUD:** read each element's position and size as fractions of the screen (score at 0.5, 0.04; minimap bottom-right 0.15 wide). Note font weight, whether text has an outline, and what is animated.
 - **Motion:** count what you can observe: seconds to cross the play area at top speed, jump height in object lengths, how long a boost or dash lasts, whether the camera lags the subject.
 - Write all of it into the look-spec (`art_direction`, `palette`, and scene measurements in the manifest) **before** generating anything. A generation call made before the numbers exist is spend against a moving target.
 
 ## Keep the frames
 
-Keep `refs/` for the whole project. The fidelity pass (`references/fidelity-pass.md`) compares Studio captures against these same stills, and the comparison is only falsifiable when the captures match: same camera angle, same distance from the subject, same moment (kickoff, mid-jump, HUD visible). Take each matched pair before judging likeness, and run `scripts/palette.py <capture-dir> --vs refs/` for the palette half of the comparison.
+Keep `refs/` for the whole project. The fidelity pass (`references/fidelity-pass.md`) compares Studio captures against these same stills, and the comparison is only falsifiable when the captures match: same camera angle, same distance from the subject, same moment (kickoff, mid-jump, HUD visible). Take each matched pair before judging likeness, and run `scripts/palette.py <build-capture-dir> --vs refs/<selected-capture>/` as an advisory one-way nearest-color distance. It ignores color proportions and missing reference colors: a red-only build can score zero against a mostly-blue reference containing red. It cannot establish palette adherence and has no acceptance thresholds. Keep both palettes with their percentage shares alongside the build and reference captures. A symmetric, proportion-aware algorithm is deferred to a separate improvement; symmetry alone does not fix ignored proportions.
 
 ## Worked example (hypothetical, arena sports game)
 
@@ -37,7 +37,13 @@ other dimension, not these particular values.
 2. Ruler: set the car at 12 studs long (an avatar is about 5, so a car that shares the frame with one cannot be
    4). Counting car lengths off the wide shot: pitch ~87 long → ~1040 studs and ~69 wide → ~830 studs; goal mouth
    ~2.5 cars → ~30 studs; walls ~1.6 cars → ~19 studs. Camera sits ~2.3 cars behind and ~0.85 above.
-3. `palette.py refs/ --k 6` → pitch green ~52%, two team colours, boost-orange accent, dark wall, white lines. Hex values go into the manifest.
+3. `palette.py refs/<selected-capture>/ --k 6` → pitch green ~52%, two team colours, boost-orange accent, dark wall, white lines. Hex values go into the manifest.
 4. HUD: score centred at 0.50 × 0.05 of the screen, timer under it, boost gauge bottom-right at 0.85 × 0.90.
 5. Motion: top speed crosses the pitch end to end in ~8 s; jump ~1.5 car lengths; boost burst ~1 s.
 6. Build to those numbers, then capture the same wide and goal-mouth angles and compare.
+
+## Capture selection and cleanup
+
+After extraction, retain the selected directory in `forgegui-project.json` as `reference.capture_path`, with `reference.supplied: true` and `reference.manifest_path` pointing to its `manifest.json`. Use that exact capture for subsequent comparisons; never aggregate the parent directory. Preserve unrelated ledger fields and older captures when switching references. Capture manifests record the supplied source, so keep them local and do not commit or share credential-bearing URLs.
+
+Extraction never deletes previous evidence. Cleanup is optional and explicit: only remove a specifically selected old capture when the user requests cleanup, after checking it is no longer the ledger’s selected reference.

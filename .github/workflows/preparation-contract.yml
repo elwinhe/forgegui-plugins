@@ -19,6 +19,7 @@ jobs:
         with:
           python-version: '3.11'
       - run: python -m pip install -r tests/requirements.txt
+      - run: python tests/test_publishing_connections.py
       - run: python tests/test_preparation_contract.py
       - run: python plugins/forgegui-roblox-builder/skills/forgegui-roblox-builder/scripts/texture_prep.py --selftest
       - run: bash tests/fidelity-pass-hook.sh

@@ -8,7 +8,7 @@ In ForgeGUI, open **Profile → MCP API keys** and create an expiring, revocable
 
 - `library:read` allows free library discovery.
 - `generation:read` reads account-owned jobs and preparation results.
-- `publication:read` polls owned publications; `publication:write` explicitly uploads owned artifacts to the configured shared group.
+- `publication:read` polls owned publications and, when live advertised, discovers publishing connections; `publication:write` publishes through the explicitly selected usable destination. The shared group remains an explicit legacy option.
 - `runs:read` retrieves run records; `runs:write` creates and records runs.
 - `generation:write` also authorizes preparation (which does not charge generation credits); generation can spend credits and requires a paid Starter-or-higher entitlement. Omit it until the account owner authorizes generation.
 
@@ -47,7 +47,7 @@ Proceed only after the free check succeeds and the account owner authorizes a bo
 
 - Select the intended Studio place and carry its `studio_id` through Studio calls.
 - Confirm `generation:write`, paid entitlement, requested asset count, and budget.
-- Verify a supported route from the expected ForgeGUI artifact format into Studio before spending.
+- Verify a supported route from the expected ForgeGUI artifact format into Studio before spending. For publication, follow [publishing connections](plugins/forgegui-roblox-builder/skills/forgegui-roblox-builder/references/publishing-connections.md): discover live connections, resolve the user-selected creator, check status/type/route/scopes and experience access, and record safe identity before paid work. Direct files need no connection.
 - Generate one authorized asset with one stable `request_id`; retain the returned `job_id`.
 - Poll `generation_status` to a terminal result. Never automatically retry `outcome_unknown`, timeouts, or ambiguous provider outcomes.
 - Verify artifact format and integrity before import. A URL is not a Roblox asset ID.
@@ -60,6 +60,10 @@ Check the bundled skill for import findings and live-tool requirements. Personal
 
 Uninstall or disable this bundle, start a new client session, and restore the recorded manual ForgeGUI entry only after the bundled copy is gone. Revoke the bundle's ForgeGUI key from **Profile → MCP API keys** if it is no longer needed or may have been exposed. Removing this bundle does not disable the separate Studio MCP server.
 
-## Generated audio publication
+## Publishing connections and generated audio
 
-For new Roblox music and sound effects, prefer generation-time `delivery: {"mode": "publish", "platform": "roblox"}` when advertised by the generator; poll the generation job and track `delivery.outputs[]` individually (`result` is null). Preserve direct delivery and standalone publication for existing artifacts; never republish integrated outputs. Require `generation:write` plus `publication:write` for integrated submission and `generation:read` for job polling. Check that live `artifact_publish` accepts `Audio` and `asset_capabilities` reports the configured shared-group route usable for the account and asset type. Use `publication:write` and `publication:read`, and confirm the target experience can use that group-owned audio before paid generation. Follow [audio publication](plugins/forgegui-roblox-builder/skills/forgegui-roblox-builder/references/audio-publication.md). Installing this version does not deploy the backend extension or establish OAuth, moderation or audible-playback acceptance.
+Roblox publishing keys go only through authenticated ForgeGUI settings, never agent chat, MCP arguments, commands or the ledger. Do not configure them as the ForgeGUI account key. Connection setup, rotation and disconnect belong in settings; do not request a key to repair a failed publication.
+
+Follow [publishing connections](plugins/forgegui-roblox-builder/skills/forgegui-roblox-builder/references/publishing-connections.md) for `publication_connections_list` (`publication:read`) and selectors. Use them only when live advertised and usable for the selected creator and asset type. No implicit shared-group fallback or creator changes are permitted. This package does not deploy the feature; request parity is checked against contract 1.9.0; hosted acceptance remains pending.
+
+For new Roblox music/SFX, prefer integrated publish delivery with the selected `connection_id` when the generator advertises it; the original selector-free publish shape is only for an explicitly chosen live legacy shared group. Require `generation:write` plus `publication:write`, `generation:read` for job polling, and `publication:read` for individual publications. Discover integrated and standalone Audio routes independently. Poll the generation job and track `delivery.outputs[]` individually (`result` is null); never republish integrated outputs. Direct files need no connection. Follow [audio publication](plugins/forgegui-roblox-builder/skills/forgegui-roblox-builder/references/audio-publication.md) for partial batches, recovery and audible-playback checks. Installation does not establish OAuth, moderation or target-experience access.

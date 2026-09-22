@@ -156,6 +156,8 @@ tested upload route (SKILL.md §4); check the current limits for your route.
 
 ## Getting it into Studio
 
+Before paid work, follow [publishing connections](publishing-connections.md) for live discovery, explicit intended-creator selection, active status/type/route/scopes and safe ledger identity. Proposed selectors await final export parity. Direct delivery needs no connection; no creator change or shared-group fallback is allowed on failure. Roblox publishing keys go only through authenticated ForgeGUI settings, never agent chat, MCP arguments, commands or the ledger.
+
 For the preferred inspect/transform-before-publication path, follow
 `preparation-installation.md`: generate/reuse a direct artifact, call
 `asset_prepare`, inspect `result.prepared_bundle`, and pass the **prepared Model
@@ -168,15 +170,16 @@ Establish the route when you plan the kit, not after generating (SKILL.md §4):
 
 1. **Generation-time publishing.** Inspect the deployed `generation_model_3d`
    schema and available capability information before spending. If supported
-   and enabled, use `delivery: {"mode": "publish", "platform": "roblox"}` when
-   the intended ownership matches. The inspected backend contract publishes to
-   ForgeGUI's **server-configured group**; callers cannot select an arbitrary
-   user or group. Verify the destination and target experience's access first.
+   and enabled, use publish/roblox with the selected `connection_id` only when
+   that selector is live supported. The original selector-free shape
+   `delivery: {"mode": "publish", "platform": "roblox"}` is the explicit legacy
+   **server-configured group** choice only. Never pass arbitrary user/group
+   overrides. Verify the destination and target experience's access first.
    Omitted delivery or `delivery: {"mode": "direct"}` returns files only.
    Poll `generation_status` until `delivery.status == "ready"`, verify access,
    then use the returned Roblox asset ID with `insert_asset` and inspect in
    Studio. Save `publication_id`, decimal-string `asset_id`, `asset_type` and
-   creator metadata (`creator_group_id`) as returned; retain the asset ID as a
+   creator metadata (legacy `creator_group_id` when present) as returned; retain the asset ID as a
    string in records and adapt it only as required by the insertion schema.
    Published responses deliberately set `result: null` and suppress raw files
    on submission, polling and replay. Do not require `result.artifacts`, a GLB
@@ -198,7 +201,7 @@ Establish the route when you plan the kit, not after generating (SKILL.md §4):
    accepted artifact, ownership, permissions, moderation and returned Roblox
    asset ID, then `insert_asset`. Do not assume this tool exists merely because
    generation-time publishing exists.
-3. **Open Cloud upload** as an explicitly chosen fallback, through
+3. **Legacy Open Cloud upload**, retained as a separate workflow, not a connection setup or failure fallback. Never collect or handle Roblox publishing keys for this connection workflow. Existing local users have
    `references/tools/oc_upload.py` with a mandatory receipt and an explicit
    destination. See [Establish the publication route](#establish-the-publication-route)
    below. Check moderation, then `insert_asset`.
@@ -212,12 +215,12 @@ If publishing is disabled, absent from the deployed schema, or targets the wrong
 owner, select a verified alternative above. If none is available and the user has
 not accepted the manual handoff, stop spending on that asset. Do not regenerate
 an existing or ambiguous job to change delivery; retain its identifiers and
-resolve its status before arranging import of the existing artifact.
+resolve its status before arranging import of the existing artifact. Never republish integrated outputs, even if a publication ID is temporarily missing.
 
 Record in the ledger for every asset (`references/project-manifest.md`): job id,
 delivery mode, available direct artifact refs or published delivery metadata
 (`publication_id`, decimal-string `roblox_asset_id` mapped from the API response's
-`asset_id`, `asset_type`, `creator_group_id`, and delivery status), plus the Studio
+`asset_id`, `asset_type`, returned creator metadata including legacy `creator_group_id` when present, and delivery status), plus the Studio
 instance path when inserted. Use `roblox_asset_id` for manifest reuse and
 reconciliation. Do not invent
 an artifact ref for published output. Track local status separately (`generated`, then
@@ -250,7 +253,7 @@ Discover deployed ForgeGUI publication first and prefer it when the live route s
 both the requested asset type and intended owner. `insert_asset` needs a Roblox ID;
 a GLB URL is not an ID, and an image uploader is not a model uploader.
 
-If explicitly choosing Open Cloud as the fallback, use the resumable uploader:
+For separate legacy local users only, the resumable uploader remains available. Connection callers must use authenticated ForgeGUI settings and must not collect keys or execute local uploads as a fallback. Historical command examples:
 
 ```sh
 python3 references/tools/oc_upload.py model.glb --type Model --name "Prop" \
@@ -260,7 +263,7 @@ python3 references/tools/oc_upload.py model.glb --type Model --name "Prop" \
 ```
 
 Replace the example ID with the intended owner, or use `--group-id` for a provable group
-scope. `ROBLOX_API_KEY` comes only from the environment, never `.env` or arguments.
+scope in that separate legacy workflow. The helper reads a pre-provisioned environment credential; connection callers must not request it or populate the environment.
 Read [asset-upload.md](asset-upload.md) for authority checks, formats, batch examples,
 receipt recovery and the compatibility shell wrapper. Do not retry ambiguous publication
 or automatically fall back after ForgeGUI `outcome_unknown`; reconcile the original request.

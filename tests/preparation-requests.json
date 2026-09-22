@@ -252,6 +252,64 @@
           }
         ]
       }
+    },
+    {
+      "name": "generate-sfx-direct",
+      "tool": "generation_sound_effect",
+      "arguments": {
+        "request_id": "desert-sfx-v1-direct",
+        "prompt": "A short dry sword impact, isolated, no music",
+        "duration_seconds": 2,
+        "count": 1,
+        "delivery": {
+          "mode": "direct"
+        }
+      }
+    },
+    {
+      "name": "generate-sfx-publish",
+      "tool": "generation_sound_effect",
+      "arguments": {
+        "request_id": "desert-sfx-v1-publish",
+        "prompt": "A short dry sword impact, isolated, no music",
+        "duration_seconds": 2,
+        "count": 1,
+        "delivery": {
+          "mode": "publish",
+          "platform": "roblox"
+        }
+      }
+    },
+    {
+      "name": "generate-music-direct",
+      "tool": "generation_music",
+      "arguments": {
+        "request_id": "desert-music-v1-direct",
+        "prompt": "Quiet instrumental desert exploration with soft percussion",
+        "music_length_seconds": 30,
+        "instrumental": true,
+        "loopable": true,
+        "count": 1,
+        "delivery": {
+          "mode": "direct"
+        }
+      }
+    },
+    {
+      "name": "generate-music-publish",
+      "tool": "generation_music",
+      "arguments": {
+        "request_id": "desert-music-v1-publish",
+        "prompt": "Quiet instrumental desert exploration with soft percussion",
+        "music_length_seconds": 30,
+        "instrumental": true,
+        "loopable": true,
+        "count": 1,
+        "delivery": {
+          "mode": "publish",
+          "platform": "roblox"
+        }
+      }
     }
   ]
 }

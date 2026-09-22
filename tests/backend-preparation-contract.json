@@ -1,12 +1,17 @@
 {
-  "backend_commit": "a51f28d07aabb2405b29fd99e6da2625c1f14fd9",
-  "export_sha256": "a5f233de075992d4380cfbf01b215f39bd9b1a29d2f8e935e6c03d93f322fd07",
-  "schema_version": "1.7.0",
+  "backend_commit": "36b26158b2a076ad5abd0ba4a9e89df65053434e",
+  "export_sha256": "ea876c46a494c9d9017053e565dac27799a248abd078c95c615bf4cfa09e8ce6",
+  "schema_version": "1.8.0",
   "tools": [
     {
       "name": "generation_sound_effect",
       "scope": "generation:write",
-      "description": "Generate game sound effects.",
+      "conditional_scopes": {
+        "delivery.mode=publish": [
+          "publication:write"
+        ]
+      },
+      "description": "Generate game sound effects. Optional delivery publish/roblox requires publication:write and publishes each retained output through the durable Audio publisher. Direct or omitted delivery returns file results and never publishes.",
       "input_schema": {
         "type": "object",
         "properties": {
@@ -20,6 +25,42 @@
           "run_id": {
             "type": "string",
             "format": "uuid"
+          },
+          "delivery": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "const": "direct"
+                  }
+                },
+                "required": [
+                  "mode"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "const": "publish"
+                  },
+                  "platform": {
+                    "type": "string",
+                    "const": "roblox"
+                  }
+                },
+                "required": [
+                  "mode",
+                  "platform"
+                ],
+                "additionalProperties": false
+              }
+            ],
+            "description": "How finished audio is delivered. Omitted or direct returns ForgeGUI file results only. publish/roblox additionally publishes each retained MP3 output as a Roblox Audio asset owned by ForgeGUI's server-configured group; the destination group and credentials are trusted server configuration and cannot be chosen per call, and each output reports its own publication status and decimal-string asset id once ready."
           },
           "prompt": {
             "type": "string",
@@ -57,7 +98,12 @@
     {
       "name": "generation_music",
       "scope": "generation:write",
-      "description": "Generate game music. loopable requests loop-friendly composition from the provider; no seam validation is performed and a seamless loop is not guaranteed.",
+      "conditional_scopes": {
+        "delivery.mode=publish": [
+          "publication:write"
+        ]
+      },
+      "description": "Generate game music. Optional delivery publish/roblox requires publication:write and requests below 420 seconds; direct or omitted delivery permits 600 seconds and never publishes. Publication readiness is reported separately per output. loopable requests loop-friendly composition from the provider; no seam validation is performed and a seamless loop is not guaranteed.",
       "input_schema": {
         "type": "object",
         "properties": {
@@ -71,6 +117,42 @@
           "run_id": {
             "type": "string",
             "format": "uuid"
+          },
+          "delivery": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "const": "direct"
+                  }
+                },
+                "required": [
+                  "mode"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "const": "publish"
+                  },
+                  "platform": {
+                    "type": "string",
+                    "const": "roblox"
+                  }
+                },
+                "required": [
+                  "mode",
+                  "platform"
+                ],
+                "additionalProperties": false
+              }
+            ],
+            "description": "How finished audio is delivered. Omitted or direct returns ForgeGUI file results only. publish/roblox additionally publishes each retained MP3 output as a Roblox Audio asset owned by ForgeGUI's server-configured group; the destination group and credentials are trusted server configuration and cannot be chosen per call, and each output reports its own publication status and decimal-string asset id once ready."
           },
           "prompt": {
             "type": "string",
@@ -956,7 +1038,7 @@
                 "pattern": "^mcp-artifact:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}:(0|[1-9][0-9]{0,2})$"
               }
             ],
-            "description": "An account-owned asset UUID or mcp-artifact reference. Object and style references must resolve to images."
+            "description": "Owned Model, Image, or Audio asset reference to publish."
           },
           "asset_type": {
             "type": "string",

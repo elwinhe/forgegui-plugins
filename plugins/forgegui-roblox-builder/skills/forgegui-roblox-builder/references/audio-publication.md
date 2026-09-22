@@ -1,14 +1,32 @@
 # Generated music and sound-effect publication
 
-This workflow requires the deployed Audio extension to `artifact_publish`. Check live tool schemas and `asset_capabilities` before planning dependent work. The package version and this document do not prove deployment, provider entitlement, Roblox moderation or playback.
+This workflow supports integrated generation-time publication and standalone Audio `artifact_publish`. Discover each route independently; standalone Audio support alone does not establish integrated delivery support. Check live tool schemas and `asset_capabilities` before planning dependent work. The package version and this document do not prove deployment, provider entitlement, Roblox moderation or playback.
 
 ## Generate or reuse
 
-Prefer an existing owned audio artifact when suitable. Otherwise use `generation_sound_effect` for short effects or `generation_music` for a soundtrack with an authorized budget. Save the exact request and stable request ID before submission, then retain the generation job ID and poll `generation_status`. Select the returned audio artifact reference for the intended batch member; never substitute a download URL or assume index zero represents every result.
+Prefer an existing owned audio artifact when suitable. Otherwise use `generation_sound_effect` for short effects or `generation_music` for a soundtrack with an authorized budget. Save the exact request and stable request ID before submission, then retain the generation job ID and poll `generation_status`. For direct delivery or reuse, select the returned audio artifact reference for the intended batch member; never substitute a download URL or assume index zero represents every result.
 
 Both generators already produce MP3. The generation service holds its provider key; never ask the user for `SoundMusic_KEY`. Music's direct-generation duration range can exceed Roblox's publication limit. Consult the advertised audio limits before spending on a track intended for Roblox. Do not trim, transcode or regenerate rejected audio automatically. `loopable` is a prompt hint, not a verified seamless loop.
 
-## Publish through ForgeGUI
+## Prefer integrated delivery for new Roblox audio
+
+For newly generated Roblox audio, prefer `delivery: {"mode": "publish", "platform": "roblox"}` on `generation_music` or `generation_sound_effect` when that generator's live schema advertises it and account capabilities report Audio publication usable. Require `generation:write` and `publication:write` before paid submission, plus `generation:read` for job polling and `publication:read` for individual publication polling. Confirm the configured shared-group destination and intended experience access first; this does not select user OAuth.
+
+Omitting delivery or passing `delivery: {"mode": "direct"}` preserves file delivery without publishing. Use direct delivery when files are wanted, and standalone publication below for existing owned artifacts. Executable examples for omitted, direct and publish requests for both generators are in `tests/preparation-requests.json`.
+
+Direct music supports up to 600 seconds; integrated publication requires a requested duration strictly below 420 seconds. Measured audio validation still applies after generation. Do not silently shorten the request or switch delivery modes on rejection.
+
+Integrated publish responses have `result: null`; consume `delivery.outputs[]` rather than looking for raw audio URLs or a single model-style `delivery.asset_id`. Poll the original job with `generation_status` even after generation succeeds. Retain each member's `index`, `artifact_ref` when present, `publication_id`, decimal-string `asset_id`, status and moderation metadata independently in ledger v2. IDs can be null while work is pending. Generation success does not mean delivery is ready.
+
+- `publishing`: keep polling the existing job/publications; no new generation or upload.
+- `ready`: every output is ready for the separate access and Studio playback checks below.
+- `partially_ready`: inspect every member; only ready members may proceed to those checks. Others may still be pending, failed or require reconciliation.
+- `incomplete`: inspect member errors and missing outputs; preserve successful receipts and report the missing/failed portion. Do not regenerate the batch automatically.
+- `needs_reconciliation` on the aggregate or a member, or `outcome_unknown`: retain all IDs and errors and reconcile the original work. Never resubmit, change routes, or assume billing settled.
+
+Never call `artifact_publish` for outputs already submitted by integrated delivery. A temporarily missing publication ID is not permission to publish manually: the durable handoff may still be recovering. Use only an explicitly supported publication-only recovery action after reconciling the original state. Standalone/local publication is not a fallback for interrupted integrated delivery.
+
+## Publish existing artifacts through ForgeGUI
 
 Require all of the following: the live `artifact_publish` input enum includes `Audio`, the configured shared-group publication route is usable for this account, its capabilities include Audio, and the intended experience has an authorized access path. A Model/Image-only publisher is not an Audio publisher.
 

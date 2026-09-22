@@ -1,6 +1,6 @@
 # Animation authoring for the standard R15 rig
 
-An agent-authored `KeyframeSequence` uploaded as an `Animation` (see `asset-upload.md`) plays on any standard R15 avatar with no rigging step. These are the rules that make one read as motion rather than a pose slideshow. Measured September 20, 2026 on a looping dance emote in the showcase place; the numbers are a starting point, not a law.
+An agent-authored `KeyframeSequence` uploaded as an `Animation` (the upload route arrives with the Open Cloud upload change; see `references/asset-upload.md` once it lands) plays on any standard R15 avatar with no rigging step. These are the rules that make one read as motion rather than a pose slideshow. Measured September 20, 2026 on a looping dance emote in the showcase place; the numbers are a starting point, not a law.
 
 ## What is addressable
 
@@ -89,4 +89,4 @@ A four-pose looping cycle at 0.25 s per pose, 1.0 s total, sampled into 8 keys p
 | Upper-leg roll (feet planted) | -18·hipDir | 0 |
 | Unweighted foot pitch | 10 | 0 |
 
-Measured in Play: `Length 1.000`, hands sweeping 1.0 studs sideways and 0.7 studs front-to-back, knees -15°…+23°, wrists ±9.6°, head yaw ±6°. The same cycle with only six joints driven measured the same hand sweep and read as arm-waving.
+Measured in Play on the **six-key precursor** to the table above, not on the table itself: `Length 1.000`, hands sweeping 1.0 studs sideways and 0.7 front-to-back, knees -15°…+23°, wrists ±9.6°, head yaw ±6°. The nine-key version in the table trades some of that range for smoother arcs — its hands sweep about 0.56 studs and its knees run -15.6°…-5°, with head yaw unchanged at ±6°. Expect the shape of these numbers, not the numbers. A version driving only six joints measured a comparable hand sweep and still read as arm-waving, which is the point of driving the whole rig.

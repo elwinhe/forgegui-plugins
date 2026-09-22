@@ -282,7 +282,12 @@ class PublisherTests(unittest.TestCase):
         self.assertFalse(self.receipt.exists())
         with patch.dict(os.environ, {}, clear=True):
             (self.root / '.env').write_text('ROBLOX_API_KEY=secret-test-key')
-            self.assertEqual(self.run_cli(), 1)
+            original_directory = pathlib.Path.cwd()
+            try:
+                os.chdir(self.root)
+                self.assertEqual(self.run_cli(), 1)
+            finally:
+                os.chdir(original_directory)
 
     def test_wrapper_real_dry_run_and_delegation(self):
         wrapper = pathlib.Path(u.__file__).resolve().parents[2] / 'scripts/open_cloud_upload.sh'

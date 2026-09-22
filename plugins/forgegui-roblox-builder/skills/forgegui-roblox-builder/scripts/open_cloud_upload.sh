@@ -10,4 +10,4 @@ fi
 file=$1; type=$2; name=$3
 shift 3
 exec python3 "$(dirname "${BASH_SOURCE[0]}")/../references/tools/oc_upload.py" \
-  "${flags[@]}" --type "$type" --name "$name" "$@" -- "$file"
+  ${flags[@]+"${flags[@]}"} --type "$type" --name "$name" "$@" -- "$file"

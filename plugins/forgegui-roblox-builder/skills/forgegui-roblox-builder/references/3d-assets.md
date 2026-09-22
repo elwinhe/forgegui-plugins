@@ -110,9 +110,10 @@ Establish the route when you plan the kit, not after generating (SKILL.md §4):
 
 1. **A publishing tool exposed by the connected MCP** that returns a Roblox asset
    id. Use it, then `insert_asset`.
-2. **Open Cloud upload** (`POST /assets/v1/assets`, `assetType: "Model"`, the GLB
-   as-is) with the user's own API key through a bridge they run. Poll the
-   operation for `response.assetId`, check moderation, then `insert_asset`.
+2. **Open Cloud upload** as an explicitly chosen fallback, through
+   `references/tools/oc_upload.py` with a mandatory receipt and an explicit
+   destination. See [Establish the publication route](#establish-the-publication-route)
+   below. Check moderation, then `insert_asset`.
 3. **Manual import handoff.** Download each GLB into the project folder and ask
    the user to import them in one sitting with Studio's 3D Importer (File >
    Import 3D). Then find the imported MeshParts in the place and continue. This is slower but fully valid. **Don't fall back to building the

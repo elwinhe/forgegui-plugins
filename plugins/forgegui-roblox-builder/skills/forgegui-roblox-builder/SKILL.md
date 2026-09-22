@@ -6,7 +6,7 @@ description: Build or extend Roblox Studio experiences with ForgeGUI assets and 
 
 ForgeGUI MCP generates and searches. Roblox Studio MCP inspects the place, edits scripts, inserts assets, and playtests. You coordinate both. Neither replaces the other. Explicit user choices override these defaults.
 
-For assets destined for Studio, follow this loop in order: **intake → reference → import preflight → generate/reuse → prepare → publish → Studio install → verify → record in run**. Reuse existing assets and Roblox IDs where suitable; a standalone downloadable asset needs no Studio import route. Skipping the reference step causes style drift and duplicate spend. Skipping verification turns a generation success into an unproven claim.
+For assets destined for Studio, follow this loop in order: **intake → reference → import preflight → generate/reuse → prepare → publish → Studio install → verify → record in run**. Reuse existing assets and Roblox IDs where suitable; a standalone downloadable asset needs no Studio import route. Skipping the reference step causes style drift and duplicate spend. Skipping verification turns a generation success into an unproven claim. For a whole game from a vague prompt, `references/showcase-flow.md` gives the order the build happens in around this loop.
 
 ## 0. Intake: one short round of questions
 
@@ -78,6 +78,26 @@ Rules:
 Read `references/preparation-installation.md` for the #606 server preparation and standalone publication workflow. Call `asset_capabilities` and verify account usability. Prefer server preparation for supported GLB inspection/transforms and image alpha/resize operations, then publish the prepared member. Keep measured metadata, baked transforms and caller-authored installation intent separate. Do not repeat completed processing locally.
 
 Establish a supported route from the expected output format into Studio before spending. A standalone downloadable asset needs no route.
+
+Prefer discovered, deployed ForgeGUI publication when it supports both the asset type and
+intended destination owner. Check the actual schema and authority; do not assume universal
+account/key support. Open Cloud is an explicitly chosen fallback, documented in
+`references/asset-upload.md`, with mandatory destination and durable receipt flags. Its
+`references/tools/oc_upload.py` implementation also serves `scripts/open_cloud_upload.sh`.
+Use `--resume` with identical inputs to recover saved operations/IDs. An uncertain submission
+must be reconciled, never resubmitted with a new receipt. For ForgeGUI, persist `request_id`
+and the exact request in the ledger before submission, then save returned identifiers immediately.
+Reconcile with `generation_status({"job_id": "<saved job UUID>"})` or
+`publication_status({"publication_id": "<saved publication UUID>"})` as applicable.
+The currently exposed status schemas do **not** accept `request_id`; it is an idempotency key,
+not a client status-query key, and `asset_id` is not a substitute for either status UUID.
+If `outcome_unknown` or a lost response leaves neither status UUID, retain the request ID,
+tool name, inputs, timestamp and any returned correlation identifier for ForgeGUI operator
+reconciliation. Keep the entry blocked until the operator recovers the original job/publication
+UUID for the status query, or a discovered read-only lookup explicitly supports the saved
+correlation identifier. Do not invent a lookup or replay the submission to obtain an ID;
+never automatically switch to Open Cloud after an ambiguous ForgeGUI result.
+Record ID, moderation and Studio usability as separate facts.
 
 Moss Louvan's September 15, 2026 [PR #1 findings](https://github.com/elwinhe/forgegui-plugins/pull/1) report image, audio and GLB uploads through Open Cloud `POST /assets/v1/assets` with the file, followed by polling the returned operation for `response.assetId`. Those tests used a personal account and an Open Cloud API key. They establish a tested API route, not that the connected MCP exposes it or that a hosted OAuth flow or production group permissions have been verified. Discover the live publishing tool and its execution permissions before relying on this route; `execute_luau` alone does not establish permission to import files or publish assets.
 
@@ -213,3 +233,5 @@ Based on the connected tool inventory of September 14–15, 2026, the ForgeGUI c
 - `references/animation-authoring.md` — authoring a `KeyframeSequence` for the standard R15 rig, and the in-Play measurements that prove one played
 - `references/reference-capture.md` — turning a user-supplied reference into frames, scale, palette and HUD numbers
 - `scripts/reference_frames.py`, `scripts/palette.py` — frame extraction and Lab palette / ΔE comparison (`--selftest` on each)
+- `references/showcase-flow.md` — a vague prompt to a finished game: look-spec, grey-box, asset strategy, fidelity passes behind guards
+- `references/asset-upload.md` — ForgeGUI-first publishing and recovery of interrupted uploads, with an explicit Open Cloud fallback (`references/tools/oc_upload.py`, wrapper `scripts/open_cloud_upload.sh`)

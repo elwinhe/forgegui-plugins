@@ -36,7 +36,7 @@ would be distorted by the resize, and `--selftest` covers all of it.
 
 Read the two numbers, not just the verdict. A flat or near-uniform image has nothing to judge and
 says so. Measured on real generator output: raw returns carried borders of roughly 90-100 px per
-side (`tex-chevron-raw.png`, `tex-stand-seats-raw.png`), and three textures already shipped in a
+side (`tex-chevron-raw.png`, `tex-stand-seats-raw.png`), and four textures already shipped in a
 finished build report a wrap several times their neighbour figure -- they tile with a seam that
 nobody had noticed, because a tiling error is invisible in a close-up.
 

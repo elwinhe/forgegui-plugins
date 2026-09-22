@@ -39,6 +39,7 @@ local function makeHat(): Accessory
 end
 
 -- on a character with a Humanoid
+local humanoid = character:WaitForChild("Humanoid") :: Humanoid
 humanoid:AddAccessory(makeHat())
 ```
 
@@ -73,8 +74,8 @@ On the live character, not the template:
 
 - the `Accessory` is parented to the character and its `Handle` carries the expected `Attachment`
 - the offset is what you intended — measure it rather than eyeballing:
-  `print((handle.Position - head.Position).Y)`. A hat built this way measured about 0.9 studs above
-  head centre in repeated Play runs; treat that as the shape of the answer, not a target, since it
+  `print((handle.Position - head.Position).Y)`. A hat built this way measured 0.84 and 0.88 studs above
+  head centre in two Play runs; treat that as the shape of the answer, not a target, since it
   depends on the mesh.
 - the gear reads correctly from the sides **and from above**, which is where an open mesh shows
 - the thumbnail is not a check — the thumbnail is what hid the hole

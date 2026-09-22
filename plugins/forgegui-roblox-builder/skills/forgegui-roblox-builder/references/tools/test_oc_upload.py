@@ -294,15 +294,19 @@ class PublisherTests(unittest.TestCase):
         fake = self.root / 'python3'
         fake.write_text('#!/bin/sh\nprintf "%s\\n" "$@"\n')
         fake.chmod(0o700)
-        result = subprocess.run(['bash', str(wrapper), str(self.file), 'Image', 'test',
-                                 '--group-id', '456', '--receipt', str(self.receipt), '--resume'],
-                                env={**os.environ, 'PATH': str(self.root) + ':' + os.environ['PATH']},
-                                capture_output=True, text=True)
-        self.assertEqual(result.returncode, 0)
-        self.assertIn('oc_upload.py', result.stdout)
-        self.assertIn('--resume', result.stdout)
-        self.assertIn('--group-id\n456', result.stdout)
-        self.assertNotIn('secret-test-key', result.stdout)
+        for flags in [[], ['--dry-run']]:
+            for extra in [[], ['--group-id', '456', '--receipt', 'receipt with spaces.json', '--resume']]:
+                with self.subTest(flags=flags, extra=extra):
+                    result = subprocess.run(
+                        ['bash', str(wrapper), *flags, 'asset with spaces.png', 'Image',
+                         'name with spaces', *extra],
+                        env={**os.environ, 'PATH': str(self.root) + ':' + os.environ['PATH']},
+                        capture_output=True, text=True)
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    args = result.stdout.splitlines()
+                    self.assertEqual(pathlib.Path(args[0]).resolve(), pathlib.Path(u.__file__).resolve())
+                    self.assertEqual(args[1:], flags + ['--type', 'Image', '--name',
+                                     'name with spaces', *extra, '--', 'asset with spaces.png'])
 
 
 class TransportTests(unittest.TestCase):

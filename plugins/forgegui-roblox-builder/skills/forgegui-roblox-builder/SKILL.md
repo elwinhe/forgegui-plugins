@@ -207,6 +207,9 @@ Based on the connected tool inventory of September 14–15, 2026, the ForgeGUI c
 - `references/ui-motion.md` — reveals, presses, counters and modals (`luau/Motion.luau`)
 - `references/lighting-presets.md` — six looks, the `glow`/`haze`/`reduced` dials and reversible apply (`luau/LightingPresets.luau`)
 - `references/particle-recipes.md`, `references/sound-placement.md`, `references/mechanical-polish.md` — VFX, audio placement and game feel
+- `references/textures.md` — generating, preparing and applying a standalone texture (`scripts/texture_prep.py`)
+- `references/characters.md` — clothing from a plain Image id, the face Decal, and applying both at spawn
+- `references/accessories.md` — fitting rigid gear to the standard R15 rig without a fitting tool
 - `references/animation-authoring.md` — authoring a `KeyframeSequence` for the standard R15 rig, and the in-Play measurements that prove one played
 - `references/reference-capture.md` — turning a user-supplied reference into frames, scale, palette and HUD numbers
 - `scripts/reference_frames.py`, `scripts/palette.py` — frame extraction and Lab palette / ΔE comparison (`--selftest` on each)

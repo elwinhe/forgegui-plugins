@@ -10,7 +10,7 @@ handing it over for this build — the script downloads what it is pointed at an
 
 1. **Use what the user attached or linked.** A clip, a link, screenshots, stills. Run `scripts/reference_frames.py` on a video; use images as they are.
 2. **If nothing was supplied, ask for one.** A short clip, a handful of screenshots, or a link is enough. Say why in one sentence: without it, likeness cannot be measured, only guessed.
-3. **If the user declines or is not available to ask,** build to the style words in the request. Record in `forgegui-project.json` that no reference was supplied, and do not report a likeness percentage anywhere in the report.
+3. **If the user declines or is not available to ask,** build to the style words in the request. Record it in `forgegui-project.json` as `"reference": { "supplied": false }`, and do not report a likeness percentage anywhere in the report.
 
 ## From frames to numbers
 
@@ -25,7 +25,7 @@ This is the part that makes a build converge. Descriptions drift; numbers do not
 
 ## Keep the frames
 
-Keep `refs/` for the whole project. The fidelity pass compares Studio captures against these same stills, and the comparison is only falsifiable when the captures match: same camera angle, same distance from the subject, same moment (kickoff, mid-jump, HUD visible). Take each matched pair before judging likeness, and run `scripts/palette.py <capture-dir> --vs refs/` for the palette half of the comparison.
+Keep `refs/` for the whole project. The fidelity pass (`references/fidelity-pass.md`) compares Studio captures against these same stills, and the comparison is only falsifiable when the captures match: same camera angle, same distance from the subject, same moment (kickoff, mid-jump, HUD visible). Take each matched pair before judging likeness, and run `scripts/palette.py <capture-dir> --vs refs/` for the palette half of the comparison.
 
 ## Worked example (hypothetical, arena sports game)
 

@@ -6,7 +6,7 @@ usage: reference_frames.py <video-or-url> <outdir> [--frames 30] [--width 1280] 
 
 Point it at the reference the user provided: a local file or a link they gave. It does not
 search for footage and downloads nothing the user did not hand over; before pointing it at a
-link, confirm the user is entitled to that footage. A URL is fetched with yt-dlp; frames are extracted with ffmpeg. Frames are written as frame_000.png ... and tiled
+link, confirm the user is entitled to that footage. A URL is fetched with yt-dlp; frames are extracted with ffmpeg. Frames are written as frame_001.png ... and tiled
 into sheet_00.png ... (rows x cols per --sheet). Keep the frames: the fidelity pass compares
 Studio captures against these same stills.
 """
@@ -139,7 +139,10 @@ def main(argv):
             raise ValueError
     except ValueError:
         sys.exit("error: --sheet wants ROWSxCOLS with both at least 1, for example 3x4")
-        sys.exit("--frames >= 1, --width >= 16, --sheet like 3x4")
+    if opts["--frames"] < 1:
+        sys.exit(f"error: --frames must be at least 1, got {opts['--frames']}")
+    if opts["--width"] < 16:
+        sys.exit(f"error: --width must be at least 16, got {opts['--width']}")
     got, sh = capture(pos[0], pos[1], opts["--frames"], opts["--width"], opts["--sheet"])
     print(f"{len(got)} frames: {got[0]} .. {got[-1]}")
     for s in sh:

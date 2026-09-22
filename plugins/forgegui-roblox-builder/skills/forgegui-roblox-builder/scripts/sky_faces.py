@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Cut a 2:1 equirectangular panorama into the six faces a Roblox Sky needs.
 
-usage: sky_faces.py <panorama.png> <out_dir> [--size 1024]
+usage: sky_faces.py <panorama.png> <out_dir> [--size 1024 | --band 64]
        sky_faces.py --selftest
+At most one option: --size is the face edge in pixels, --band the number of columns
+the wrap seam's step is ramped out over (0 disables the correction).
 Writes SkyboxFt/Bk/Lf/Rt/Up/Dn.png. Faces come from one continuous image, so
 edges meet by construction; the panorama's own left/right wrap seam is the only
 place a generated image can mismatch, and it lands behind the camera (Bk).
@@ -77,6 +79,24 @@ def faces(pano, size, rotate=True):
     return {n: np.rot90(sample(pano, *f(u, v)), ROTATE[n] if rotate else 0) for n, f in FACES.items()}
 
 
+def parse_args(argv):
+    """Return (src, out, kwargs-for-main) for a valid invocation, or exit with usage.
+
+    A fourth argument is only ever --size or --band. A typo, an unknown option or a stray
+    path has to be rejected: silently falling back to the defaults would run a long cut with
+    settings the caller did not ask for and no sign that the option was dropped. Defaults
+    stay on main, so an omitted option is absent from the returned kwargs rather than
+    restated here.
+    """
+    if len(argv) == 2:
+        return argv[0], argv[1], {}
+    if len(argv) == 4 and argv[2] == "--size":
+        return argv[0], argv[1], {"size": int(argv[3])}
+    if len(argv) == 4 and argv[2] == "--band":
+        return argv[0], argv[1], {"band": int(argv[3])}
+    sys.exit(__doc__)
+
+
 def main(src, out, size=1024, band=64):
     img = Image.open(src).convert("RGB")
     w, h = img.size
@@ -148,16 +168,26 @@ def selftest():
     assert abs(float(np.abs(fixed[:, 0] - stepped[:, 0]).max()) - 10.0) < 1e-3, "each side takes half the step"
     interior = np.abs(fixed[:, 255] - stepped[:, 255]).max()
     assert interior < 1e-3, "detail outside the band must be untouched"
-    print("selftest ok: six face directions, four shared edges, ROTATE table pinned, wrap seam ramp")
+    # Argument parsing. The fourth argument is only ever --size or --band; anything else has
+    # to exit with usage rather than reach main with the defaults.
+    assert parse_args(["p.png", "out"]) == ("p.png", "out", {})
+    assert parse_args(["p.png", "out", "--size", "512"]) == ("p.png", "out", {"size": 512})
+    assert parse_args(["p.png", "out", "--band", "0"]) == ("p.png", "out", {"band": 0})
+    for bad in ([], ["p.png"], ["p.png", "out", "--sizes", "512"], ["p.png", "out", "-size", "512"],
+                ["p.png", "out", "512", "--size"], ["p.png", "out", "--size", "512", "--band", "0"]):
+        try:
+            parse_args(bad)
+        except SystemExit as e:
+            assert e.code == __doc__, f"{bad} must exit with the usage text"
+        else:
+            raise AssertionError(f"{bad} must be rejected, not run with defaults")
+    print("selftest ok: six face directions, four shared edges, ROTATE table pinned, wrap seam ramp, argument parsing")
 
 
 if __name__ == "__main__":
     a = sys.argv[1:]
     if a == ["--selftest"]:
         selftest()
-    elif len(a) in (2, 4):
-        size = int(a[3]) if len(a) == 4 and a[2] == "--size" else 1024
-        band = int(a[3]) if len(a) == 4 and a[2] == "--band" else 64
-        main(a[0], a[1], size, band)
     else:
-        sys.exit(__doc__)
+        src, out, opts = parse_args(a)
+        main(src, out, **opts)

@@ -68,8 +68,10 @@ local converter only as the explicit fallback below.
    reliably close it — one measured panorama differed by 6.2 mean channel units across
    that join against 1.1 for ordinary neighbouring columns, which shows in Studio as a
    vertical line through one face. The cutter closes that join first (`--band`, 64 columns
-   by default, 0 to disable): it takes the step across the wrap, per row and per channel,
-   and ramps half of it out of each side. Averaging the two edges instead would blend parts
+   by default, 0 to disable; pass either `--size` or `--band`, not both, and any other
+   fourth argument is rejected with the usage text rather than silently ignored): it takes
+   the step across the wrap, per row and per channel, and ramps half of it out of each
+   side. Averaging the two edges instead would blend parts
    of the sky that face opposite directions, so it ghosts detail and disturbs a panorama
    that already wrapped; ramping the step moves only a smooth offset, is bounded by half
    the measured step, and leaves a seamless input untouched. It prints the step it removed

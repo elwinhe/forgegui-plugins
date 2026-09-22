@@ -68,7 +68,7 @@ def main(src, out, size=1024):
         im = Image.open(src)
     except Exception as exc:
         sys.exit(f"error: cannot read {src}: {exc}")
-    mode = "RGBA" if "A" in im.getbands() else "RGB"
+    mode = "RGBA" if "A" in im.getbands() or "transparency" in im.info else "RGB"
     a = np.asarray(im.convert(mode), np.float32)
 
     a, (t, b, l, r) = crop_border(a)
@@ -124,6 +124,24 @@ def selftest():
     # Degenerate sizes must not raise.
     assert tile_mismatch(np.zeros((1, 1, 3), np.float32)) == (0.0, 0.0), "1x1 must not raise"
     assert tile_mismatch(np.zeros((1, 50, 3), np.float32)) == (0.0, 0.0), "1-row must not raise"
+
+    from tempfile import TemporaryDirectory
+
+    with TemporaryDirectory() as directory:
+        directory = Path(directory)
+        indices = np.zeros((16, 16), dtype=np.uint8)
+        indices[:, 8:] = 1
+        indexed = Image.fromarray(indices, "P")
+        indexed.putpalette([200, 100, 50, 50, 100, 200] + [0] * 762)
+        for transparency in (0, bytes([0, 128] + [255] * 254)):
+            source = directory / "indexed.png"
+            output = directory / "prepared.png"
+            indexed.save(source, transparency=transparency)
+            expected = np.asarray(Image.open(source).convert("RGBA"))
+            main(source, output, size=16)
+            actual = Image.open(output)
+            assert actual.mode == "RGBA", "indexed transparency must become RGBA"
+            assert np.array_equal(np.asarray(actual), expected), "indexed alpha must survive PNG preparation"
 
     print("selftest ok: border cropped per side, seamless passes, stepped flagged, "
           "unbordered untouched, alpha measured, degenerate sizes safe")

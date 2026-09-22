@@ -7,7 +7,7 @@ plus applying them at spawn.
 
 An `assetType: "Image"` id works directly as `Shirt.ShirtTemplate` and `Pants.PantsTemplate` — the
 verified route is in SKILL.md §4 under clothing. Upload the image first (SKILL.md §4,
-`references/asset-upload.md`), then use the returned id.
+`references/preparation-installation.md`), then use the returned id.
 
 Generate with `generation_image` type `clothing_shirt` / `clothing_pants`, which lay the art out on
 the classic template. **Target the classic template size, 585x559**, and check what came back before

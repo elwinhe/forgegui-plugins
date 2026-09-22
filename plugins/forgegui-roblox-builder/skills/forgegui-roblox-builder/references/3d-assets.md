@@ -156,6 +156,14 @@ tested upload route (SKILL.md §4); check the current limits for your route.
 
 ## Getting it into Studio
 
+For the preferred inspect/transform-before-publication path, follow
+`preparation-installation.md`: generate/reuse a direct artifact, call
+`asset_prepare`, inspect `result.prepared_bundle`, and pass the **prepared Model
+member** to `artifact_publish`. This supports an existing owned direct result or
+remesh without regeneration when the account's routes are usable. Do not apply
+the baked transform a second time in Studio. The routes below remain alternatives
+when preparation is unnecessary or unavailable.
+
 Establish the route when you plan the kit, not after generating (SKILL.md §4):
 
 1. **Generation-time publishing.** Inspect the deployed `generation_model_3d`

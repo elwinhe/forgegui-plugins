@@ -10,63 +10,73 @@ without retargeting — a much larger problem than the one you have.
 
 ## Build it
 
-Upload the mesh first as `assetType: "Model"` (SKILL.md §4) and use the returned id.
+Publish the prepared artifact and wait for readiness using
+`references/preparation-installation.md`. The returned Model asset ID is a container ID,
+**not a MeshId**. Insert it through the exposed Studio MCP insertion tool, inspect its
+hierarchy, and select the actual imported MeshPart. Preserve its mesh and texture data,
+including any SurfaceAppearance; do not assign the Model ID to MeshId.
+
+For a single-piece hat, pass that inspected MeshPart to this helper. Multi-part gear needs
+an explicit assembly with the additional parts welded to its Handle; do not silently discard
+parts or choose the first descendant. Attachment placement still requires measured fitting.
 
 ```lua
-local MESH_ID = "rbxassetid://0"
-local TEXTURE_ID = "rbxassetid://0"
-
-local function makeHat(): Accessory
+local function makeHat(importedMesh: MeshPart): Accessory
+    assert(importedMesh:IsA("MeshPart"), "Select the imported MeshPart")
     local accessory = Instance.new("Accessory")
     accessory.Name = "GeneratedHat"
 
-    local handle = Instance.new("MeshPart")
-    handle.Name = "Handle"            -- the name matters; AddAccessory looks for it
-    handle.MeshId = MESH_ID
-    handle.TextureID = TEXTURE_ID
-    handle.Size = Vector3.new(1.4, 1.2, 1.4)
+    local handle = importedMesh:Clone()
+    handle.Name = "Handle"
+    handle.Anchored = false
     handle.CanCollide = false
     handle.Massless = true
     handle.Parent = accessory
 
-    -- The name is what Roblox matches against the character's own attachment.
-    local attachment = Instance.new("Attachment")
-    attachment.Name = "HatAttachment"
-    attachment.CFrame = CFrame.new(0, -0.3, 0)   -- nudge the fit here, not by moving the Handle
-    attachment.Parent = handle
+    local attachment = handle:FindFirstChild("HatAttachment")
+    if not attachment then
+        attachment = Instance.new("Attachment")
+        attachment.Name = "HatAttachment"
+        attachment.Parent = handle
+    end
+    assert(attachment:IsA("Attachment"), "HatAttachment must be an Attachment")
+    attachment.CFrame = CFrame.new(0, -0.3, 0)
 
     return accessory
 end
 
--- on a character with a Humanoid
 local humanoid = character:WaitForChild("Humanoid") :: Humanoid
-humanoid:AddAccessory(makeHat())
+humanoid:AddAccessory(makeHat(importedMesh))
 ```
+
+`character` and `importedMesh` must resolve to the intended live character and inspected
+imported part. Preserve the imported proportions; derive any size adjustment from measured
+bounds and intended dimensions. The example attachment offset is not an automatic fit.
 
 Roblox matches the `Attachment` name against the character's attachment of the same name and welds
 them. `HatAttachment` is one of several on the head; enumerate `head:GetChildren()` to see the rest.
 
 ## Keep it light
 
-Remesh before upload with `generation_remesh_3d` — budgets and arguments are in
-`references/3d-assets.md`, where a hat falls in the kit-prop range. A generated mesh at high quality
-comes back far over that and must be remeshed; at standard quality it is closer but still worth
-checking.
+Inspect geometry first using server `asset_prepare` when available, retaining
+`metrics.source` and `metrics.prepared` from `references/preparation-installation.md`.
+Compare measured triangles and dimensions with the intended gear budget in
+`references/3d-assets.md`. Quality labels alone do not establish triangle counts.
+Request paid `generation_remesh_3d` only when measurements show a budget problem and
+the additional generation is authorized. Reinspect its result; do not remesh every hat.
 
-## Check the mesh is closed before you upload it
+## Inspect suspicious openings
 
-**This is the failure that reached a player's head.** A generated hat had a hole in its crown; it
-uploaded, moderated, imported and thumbnailed without a single warning, and was caught only by
-walking around the character in Play. The full account and the threshold are in SKILL.md §4 under
-the mesh topology check.
+A generated hat once had an unintended hole in its crown despite successful upload,
+moderation and import. Inspect it from above and at play distance; a thumbnail is insufficient.
+Intentional openings (a hat's underside, cups, banners) are not defects.
 
-Count boundary edges before uploading — an edge used by exactly one triangle means an open surface —
-and treat a non-zero count as a rejection, not a warning. `scripts/glb_quality.py` reports
-`boundary_edges` per mesh:
-
-```sh
-python3 scripts/glb_quality.py hat.glb
-```
+Use server preparation first. If supplementary topology evidence is needed and source
+bytes are available, run `scripts/glb_quality.py hat.glb`. Its boundary counts are advisory,
+per primitive, with positions rounded to six decimals. Material boundaries can appear open,
+and nearby vertices can merge. Unsupported geometry is not a passing inspection.
+Inspect suspicious regions in Studio and record caller-reported evidence. A nonzero boundary
+count alone must not reject the asset or trigger repair or paid regeneration.
 
 ## Check the fit in Play
 

@@ -3,8 +3,11 @@
 Discover deployed ForgeGUI publishing tools first. Prefer ForgeGUI when its live schema and
 permissions support **both the requested asset and destination owner**. Persist the caller's
 request ID before submission; persist job/publication IDs and the asset ID as soon as returned. A timeout or
-`outcome_unknown` requires status lookup and reconciliation using those identifiers. Never
-switch routes or create a new request to resolve an ambiguous publication.
+`outcome_unknown` requires reconciliation: query `generation_status` with the saved `job_id`
+or `publication_status` with the saved `publication_id`. Neither currently accepts `request_id`.
+If both status IDs are missing, preserve the request ID and evidence and block for ForgeGUI
+operator recovery of a queryable identifier, as described in SKILL.md §4. Never replay the
+submission, switch routes or create a new request to resolve an ambiguous publication.
 
 Open Cloud is an **explicitly chosen fallback**, after checking the intended owner and route.
 It is not an automatic response to a ForgeGUI failure. The Python implementation below is

@@ -85,11 +85,19 @@ account/key support. Open Cloud is an explicitly chosen fallback, documented in
 `references/asset-upload.md`, with mandatory destination and durable receipt flags. Its
 `references/tools/oc_upload.py` implementation also serves `scripts/open_cloud_upload.sh`.
 Use `--resume` with identical inputs to recover saved operations/IDs. An uncertain submission
-must be reconciled, never resubmitted with a new receipt. Likewise, retain ForgeGUI publication
-identifiers on `outcome_unknown` and reconcile that request; never automatically switch to
-Open Cloud after an ambiguous ForgeGUI result. Record ID, moderation and Studio usability
-as separate facts.
-
+must be reconciled, never resubmitted with a new receipt. For ForgeGUI, persist `request_id`
+and the exact request in the ledger before submission, then save returned identifiers immediately.
+Reconcile with `generation_status({"job_id": "<saved job UUID>"})` or
+`publication_status({"publication_id": "<saved publication UUID>"})` as applicable.
+The currently exposed status schemas do **not** accept `request_id`; it is an idempotency key,
+not a client status-query key, and `asset_id` is not a substitute for either status UUID.
+If `outcome_unknown` or a lost response leaves neither status UUID, retain the request ID,
+tool name, inputs, timestamp and any returned correlation identifier for ForgeGUI operator
+reconciliation. Keep the entry blocked until the operator recovers the original job/publication
+UUID for the status query, or a discovered read-only lookup explicitly supports the saved
+correlation identifier. Do not invent a lookup or replay the submission to obtain an ID;
+never automatically switch to Open Cloud after an ambiguous ForgeGUI result.
+Record ID, moderation and Studio usability as separate facts.
 
 Moss Louvan's September 15, 2026 [PR #1 findings](https://github.com/elwinhe/forgegui-plugins/pull/1) report image, audio and GLB uploads through Open Cloud `POST /assets/v1/assets` with the file, followed by polling the returned operation for `response.assetId`. Those tests used a personal account and an Open Cloud API key. They establish a tested API route, not that the connected MCP exposes it or that a hosted OAuth flow or production group permissions have been verified. Discover the live publishing tool and its execution permissions before relying on this route; `execute_luau` alone does not establish permission to import files or publish assets.
 

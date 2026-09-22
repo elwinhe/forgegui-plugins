@@ -44,7 +44,7 @@ def _rgb(lab):
 def images(path):
     p = Path(path)
     if p.is_dir():
-        found = sorted(f for f in p.iterdir() if f.suffix.lower() in EXTS)
+        found = sorted(f for f in p.iterdir() if f.is_file() and f.suffix.lower() in EXTS and not f.name.startswith("sheet_"))
         if not found:
             sys.exit(f"no images in {p}")
         return found
@@ -77,7 +77,8 @@ def palette(path, k=6, seed=0):
         lbl = ((lab[:, None] - c[None]) ** 2).sum(-1).argmin(1)
         c = np.stack([lab[lbl == i].mean(0) if (lbl == i).any() else c[i] for i in range(k)])
     share = np.bincount(lbl, minlength=k) / len(lab)
-    order = np.argsort(-share)
+    active = np.flatnonzero(share > 0)
+    order = active[np.argsort(-share[active])]
     return c[order], share[order]
 
 
@@ -108,6 +109,17 @@ def selftest():
         pa, sa = palette(Path(d) / "a.png", k=2)
         pb, _ = palette(Path(d) / "b.png", k=2)
         pg, sg = palette(sub, k=2)
+        Image.new("RGB", (60, 60), "red").save(sub / "sheet_00.png")
+        Image.new("RGB", (60, 60), "red").save(sub / "sheet_01.JPG")
+        (sub / "not-an-image.png").mkdir()
+        assert [p.name for p in images(sub)] == ["1.png", "2.png"]
+        filtered, filtered_share = palette(sub, k=2)
+        assert np.array_equal(filtered, pg) and np.array_equal(filtered_share, sg)
+        for ext in EXTS:
+            fixture = Path(d) / f"extension-{ext[1:]}"
+            fixture.mkdir()
+            Image.new("RGB", (10, 10), "blue").save(fixture / f"frame{ext}")
+            assert len(images(fixture)) == 1
         assert set(hexes(pa)) == {"#ff0000", "#0000ff"}, hexes(pa)
         assert abs(sa[0] - 0.5) < 0.05 and abs(sg[0] - 0.5) < 0.05, (sa, sg)
         assert delta_e(pa, pb) < delta_e(pa, pg), (delta_e(pa, pb), delta_e(pa, pg))
@@ -118,7 +130,16 @@ def selftest():
         reference.save(Path(d) / "mostly-blue.png")
         build, build_share = palette(Path(d) / "red.png")
         ref, ref_share = palette(Path(d) / "mostly-blue.png")
+        assert len(build) == len(build_share) == 1
+        assert len(ref) == len(ref_share) == 2
+        assert np.all(ref_share > 0) and np.isclose(ref_share.sum(), 1)
         assert abs(build_share[0] - 1) < 1e-6
+        try:
+            main([str(Path(d) / "red.png"), str(Path(d) / "mostly-blue.png")])
+        except SystemExit as exc:
+            assert "expected one image or directory" in str(exc)
+        else:
+            raise AssertionError("second positional source accepted")
         assert hexes(ref)[0] == "#0000ff" and abs(ref_share[0] - 0.9) < 1e-6
         assert delta_e(build, ref) < 1e-6
         import contextlib
@@ -151,6 +172,8 @@ def main(argv):
         elif x.startswith("-"):
             sys.exit(f"unknown option {x}\n{__doc__}")
         else:
+            if src is not None:
+                sys.exit("expected one image or directory; use --vs for a reference")
             src = x
     if not src or k < 1 or (ref is None and "--vs" in argv):
         sys.exit(__doc__)

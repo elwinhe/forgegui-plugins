@@ -36,7 +36,7 @@ After the answers, play back a brief of three to five lines: what you will build
 - **Look for leftovers from an interrupted session** before building: test scripts, temporary GUI, teleport or currency helpers, an unfinished `.forgegui-fidelity`. A run that was cut short never cleaned up after itself. Report what you find; remove only what is clearly test scaffolding.
 - **Load project memory first.** Look for `forgegui-project.json` in the working directory (see `references/project-manifest.md`). If it exists, read `game_style` (routing type), `art_direction`, `palette`, `material_language`, and the `assets` ledger before planning. If it does not exist and the task will generate more than one asset, create it from the brief before the first paid call.
 - Inspect the existing scene and relevant scripts before planning additions. Reuse existing objects for ordinary geometry.
-- A likeness claim in the brief ("like X", "same style as") requires a user-supplied reference before building; obtain and measure it per `references/reference-capture.md`, and never report a likeness percentage without one.
+- For a likeness request ("like X", "same style as"), use and measure the supplied reference per `references/reference-capture.md`; prefer frame extraction from supplied videos/links. If none is supplied, ask for one. If the user declines or is unavailable, proceed with a style-only build, record `"reference": { "supplied": false }` in the ledger, make no likeness claim, and report no likeness percentage.
 
 ## 2. Plan assets before spending
 

@@ -24,6 +24,7 @@ Illustrative IDs below are placeholders, not usable assets. Start a real project
   "style_refs": ["mcp-artifact:00000000-0000-4000-8000-000000000001:0"],
   "style_id": "00000000-0000-4000-8000-0000000000aa",
   "style_version": 1,
+  "run": null,
   "assets": [
     {
       "key": "hud.panel",

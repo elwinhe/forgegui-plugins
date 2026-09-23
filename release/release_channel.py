@@ -41,6 +41,9 @@ def package_problems():
     root = PLUGIN.resolve()
     for path in PLUGIN.rglob("*"):
         rel = path.relative_to(PLUGIN)
+        if path.is_symlink() or not path.resolve().is_relative_to(root):
+            problems.append(f"symlink or escaping path in package: {rel}")
+            continue
         if CACHE_PARTS.intersection(rel.parts) or path.suffix in {".pyc", ".pyo"}:
             problems.append(f"cache or build artifact in package: {rel}")
         if path.is_file() and path.suffix in {".md", ".json", ".sh", ".py", ".luau"}:
@@ -52,7 +55,7 @@ def package_problems():
                     if re.match(r"^[a-z][a-z0-9+.-]*:", href):
                         continue
                     target = (path.parent / href).resolve()
-                    if not str(target).startswith(str(root)):
+                    if not target.is_relative_to(root):
                         problems.append(f"{rel}: link escapes the installed package: {href}")
                     elif not target.exists():
                         problems.append(f"{rel}: broken link: {href}")

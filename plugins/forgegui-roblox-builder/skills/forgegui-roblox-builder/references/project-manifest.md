@@ -144,6 +144,6 @@ expired or revoked. Preserve the selected snapshot and prior receipts; do not
 rewrite them from today's discovery/defaults or claim migration verifies Studio.
 Returned creator mismatches require reconciliation, not a ledger overwrite.
 See [publishing connections](publishing-connections.md) for failure handling and
-[the contract fixtures](../../../../../tests/publishing-connections.json)
+[the contract fixtures](https://github.com/elwinhe/forgegui-plugins/blob/release/claude-mcp-v1/tests/publishing-connections.json) (repository-only)
 for illustrative selection and partial-batch ledger entries. Those fixtures are
 documentation only, never user decisions to copy into a real project.

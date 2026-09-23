@@ -23,6 +23,7 @@ MARKETPLACE_JSON = ROOT / ".claude-plugin/marketplace.json"
 BASE_DESCRIPTION = "Build Roblox experiences with ForgeGUI assets and the official Roblox Studio MCP."
 CACHE_PARTS = {"__pycache__", ".pytest_cache", ".test-deps", "node_modules", ".DS_Store"}
 LINK = re.compile(r"\]\(([^)#\s]+)(?:#[^)]*)?\)")
+REFERENCE_LINK = re.compile(r"^ {0,3}\[[^\]\n]+\]:\s*<?([^\s>]+)>?", re.MULTILINE)
 
 
 def load(path):
@@ -41,6 +42,9 @@ def package_problems():
     root = PLUGIN.resolve()
     for path in PLUGIN.rglob("*"):
         rel = path.relative_to(PLUGIN)
+        if path.is_symlink() or not path.resolve().is_relative_to(root):
+            problems.append(f"symlink or escaping path in package: {rel}")
+            continue
         if CACHE_PARTS.intersection(rel.parts) or path.suffix in {".pyc", ".pyo"}:
             problems.append(f"cache or build artifact in package: {rel}")
         if path.is_file() and path.suffix in {".md", ".json", ".sh", ".py", ".luau"}:
@@ -48,11 +52,14 @@ def package_problems():
             if "/home/" in text or "/Users/" in text:
                 problems.append(f"machine-specific absolute path in {rel}")
             if path.suffix == ".md":
-                for href in LINK.findall(text):
+                for href in LINK.findall(text) + REFERENCE_LINK.findall(text):
+                    href = href.split("#", 1)[0]
+                    if not href:
+                        continue
                     if re.match(r"^[a-z][a-z0-9+.-]*:", href):
                         continue
                     target = (path.parent / href).resolve()
-                    if not str(target).startswith(str(root)):
+                    if not target.is_relative_to(root):
                         problems.append(f"{rel}: link escapes the installed package: {href}")
                     elif not target.exists():
                         problems.append(f"{rel}: broken link: {href}")

@@ -49,7 +49,7 @@ This builder does not change or install the Claude package.
 
 `release/release_channel.py set <channel> --version <semver>` rewrites the bundled endpoint, both manifest versions and both descriptions together, and refuses a channel marked unavailable. Staging releases use `X.Y.Z-beta.N` and the `Staging beta:` description prefix; production releases use plain `X.Y.Z` and must never point at the staging host. `check` also audits the installed package for caches, machine-specific paths and links that escape the plugin directory. CI runs it with `claude plugin validate` on every pull request.
 
-Release steps: bump through `set`, record the change in [CHANGELOG.md](CHANGELOG.md), merge, then tag the merged commit with `claude plugin tag plugins/forgegui-roblox-builder` and verify a fresh-profile install before announcing it.
+Release steps: bump through `set`, update the root and installed READMEs with the selected version, channel, endpoint and key guidance, and record the change in [CHANGELOG.md](CHANGELOG.md). After review and merge, tag the merged commit with `claude plugin tag plugins/forgegui-roblox-builder --push`, verify the remote tag and a fresh-profile install, then announce it.
 
 ## Update or uninstall
 

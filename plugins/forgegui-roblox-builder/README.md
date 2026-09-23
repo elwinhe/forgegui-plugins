@@ -1,6 +1,6 @@
 # ForgeGUI Roblox Builder
 
-**Staging beta.** This package connects to ForgeGUI's staging project (`vzzqjekupwutoaasswwd.supabase.co`). Staging accounts, keys, credits and data are separate from production, and staging behavior can change without notice. A production release will be published under a non-beta version once the ForgeGUI MCP service is live in production.
+**Staging beta.** This package connects to ForgeGUI's staging project (`vzzqjekupwutoaasswwd.supabase.co`). Use staging credentials and verify the intended account, data and credit balance before paid work; package validation alone does not verify backend isolation. Staging behavior can change without notice. A production release will use a non-beta version after hosted production verification.
 
 The plugin helps Claude Code build Roblox Studio experiences with ForgeGUI-generated assets. It coordinates two separate MCP connections: ForgeGUI (bundled here) for generation, search, preparation and publication, and the official Roblox Studio MCP (configured separately in Studio) for inspecting, editing, inserting and playtesting.
 
@@ -12,10 +12,11 @@ The plugin helps Claude Code build Roblox Studio experiences with ForgeGUI-gener
 | MCP server `forgegui` | Remote Streamable HTTP endpoint authenticated with your ForgeGUI MCP key |
 | `Stop` hook | Read-only reminder for an opted-in fidelity pass. It reads `./.forgegui-fidelity` in the working directory and does nothing when that file is absent. It never writes files or makes network calls |
 
-No Studio adapter, local server or executable is installed or started. Nothing runs at install time.
+The package includes shell and Python scripts. Its Bash Stop hook runs when Claude stops; optional helpers run only when invoked. It does not start a local server or install a Studio adapter. Nothing runs at install time.
 
 ## Requirements
 
+- Bash for the bundled Stop hook.
 - A ForgeGUI account and an expiring MCP key from **Profile → MCP API keys**, entered through `/plugin configure` as a masked value. Request only the scopes you need; `generation:write` spends credits and requires a paid Starter-or-higher plan.
 - Roblox Studio with **Enable Studio as MCP server** turned on, for any Studio work. See <https://create.roblox.com/docs/studio/mcp>.
 - Optional local helpers, used only when the skill or you run them:

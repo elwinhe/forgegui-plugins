@@ -20,6 +20,11 @@ jobs:
           python-version: '3.11'
       - run: python -m pip install -r tests/requirements.txt
       - run: python release/release_channel.py check
+      - run: python tests/test_openai_package.py
+      - run: python release/openai_package.py build
+      - run: python release/openai_package.py check
+      - run: python release/openai_package.py build
+      - run: python release/openai_package.py check
       - uses: actions/setup-node@v4
         with:
           node-version: '22'

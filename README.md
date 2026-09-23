@@ -33,7 +33,19 @@ Enable the separate official Roblox Studio MCP server with the exact Quick Conne
 
 Before a manual paid end-to-end test, select the intended Studio place, confirm a bounded asset count and budget, and verify an import route for the expected format. Generate one asset with a stable `request_id`, retain its `job_id`, poll `generation_status` to a terminal result, and never automatically retry `outcome_unknown`. Verify the artifact before import, then record the imported asset ID or instance path and inspect the saved Edit-mode result. The bundled skill distinguishes reported import routes from tools actually exposed by the connected server; do not claim generation proves import or gameplay.
 
-## Release channels
+## OpenAI release preview
+
+The separate OpenAI skills + remote MCP artifact is built with
+`python3 release/openai_package.py build` and verified with
+`python3 release/openai_package.py check`. Output is
+`dist/openai/forgegui-roblox-builder`; pass `--output /chosen/path/forgegui-roblox-builder`
+to either command for another destination. Shared source copies are generated,
+not maintained independently. See [OpenAI packaging guidance](release/openai/README.md)
+for drift handling, runtime boundaries and release gates. This is staging only:
+production/submission fail closed and OpenAI OAuth readiness is unverified.
+This builder does not change or install the Claude package.
+
+## Claude release channels
 
 `release/release_channel.py set <channel> --version <semver>` rewrites the bundled endpoint, both manifest versions and both descriptions together, and refuses a channel marked unavailable. Staging releases use `X.Y.Z-beta.N` and the `Staging beta:` description prefix; production releases use plain `X.Y.Z` and must never point at the staging host. `check` also audits the installed package for caches, machine-specific paths and links that escape the plugin directory. CI runs it with `claude plugin validate` on every pull request.
 

@@ -1,6 +1,6 @@
 # ForgeGUI Roblox Builder
 
-**Staging beta.** This package connects to ForgeGUI's staging project (`vzzqjekupwutoaasswwd.supabase.co`). Staging accounts, keys, credits and data are separate from production, and staging behavior can change without notice. A production release will be published under a non-beta version once the ForgeGUI MCP service is live in production.
+**Staging beta.** This package connects to ForgeGUI's staging project (`vzzqjekupwutoaasswwd.supabase.co`). Use staging credentials and verify the intended account, data and credit balance before paid work; package validation alone does not verify backend isolation. Staging behavior can change without notice. A production release will use a non-beta version after hosted production verification.
 
 The plugin helps Claude Code build Roblox Studio experiences with ForgeGUI-generated assets. It coordinates two separate MCP connections: ForgeGUI (bundled here) for generation, search, preparation and publication, and the official Roblox Studio MCP (configured separately in Studio) for inspecting, editing, inserting and playtesting.
 

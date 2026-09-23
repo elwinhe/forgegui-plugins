@@ -46,6 +46,18 @@ class PackageBoundaryTests(unittest.TestCase):
         (release.PLUGIN / "linked").symlink_to(self.root, target_is_directory=True)
         self.assertTrue(any("symlink" in p for p in release.package_problems()))
 
+    def test_reference_link_boundaries(self):
+        (release.PLUGIN / "guide.md").write_text("Guide")
+        for href, expected in (("guide.md", []), ("missing.md", "broken link"),
+                               ("../outside.md", "escapes")):
+            with self.subTest(href=href):
+                (release.PLUGIN / "README.md").write_text(f"[Guide][guide]\n\n[guide]: <{href}>\n")
+                problems = release.package_problems()
+                if expected:
+                    self.assertTrue(any(expected in p for p in problems))
+                else:
+                    self.assertEqual(problems, [])
+
 
 if __name__ == "__main__":
     unittest.main()

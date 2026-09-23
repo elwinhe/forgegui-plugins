@@ -23,9 +23,13 @@ def safe_path(root, relative):
     rel = PurePosixPath(relative)
     if rel.is_absolute() or ".." in rel.parts or "\\" in relative:
         raise ValueError(f"unsafe package path: {relative}")
-    path = root / rel
-    if any(p.is_symlink() for p in (path, *path.parents)):
-        raise ValueError(f"symlink is not allowed: {relative}")
+    # The root is trusted; its ancestors may include platform aliases like /var.
+    # Reject symlinks only in the package-relative components we traverse.
+    path = root
+    for part in rel.parts:
+        path = path / part
+        if path.is_symlink():
+            raise ValueError(f"symlink is not allowed: {relative}")
     if not path.resolve().is_relative_to(root.resolve()):
         raise ValueError(f"path escapes root: {relative}")
     return path

@@ -74,6 +74,32 @@ class OpenAIPackageTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             package.output_path(self.output)
 
+    def test_safe_path_allows_symlinked_ancestor_above_root(self):
+        real_parent = Path(self.temp.name) / 'real'
+        real_parent.mkdir()
+        alias = Path(self.temp.name) / 'alias'
+        alias.symlink_to(real_parent, target_is_directory=True)
+        root = alias / package.NAME
+        target = root / 'nested/file.md'
+        self.assertEqual(package.safe_path(root, 'nested/file.md'), target)
+        package.build(root, self.files)
+        package.check(root, self.files)
+        self.assertEqual(package.safe_path(root, 'plugin.json').read_bytes(),
+                         self.files['plugin.json'])
+
+    def test_safe_path_rejects_internal_directory_symlinks(self):
+        self.output.mkdir()
+        inside = self.output / 'real'
+        inside.mkdir()
+        outside = Path(self.temp.name) / 'outside'
+        outside.mkdir()
+        for name, target in [('internal', inside), ('escaping', outside),
+                             ('dangling', outside / 'missing')]:
+            link = self.output / name
+            link.symlink_to(target, target_is_directory=True)
+            with self.subTest(name=name), self.assertRaisesRegex(ValueError, 'symlink'):
+                package.safe_path(self.output, f'{name}/nested/file.md')
+
     def test_unavailable_channels_and_submission(self):
         for channel, mode in [('production', 'preview'), ('missing', 'preview'), ('staging-beta', 'submission')]:
             with self.subTest(channel=channel, mode=mode), self.assertRaises(ValueError):

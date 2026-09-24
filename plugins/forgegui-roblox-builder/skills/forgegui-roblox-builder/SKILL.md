@@ -173,6 +173,7 @@ Observed generator behaviour from the September 19-21, 2026 Turbo Pitch and Sky 
 - Integrate gameplay using existing project conventions and the live `multi_edit` / `execute_luau` schemas. Do not replace unrelated content.
 
 Detail flows: after the scene exists, apply polish in this order: lighting mood → sound placement → particles and feedback → UI motion. Pick a lighting preset from the requested genre without being asked (`references/lighting-presets.md`, code in `references/luau/LightingPresets.luau`); fit it to the place with the `glow` and `haze` dials rather than by editing the preset, use `{ reduced = true }` for low-end targets, and read the returned report's `failed` list before claiming the look applied. Place sounds by the conventions in `references/sound-placement.md`. Add VFX from `references/particle-recipes.md` (code in `references/luau/ParticleRecipes.luau`) and finishing touches from `references/mechanical-polish.md`. Animate the UI from `references/ui-motion.md` (code in `references/luau/Motion.luau`): panels reveal and dismiss, art buttons respond by scale, totals count up, and a modal's backdrop dims and sinks input but never closes the modal. Use only shipped, reviewed code, never downloaded scripts or executable asset descendants. `Lighting.Technology` is not scriptable; report the recommended value for the user to set in Properties. `clear()` restores what a preset borrowed, so say so when you apply one to a place you did not build.
+- **Ambient motion and the lab.** For an outdoor world, start one shared wind with its lit ribbons, dust and foliage sway from `references/ambient-motion.md` (camera shots in `luau/CameraPath.luau`), and judge every lighting, material and VFX change as a before/after capture pair in the lab from `references/lighting-lab.md`, with the camera pinned and the HUD hidden.
 
 ## 7. Verify, then report
 
@@ -242,6 +243,7 @@ Based on the connected tool inventory of September 14–15, 2026, the ForgeGUI c
 - `references/ui-motion.md` — reveals, presses, counters and modals (`luau/Motion.luau`)
 - `references/lighting-presets.md` — six looks, the `glow`/`haze`/`reduced` dials and reversible apply (`luau/LightingPresets.luau`)
 - `references/particle-recipes.md`, `references/sound-placement.md`, `references/audio-publication.md`, `references/mechanical-polish.md` — VFX, music/SFX publication, audio placement and game feel
+- `references/ambient-motion.md`, `references/lighting-lab.md` — shared wind, lit wind VFX, foliage sway and camera paths; a lab plate for before/after lighting and VFX captures with an admin-only teleport (`luau/Wind.luau`, `luau/WindVfx.luau`, `luau/FoliageSway.luau`, `luau/CameraPath.luau`, `luau/LightingLab.luau`)
 - `references/textures.md` — generating, preparing and applying a standalone texture (`scripts/texture_prep.py`)
 - `references/characters.md` — clothing from a plain Image id, the face Decal, and applying both at spawn
 - `references/accessories.md` — fitting rigid gear to the standard R15 rig without a fitting tool

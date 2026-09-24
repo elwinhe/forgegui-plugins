@@ -247,6 +247,38 @@ do
 end
 
 do
+	-- Clutter scattered into a house, beside it, and a tree whose crown overhangs the roof.
+	local house = box("Town.House", Vector3.new(0, 0, 0), Vector3.new(20, 14, 20))
+	local ground = box("Terrain (Sand)", Vector3.new(-100, -20, -100), Vector3.new(100, 0.5, 100))
+	local function prop(name, center, size, attributes)
+		local item = object(name, { attributes = attributes })
+		item.cframe, item.size = CFrame.new(center.X, center.Y, center.Z), size
+		return item
+	end
+	local inside = prop("Props.crates", Vector3.new(10, 1.5, 10), Vector3.new(4, 3, 4))
+	local beside = prop("Props.jar", Vector3.new(21, 1, 10), Vector3.new(2, 2, 2))
+	local tree = prop("Props.palm", Vector3.new(24, 8, 10), Vector3.new(16, 16, 16), { KeepOutTrunk = 0.12 })
+	local allowed = prop("Props.sign", Vector3.new(10, 1.5, 10), Vector3.new(2, 3, 2), { AllowOverlap = true })
+	local adapter = world({ house, ground }, {})
+	adapter.box = function(item)
+		return item.cframe, item.size
+	end
+	local report = WorldCheck.run({ adapter = adapter, clutter = { inside, beside, tree, allowed } })
+	check(count(report, "clutter_overlap") == 1, "only the crate inside the house is reported")
+	check(report.findings[1] and report.findings[1].subject == "Workspace.Props.crates", "the finding names the prop")
+	check(string.find(report.findings[1].detail, "Town.House", 1, true) ~= nil and string.find(report.findings[1].detail, "Terrain", 1, true) == nil, "terrain under a prop never counts")
+	check(report.checked.clutter == 4, "every clutter item is counted")
+
+	local wide = prop("Props.palm2", Vector3.new(24, 8, 10), Vector3.new(16, 16, 16))
+	report = WorldCheck.run({ adapter = adapter, clutter = { wide } })
+	check(count(report, "clutter_overlap") == 1, "without KeepOutTrunk a crown over the roof counts")
+
+	adapter.box = nil
+	report = WorldCheck.run({ adapter = adapter, clutter = { inside } })
+	check(count(report, "clutter_overlap") == 0, "an adapter without `box` skips the clutter check")
+end
+
+do
 	local text = WorldCheck.format(WorldCheck.run({ adapter = world(hub, { spawnAt("SpawnLocation", 0, 0.5, 0) }) }))
 	check(string.find(text, "WorldCheck: 2 error(s), 0 warning(s)", 1, true) == 1, "format leads with the totals")
 	check(string.find(text, "[error] spawn_buried Workspace.SpawnLocation", 1, true) ~= nil, "format lists each finding")

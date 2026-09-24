@@ -22,4 +22,5 @@ jobs:
       - run: python tests/test_publishing_connections.py
       - run: python tests/test_preparation_contract.py
       - run: python plugins/forgegui-roblox-builder/skills/forgegui-roblox-builder/scripts/texture_prep.py --selftest
+      - run: python plugins/forgegui-roblox-builder/skills/forgegui-roblox-builder/references/tools/make_gradient.py --selftest
       - run: bash tests/fidelity-pass-hook.sh

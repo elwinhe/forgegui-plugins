@@ -191,6 +191,13 @@ Terrain never counts, because props are sunk into it on purpose. Mark an intende
   medium band (`--medium`) was added.
 - A tiled material blended over generated buildings (C). It washed out the baked detail.
 - Grid-snapped patches without the footprint test. They straddled road edges as loose tiles.
+- Keying laid cells by `Vector2`. Luau compares `Vector2` table keys by identity (measured:
+  `{[Vector2.new(1, 2)] = true}[Vector2.new(1, 2)]` is nil), so every re-plan laid the same
+  cells again and stacked patches. `Vector3` keys compare by value; GroundScatter uses them.
+- Starting the scatter in the same frame the terrain is written. Measured: terrain from
+  `FillBlock` is not raycastable until the next physics step, so every cell was recorded as
+  empty and stays empty until it leaves the radius. Generate the terrain first, wait a frame
+  (or until a probe ray hits it), then `start`.
 
 ## Verify
 

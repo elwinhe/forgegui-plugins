@@ -179,6 +179,19 @@ local function fillTestGround()
 	-- A 64-stud Ground square west of the origin, and an 8-stud Ground road east of it.
 	Terrain:FillBlock(CFrame.new(ORIGIN + Vector3.new(-40, -4, 0)), Vector3.new(64, 8, 64), Enum.Material.Ground)
 	Terrain:FillBlock(CFrame.new(ORIGIN + Vector3.new(24, -4, 0)), Vector3.new(8, 8, 64), Enum.Material.Ground)
+	-- Measured in Studio: freshly filled terrain is not raycastable until the next
+	-- physics step, so a scatter started in the same frame finds no ground at all.
+	local probe = RaycastParams.new()
+	probe.FilterType = Enum.RaycastFilterType.Include
+	probe.FilterDescendantsInstances = { Terrain }
+	for _ = 1, 120 do
+		local hit = workspace:Raycast(ORIGIN + Vector3.new(-40, 60, 0), Vector3.new(0, -120, 0), probe)
+		if hit and hit.Material == Enum.Material.Ground then
+			return
+		end
+		task.wait()
+	end
+	error("the test ground never became raycastable")
 end
 
 local function patchPositions(folder: Instance): { string }

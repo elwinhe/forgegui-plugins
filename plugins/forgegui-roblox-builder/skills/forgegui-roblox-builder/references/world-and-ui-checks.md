@@ -26,6 +26,7 @@ explain in the report.
 | `multiple_spawns` | warning | The neutral pool or a team pool has more than one enabled spawn. Roblox picks one at random, so every one must be valid |
 | `floor_covered` | error | Terrain or a prop covers a walkable floor you listed |
 | `interactive_covered` | error | Something covers a pad, pickup or prompt part you listed. Models are checked by their bounding box |
+| `clutter_overlap` | error | A prop you listed in `clutter` stands inside a collidable part: its box, shrunk to 0.7 (trunk share for `KeepOutTrunk` trees), overlaps it. Terrain never counts. See `surface-realism.md` |
 | `art_background` | error | Generated art has a visible Roblox background behind it |
 | `art_stroke` | error | A `UIStroke` draws a rectangle around art that already has its own rim |
 | `bordered_icon` | error | An icon sits in a small chip that has a stroke or fill |
@@ -41,6 +42,8 @@ explain in the report.
 When something is meant to be that way, mark it on the instance instead of ignoring the finding:
 
 - `AllowCovered = true` on a spawn with a roof over it. `spawn_clearance` still applies.
+- `AllowOverlap = true` on a prop listed in `clutter` that is meant to overlap something, such as a sign
+  post set into a wall.
 - `MultipleSpawnsIntended = true` on a spawn in a pool that is supposed to have several.
 - `UiCheckIgnore = true` on UI chrome that is meant to be there.
 - `AllowPrimitive = true` on a frame or label that is meant to draw its own fill or border, such as a

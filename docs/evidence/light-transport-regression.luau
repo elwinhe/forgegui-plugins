@@ -232,6 +232,8 @@ local function testGlobalIllumination()
 	local sentinel = Color3.fromRGB(1, 2, 3)
 	Lighting:SetAttribute("ForgeGUIPrior_Ambient", sentinel) -- another module's prior
 	local outdoor, bottom = Lighting.OutdoorAmbient, Lighting.ColorShift_Bottom
+	-- A place with a LightingPresets look applied already holds this prior; GI must keep it.
+	local existingOutdoor = Lighting:GetAttribute("ForgeGUIPrior_OutdoorAmbient")
 	local options = { manual = true, level = 1, getFocus = function()
 		return ORIGIN + Vector3.new(0, 3, 0)
 	end }
@@ -239,7 +241,7 @@ local function testGlobalIllumination()
 	GI.start(options)
 	check(Lighting:GetAttribute("ForgeGUIGlobalIllumination") == true, "gi: Lighting is marked while running")
 	check(Lighting:GetAttribute("ForgeGUIPrior_Ambient") == sentinel, "gi: another module's prior is never overwritten")
-	check(sameColour(Lighting:GetAttribute("ForgeGUIPrior_OutdoorAmbient") :: Color3, outdoor), "gi: OutdoorAmbient prior recorded")
+	check(sameColour(Lighting:GetAttribute("ForgeGUIPrior_OutdoorAmbient") :: Color3, (existingOutdoor or outdoor) :: Color3), "gi: OutdoorAmbient prior recorded (or an existing one kept)")
 	for _ = 1, 40 do
 		GI.step(0.1)
 	end
@@ -257,7 +259,7 @@ local function testGlobalIllumination()
 	check(sameColour(Lighting.ColorShift_Bottom, bottom), "gi: ColorShift_Bottom restored")
 	check(ownedCount(Terrain, "ForgeGUIGlobalIllumination") == 0, "gi: every bounce light is destroyed")
 	check(stranger.Parent == Terrain, "gi: a same-named stranger under Terrain survives")
-	check(Lighting:GetAttribute("ForgeGUIPrior_OutdoorAmbient") == nil, "gi: the priors it wrote are cleaned up")
+	check(Lighting:GetAttribute("ForgeGUIPrior_OutdoorAmbient") == existingOutdoor, "gi: the priors it wrote are cleaned up, others kept")
 	check(Lighting:GetAttribute("ForgeGUIPrior_Ambient") == sentinel, "gi: a prior it did not write is left alone")
 	check(Lighting:GetAttribute("ForgeGUIGlobalIllumination") == nil, "gi: the running marker is removed")
 	check(GI.stop() == false, "gi: a second stop is a no-op")
@@ -285,13 +287,17 @@ for _, property in SAVED_LIGHTING do
 end
 Terrain.WaterReflectance = savedReflectance
 for instance, attributes in savedAttributes do
+	-- RBX_* attributes are engine-reserved: writing one (even its own value) needs
+	-- CoreScript permission and raises, so they are skipped both ways.
 	for key in instance:GetAttributes() do
-		if attributes[key] == nil then
+		if attributes[key] == nil and string.sub(key, 1, 4) ~= "RBX_" then
 			instance:SetAttribute(key, nil)
 		end
 	end
 	for key, value in attributes do
-		instance:SetAttribute(key, value)
+		if string.sub(key, 1, 4) ~= "RBX_" and instance:GetAttribute(key) ~= value then
+			instance:SetAttribute(key, value)
+		end
 	end
 end
 

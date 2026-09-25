@@ -107,6 +107,12 @@ def expected_files(root=ROOT, channel=None, mode="preview"):
             target = Path(relative).parent / href
             if ".." in target.parts or target.as_posix() not in result:
                 raise ValueError(f"broken or escaping package link: {relative}: {href}")
+    workflow = result[f"skills/{NAME}/WORKFLOW.md"].decode()
+    for resource in re.findall(r"`((?:references|scripts|luau|tools|tests)/[^`\s]+)`", workflow):
+        if resource.startswith(("luau/", "tools/", "tests/")):
+            resource = "references/" + resource
+        if f"skills/{NAME}/{resource}" not in result:
+            raise ValueError(f"missing WORKFLOW.md resource: {resource}")
     return result
 
 

@@ -66,3 +66,7 @@ Restart after update/uninstall. If rolling back, restore the previously recorded
 The plugin now prefers generate/reuse → prepare → publish → Studio install → verify → record in run. See [the preparation contract](plugins/forgegui-roblox-builder/skills/forgegui-roblox-builder/references/preparation-installation.md) and [offline request fixtures](tests/preparation-requests.json). This is contract-backed caller guidance, not hosted or Studio acceptance evidence. Supported server alpha/resize and model transforms are not repeated locally. New image content bounds, padding and authored installation metadata still require backend work.
 
 Offline validation: install `tests/requirements.txt`, then run `python3 tests/test_publishing_connections.py`, `python3 tests/test_preparation_contract.py` and `bash tests/fidelity-pass-hook.sh`. The request test uses a pinned subset of the backend export; it neither contacts staging nor spends generation credits.
+
+## Combined lighting stack
+
+The [combined setup](plugins/forgegui-roblox-builder/skills/forgegui-roblox-builder/references/unified-lighting.md) installs light transport and post-processing together with one shared Lighting compositor. Offline runtime coverage: `lune run tests/unified-lighting.luau`. Studio rendering and performance verification remain separate checks.

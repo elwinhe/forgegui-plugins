@@ -5,6 +5,9 @@ on:
   push:
     branches: [release/claude-mcp-v1]
 
+env:
+  PYTHONDONTWRITEBYTECODE: '1'
+
 permissions:
   contents: read
 
@@ -34,4 +37,16 @@ jobs:
       - run: python tests/test_publishing_connections.py
       - run: python tests/test_preparation_contract.py
       - run: python plugins/forgegui-roblox-builder/skills/forgegui-roblox-builder/scripts/texture_prep.py --selftest
+      - run: python plugins/forgegui-roblox-builder/skills/forgegui-roblox-builder/references/tools/lut_fit.py --selftest
+      - run: python plugins/forgegui-roblox-builder/skills/forgegui-roblox-builder/references/tools/make_luts.py --selftest
+      - run: python plugins/forgegui-roblox-builder/skills/forgegui-roblox-builder/references/tools/make_gradient.py --selftest
       - run: bash tests/fidelity-pass-hook.sh
+
+  lighting-runtime:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: cargo install lune --version 0.10.5 --locked
+      - run: lune run tests/unified-lighting.luau

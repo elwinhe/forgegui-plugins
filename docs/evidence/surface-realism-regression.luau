@@ -9,7 +9,8 @@
 -- It asserts ownership (only tagged instances are ever destroyed, same-named strangers
 -- survive), restore (overrides and terrain colours come back, clear/stop leave nothing
 -- behind), idempotence (a second apply/start does not stack), and the placement rules
--- (footprint, protrude, keep-out, trunk share).
+-- (footprint, including a 12 x 6 template whose test must follow its own extents and
+-- yaw, protrude, keep-out, trunk share).
 --
 -- The place is left as it was found: terrain in the test region is read first and
 -- written back at the end, and every module is cleared, whether it passed or failed.
@@ -244,14 +245,33 @@ local function checkPatch(model: Model, ray: RaycastParams)
 	check(model:GetAttribute("ForgeGUIGroundScatter") == true, "every patch is owned")
 end
 
-local function groundScatterChecks()
-	fillTestGround()
+-- The ground under a patch's own corners, pulled in to the tested 0.46 x side, must be
+-- Ground whatever the cell's yaw. A test that probed a world-aligned square from the
+-- shorter side passed 12 x 6 patches lying across the 8-stud road.
+local FOOTPRINT_CORNERS = { Vector2.new(1, 1), Vector2.new(1, -1), Vector2.new(-1, 1), Vector2.new(-1, -1) }
+local function checkFootprint(model: Model, ray: RaycastParams, label: string)
+	local box, size = model:GetBoundingBox()
+	for _, corner in ipairs(FOOTPRINT_CORNERS) do
+		local point = box:PointToWorldSpace(Vector3.new(corner.X * size.X * 0.46, 0, corner.Y * size.Z * 0.46))
+		local hit = workspace:Raycast(Vector3.new(point.X, ORIGIN.Y + 60, point.Z), Vector3.new(0, -120, 0), ray)
+		check(hit ~= nil and hit.Material == Enum.Material.Ground, label)
+	end
+end
+
+local function slabTemplate(name: string, size: Vector3): Model
 	local template = Instance.new("Model")
-	template.Name = "MudPatch"
+	template.Name = name
 	local slab = Instance.new("Part")
-	slab.Size = Vector3.new(12, 0.6, 12)
+	slab.Size = size
 	slab.Parent = template
 	template.PrimaryPart = slab
+	return template
+end
+
+local function groundScatterChecks()
+	fillTestGround()
+	local template = slabTemplate("MudPatch", Vector3.new(12, 0.6, 12))
+	local slab = template.PrimaryPart :: BasePart
 
 	local made = runScatter(template)
 	check(made ~= nil and #ownedFolders() == 1, "start makes one owned folder")
@@ -263,6 +283,21 @@ local function groundScatterChecks()
 	ray.FilterDescendantsInstances = { Terrain }
 	for _, patch in ipairs(folder:GetChildren()) do
 		checkPatch(patch :: Model, ray)
+		checkFootprint(patch :: Model, ray, "a 12-stud patch's own corners stand on Ground at any yaw")
+	end
+
+	-- A 12 x 6 template. Across the 8-stud road it must get nothing; along the road it
+	-- fits, so any patch laid there must have its long side running along Z.
+	local oblong = slabTemplate("MudStrip", Vector3.new(12, 0.6, 6))
+	local strips = runScatter(oblong) :: Instance
+	check(#strips:GetChildren() > 0, "12 x 6 patches are laid on the Ground square")
+	for _, patch in ipairs(strips:GetChildren()) do
+		checkFootprint(patch :: Model, ray, "a 12 x 6 patch's own corners stand on Ground")
+		local box = (patch :: Model):GetBoundingBox()
+		if box.Position.X > ORIGIN.X then
+			local halfX = math.abs(box.RightVector.X) * 6 + math.abs(box.LookVector.X) * 3
+			check(halfX <= 4.5, "a 12 x 6 patch on the 8-stud road lies along it, never across it")
+		end
 	end
 
 	local again = runScatter(template)

@@ -29,7 +29,8 @@ High, with the full lighting and effects stack.
   3. Materials whose colour map has the relief baked in (`--cavity`) plus a height-derived normal
      map, so the relief still shows where the normal map is lit flat (shadow, overcast, far LOD).
 - **Footprint rule.** A grid-snapped 12-stud patch must be laid only where its whole footprint
-  (centre and four corners) is the same terrain material. The roads were about 14 studs wide.
+  (centre and the four corners of its own box, where it will actually stand) is the same terrain
+  material. The roads were about 14 studs wide.
   Without the rule, most road patches straddled the edge and read as loose tiles strewn over the
   sand. With it, narrow strips get none, and that looks right.
 - **Tiling test on a generated building (A/B/C, side by side, same light):** A was the bare mesh
@@ -131,7 +132,7 @@ The template is a generated model (ForgeGUI `generation_model_3d`): a low, wide 
 | `radius` / `leaveRadius` | 64 / radius + 8 | laid within, returned to the pool beyond |
 | `protrude` | 0.45 | studs of the patch's top standing above the terrain; the rest is sunk into it |
 | `minUp` | 0.86 | ground steeper than this normal.Y (cliffs, banks) gets none |
-| `footprint` | 0.46 x the smaller template side | half-width of the corner test (5.5 for a 12-stud patch) |
+| `footprint` | 0.46 x each template side | half-extents of the corner test, probed at the patch's own corners as it will stand (turned by the cell's yaw): 5.5 x 5.5 for a 12-stud patch, 5.5 x 2.8 for a 12 x 6 one. A number sets both axes |
 | `cellsPerFrame` | 12 | cells checked per frame, five rays each |
 | `jitter` | 0.3 | per-cell offset as a fraction of the cell |
 | `tint` | none | `SurfaceAppearance.Color`. Generated maps come out warmer and brighter than graded terrain |

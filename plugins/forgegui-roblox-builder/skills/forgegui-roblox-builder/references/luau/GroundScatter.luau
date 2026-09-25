@@ -24,10 +24,14 @@
 --   * One ray down per cell finds the ground; steep ground (normal.Y < minUp:
 --     cliffs, bank faces), water and other materials get nothing.
 --   * FOOTPRINT rule: a patch is laid only where its whole footprint (centre and
---     four corners, `footprint` studs out) is the same material. Without it,
---     roads about 14 studs wide under 12-stud patches mostly got patches that
---     straddled the road edge and read as loose tiles strewn over the next
---     material. Narrow strips therefore get none, which is the right answer.
+--     the four corners of its own box, as it will stand: its X and Z extents,
+--     turned by the cell's yaw, pulled in to 0.92 of each half-side) is the same
+--     material. Without it, roads about 14 studs wide under 12-stud patches
+--     mostly got patches that straddled the road edge and read as loose tiles
+--     strewn over the next material. Narrow strips therefore get none, which is
+--     the right answer. The corners are probed where the patch will actually
+--     lie: a world-aligned square from the shorter side let a 12 x 6 patch lie
+--     across an 8-stud road, and let a turned square reach past its test.
 --   * The patch follows the slope and is sunk so only its top `protrude` studs
 --     stand proud, so it reads as part of the ground rather than an object on it.
 --   * Generated colour maps come out warmer and brighter than graded terrain;
@@ -70,7 +74,7 @@ export type Config = {
 }
 export type Stats = { patches: number, empty: number, pooled: number, queued: number }
 
-type Prepared = { template: Model, tint: Color3?, lift: number, footprint: number }
+type Prepared = { template: Model, tint: Color3?, lift: number, box: CFrame, reach: Vector2 }
 type Patch = { model: Model, material: Enum.Material }
 type State = {
 	cell: number,
@@ -111,7 +115,10 @@ local function cameraFocus(): Vector3?
 end
 
 -- Offsets that put the template's box top `protrude` studs above the ground point
--- under its pivot, and the half-width of its footprint test.
+-- under its pivot, the box's frame in pivot space, and the half-extents of its
+-- footprint test: 0.46 of each of the box's own X and Z sides (a `footprint`
+-- number sets both), so the corners probed are the patch's real corners pulled
+-- in a little, wherever and however the patch is turned.
 local function prepare(material: Enum.Material, kind: Kind, protrude: number, footprint: number?): Prepared
 	assert(type(kind) == "table" and typeof(kind.template) == "Instance" and kind.template:IsA("Model"), "GroundScatter: kinds[" .. material.Name .. "].template must be a Model")
 	local box, size = kind.template:GetBoundingBox()
@@ -120,7 +127,8 @@ local function prepare(material: Enum.Material, kind: Kind, protrude: number, fo
 		template = kind.template,
 		tint = kind.tint,
 		lift = protrude - rel.Y - size.Y / 2,
-		footprint = footprint or math.min(size.X, size.Z) * 0.46,
+		box = rel,
+		reach = if footprint then Vector2.new(footprint, footprint) else Vector2.new(size.X * 0.46, size.Z * 0.46),
 	}
 end
 
@@ -158,10 +166,12 @@ local function groundAt(s: State, x: number, z: number): RaycastResult?
 	return Workspace:Raycast(Vector3.new(x, s.castTop, z), Vector3.new(0, -s.castDepth, 0), s.ray)
 end
 
--- Whether all four footprint corners round (x, z) are `material`.
-local function covered(s: State, x: number, z: number, material: Enum.Material, reach: number): boolean
+-- Whether the ground under all four corners of `box` (the patch's bounding box
+-- where it will stand, so the probe follows its size, yaw and slope) is `material`.
+local function covered(s: State, box: CFrame, material: Enum.Material, reach: Vector2): boolean
 	for _, corner in ipairs(CORNERS) do
-		local hit = groundAt(s, x + corner.X * reach, z + corner.Y * reach)
+		local point = box:PointToWorldSpace(Vector3.new(corner.X * reach.X, 0, corner.Y * reach.Y))
+		local hit = groundAt(s, point.X, point.Z)
 		if not hit or hit.Material ~= material then
 			return false
 		end
@@ -179,14 +189,18 @@ local function lay(s: State, cell: Vector3): Patch | false
 		return false
 	end
 	local kind = s.kinds[hit.Material]
-	if not kind or not covered(s, x, z, hit.Material, kind.footprint) then
+	if not kind then
 		return false
 	end
-	local model = clone(s, hit.Material)
 	local up = hit.Normal
 	local yaw = math.floor(hash(cell.X, cell.Z, 3) * 4) * math.pi / 2 + (hash(cell.X, cell.Z, 4) - 0.5) * 0.5
 	local level = CFrame.fromMatrix(hit.Position, up:Cross(Vector3.zAxis).Unit, up) * CFrame.Angles(0, yaw, 0)
-	model:PivotTo(level * CFrame.new(0, kind.lift, 0))
+	local pivot = level * CFrame.new(0, kind.lift, 0)
+	if not covered(s, pivot * kind.box, hit.Material, kind.reach) then
+		return false
+	end
+	local model = clone(s, hit.Material)
+	model:PivotTo(pivot)
 	model.Parent = s.folder
 	return { model = model, material = hit.Material }
 end

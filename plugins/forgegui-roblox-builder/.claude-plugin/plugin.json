@@ -1,7 +1,7 @@
 {
   "name": "mcp",
-  "version": "1.8.0",
-  "description": "Build Roblox experiences with ForgeGUI assets and the official Roblox Studio MCP.",
+  "version": "1.9.0-beta.1",
+  "description": "Staging beta: Build Roblox experiences with ForgeGUI assets and the official Roblox Studio MCP.",
   "author": {
     "name": "ForgeGUI"
   },

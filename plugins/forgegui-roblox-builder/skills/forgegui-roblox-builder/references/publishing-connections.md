@@ -1,7 +1,7 @@
 # Roblox publishing connections
 
 The request examples match backend contract **1.9.0**, pinned in
-`tests/backend-preparation-contract.json` at backend commit `7f21d40aeb556528f28d38c228282c1ea0eb5177`. This is local contract validation,
+the plugin repository's `tests/backend-preparation-contract.json` (not installed with the plugin) at backend commit `7f21d40aeb556528f28d38c228282c1ea0eb5177`. This is local contract validation,
 not deployment or Studio acceptance. Discover live schemas and account
 capabilities before using a connection tool or field.
 
@@ -146,14 +146,14 @@ spend again merely because a topology diagnostic reports open edges.
 
 ## Contract validation and release boundary
 
-[Connection fixtures](../../../../../tests/publishing-connections.json) cover
+[Connection fixtures](https://github.com/elwinhe/forgegui-plugins/blob/release/claude-mcp-v1/tests/publishing-connections.json) (repository-only; not installed with the plugin) cover
 discovery, direct and connected Model/music/SFX generation, standalone
 Model/Image/Audio publication, replay-only legacy delivery and partial audio receipts.
 Request fixtures are validated against the pinned backend input schemas;
 receipt examples and guidance assertions are not portable output schemas or
 proof of installed-agent behavior.
 
-Run `tests/test_publishing_connections.py` and `tests/test_preparation_contract.py`.
+Developers working in the plugin repository run `tests/test_publishing_connections.py` and `tests/test_preparation_contract.py`; neither file is part of the installed package.
 Set `FORGEGUI_BACKEND_CONTRACT` to the exact backend export to check its hash
 and every pinned tool definition. Staging still requires dedicated user/group
 credentials, actual uploads and recovery, followed by Studio insertion/playback

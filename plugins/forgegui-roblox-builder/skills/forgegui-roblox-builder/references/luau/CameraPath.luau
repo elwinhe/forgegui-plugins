@@ -410,17 +410,20 @@ function CameraPath.stop(): boolean
 	if shot then
 		finish(shot, false)
 	end
-	local hadBlend = blend ~= nil
+	local pendingBlend = blend
+	local camera = Workspace.CurrentCamera
+	if camera and pendingBlend then
+		camera.FieldOfView = pendingBlend.target
+	end
 	blend = nil
 	unbind()
-	local camera = Workspace.CurrentCamera
 	local borrowed = false
 	if camera and camera:GetAttribute(PRIOR_PREFIX .. "CameraType") ~= nil then
 		borrowed = true
 		restoreCamera(camera)
 	end
 	CameraPath.hideGuis(false)
-	return shot ~= nil or hadBlend or borrowed
+	return shot ~= nil or pendingBlend ~= nil or borrowed
 end
 
 function CameraPath.isPlaying(): boolean

@@ -23,3 +23,12 @@ jobs:
       - run: python tests/test_preparation_contract.py
       - run: python plugins/forgegui-roblox-builder/skills/forgegui-roblox-builder/scripts/texture_prep.py --selftest
       - run: bash tests/fidelity-pass-hook.sh
+
+  camera-runtime:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: cargo install lune --version 0.10.5 --locked
+      - run: lune run tests/camera-path-blend.luau

@@ -265,14 +265,14 @@ local function checkPatch(model: Model, ray: RaycastParams)
 	check(model:GetAttribute("ForgeGUIGroundScatter") == true, "every patch is owned")
 end
 
--- The ground under a patch's own corners, pulled in to the tested 0.46 x side, must be
+-- The ground under a patch's full bounding-box corners must be
 -- Ground whatever the cell's yaw. A test that probed a world-aligned square from the
 -- shorter side passed 12 x 6 patches lying across the 8-stud road.
 local FOOTPRINT_CORNERS = { Vector2.new(1, 1), Vector2.new(1, -1), Vector2.new(-1, 1), Vector2.new(-1, -1) }
 local function checkFootprint(model: Model, ray: RaycastParams, label: string)
 	local box, size = model:GetBoundingBox()
 	for _, corner in ipairs(FOOTPRINT_CORNERS) do
-		local point = box:PointToWorldSpace(Vector3.new(corner.X * size.X * 0.46, 0, corner.Y * size.Z * 0.46))
+		local point = box:PointToWorldSpace(Vector3.new(corner.X * size.X / 2, 0, corner.Y * size.Z / 2))
 		local hit = workspace:Raycast(Vector3.new(point.X, ORIGIN.Y + 60, point.Z), Vector3.new(0, -120, 0), ray)
 		check(hit ~= nil and hit.Material == Enum.Material.Ground, label)
 	end

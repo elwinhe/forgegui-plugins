@@ -31,7 +31,7 @@
 --     RETRY_STEPS steps while it stays in reach, and left empty after MAX_MISSES.
 --   * FOOTPRINT rule: a patch is laid only where its whole footprint (centre and
 --     the four corners of its own box, as it will stand: its X and Z extents,
---     turned by the cell's yaw, pulled in to 0.92 of each half-side) is the same
+--     turned by the cell's yaw, using the full half-extents by default) is the same
 --     material. Without it, roads about 14 studs wide under 12-stud patches
 --     mostly got patches that straddled the road edge and read as loose tiles
 --     strewn over the next material. Narrow strips therefore get none, which is
@@ -128,9 +128,8 @@ end
 
 -- Offsets that put the template's box top `protrude` studs above the ground point
 -- under its pivot, the box's frame in pivot space, and the half-extents of its
--- footprint test: 0.46 of each of the box's own X and Z sides (a `footprint`
--- number sets both), so the corners probed are the patch's real corners pulled
--- in a little, wherever and however the patch is turned.
+-- footprint test: half of each box side by default. An explicit `footprint`
+-- number overrides both axes and may intentionally allow edge overhang.
 local function prepare(material: Enum.Material, kind: Kind, protrude: number, footprint: number?): Prepared
 	assert(type(kind) == "table" and typeof(kind.template) == "Instance" and kind.template:IsA("Model"), "GroundScatter: kinds[" .. material.Name .. "].template must be a Model")
 	local box, size = kind.template:GetBoundingBox()
@@ -140,7 +139,7 @@ local function prepare(material: Enum.Material, kind: Kind, protrude: number, fo
 		tint = kind.tint,
 		lift = protrude - rel.Y - size.Y / 2,
 		box = rel,
-		reach = if footprint then Vector2.new(footprint, footprint) else Vector2.new(size.X * 0.46, size.Z * 0.46),
+		reach = if footprint then Vector2.new(footprint, footprint) else Vector2.new(size.X / 2, size.Z / 2),
 	}
 end
 

@@ -132,7 +132,7 @@ The template is a generated model (ForgeGUI `generation_model_3d`): a low, wide 
 | `radius` / `leaveRadius` | 64 / radius + 8 | laid within, returned to the pool beyond |
 | `protrude` | 0.45 | studs of the patch's top standing above the terrain; the rest is sunk into it |
 | `minUp` | 0.86 | ground steeper than this normal.Y (cliffs, banks) gets none |
-| `footprint` | 0.46 x each template side | half-extents of the corner test, probed at the patch's own corners as it will stand (turned by the cell's yaw): 5.5 x 5.5 for a 12-stud patch, 5.5 x 2.8 for a 12 x 6 one. A number sets both axes |
+| `footprint` | 0.5 x each template side | full half-extents of the transformed bounding-box corner test: 6 x 6 for a 12-stud patch, 6 x 3 for a 12 x 6 one. A number overrides both axes; smaller values intentionally permit edge overhang. Centre/corner sampling does not detect material holes between probes |
 | `cellsPerFrame` | 12 | cells checked per frame, five rays each |
 | `jitter` | 0.3 | per-cell offset as a fraction of the cell |
 | `castTop` / `castDepth` | castDepth / 2 above the focus / 800 | where the downward rays start and how far they reach. Leave `castTop` unset unless the ground sits in a fixed height band |

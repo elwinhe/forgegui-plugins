@@ -46,6 +46,10 @@ and then passes a naive tiling check. Check the mode before processing.
 
 If a texture does not tile, repair it before upload rather than living with the seam.
 
+For a material (ground, rock, walls), derive its normal, roughness and cavity maps from the tiled
+colour with `references/tools/pbr_maps.py` and apply them as a MaterialVariant; see
+`surface-realism.md`.
+
 ## 3. Upload
 
 Upload the prepared PNG as `assetType: "Image"` (SKILL.md §4). Everything below takes the returned

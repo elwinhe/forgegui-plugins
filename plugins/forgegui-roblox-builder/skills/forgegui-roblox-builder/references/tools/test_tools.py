@@ -135,6 +135,17 @@ def test_paste_module() -> None:
         source = (luau / f"{name}.luau").read_text(encoding="utf-8")
         body = paste_module.paste(source, f"return {name}.format")
         check(f"local {name} = {{}}" in body and body.rstrip().endswith(f"return {name}.format"), f"the shipped {name} pastes with a runner")
+    check(paste_module.paste_many([module], "return 1") == paste_module.paste(module, "return 1"), "one module pastes exactly as before")
+    other = "--!strict\nlocal Other = {}\nexport type T = number\nreturn Other\n"
+    many = paste_module.paste_many([module, other], "return Check.run()\n")
+    check(many.startswith("local Check = (function()\n") and "local Other = (function()\n" in many,
+          "several modules are each wrapped in their own scope")
+    check("export type" not in many and "\ntype T = number" in many, "exported types become local types inside the wrapper")
+    check(many.count("--!") == 0 and many.endswith("return Check.run()\n"), "mode lines are dropped and the runner comes last")
+    names = ("MaterialKit", "DetailGrain", "KeepOut", "GroundScatter")
+    shipped = [(luau / f"{name}.luau").read_text(encoding="utf-8") for name in names]
+    body = paste_module.paste_many(shipped, "return 'ok'")
+    check(all(f"local {name} = (function()" in body for name in names), "the shipped surface modules paste together")
 
 
 def kit(background: tuple[int, int, int], accent: tuple[int, int, int], margin: int = 0) -> Image.Image:

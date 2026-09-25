@@ -22,7 +22,13 @@
 --     never swims as the camera moves and returns to the same spot. `cell` sits a
 --     little under the patch width so neighbours overlap and hide their edges.
 --   * One ray down per cell finds the ground; steep ground (normal.Y < minUp:
---     cliffs, bank faces), water and other materials get nothing.
+--     cliffs, bank faces), water and other materials get nothing. Rays run
+--     `castDepth` studs down from `castTop`; without `castTop` they start
+--     castDepth / 2 above the focus, so ground at any height is in reach.
+--   * A ray that meets no terrain at all is not taken as final: on a client the
+--     terrain may not have streamed in yet, and freshly written terrain is not
+--     raycastable until the next physics step. Such a cell is tried again every
+--     RETRY_STEPS steps while it stays in reach, and left empty after MAX_MISSES.
 --   * FOOTPRINT rule: a patch is laid only where its whole footprint (centre and
 --     the four corners of its own box, as it will stand: its X and Z extents,
 --     turned by the cell's yaw, pulled in to 0.92 of each half-side) is the same
@@ -72,7 +78,7 @@ export type Config = {
 	focus: (() -> Vector3?)?,
 	manual: boolean?,
 }
-export type Stats = { patches: number, empty: number, pooled: number, queued: number }
+export type Stats = { patches: number, empty: number, pooled: number, queued: number, retrying: number }
 
 type Prepared = { template: Model, tint: Color3?, lift: number, box: CFrame, reach: Vector2 }
 type Patch = { model: Model, material: Enum.Material }
@@ -83,12 +89,16 @@ type State = {
 	minUp: number,
 	cellsPerFrame: number,
 	jitter: number,
-	castTop: number,
+	castTop: number?,
 	castDepth: number,
+	focusY: number,
 	focus: () -> Vector3?,
 	kinds: { [Enum.Material]: Prepared },
 	folder: Folder,
 	placed: { [Vector3]: Patch | false },
+	misses: { [Vector3]: number },
+	steps: number,
+	retryAt: number?,
 	pools: { [Enum.Material]: { Model } },
 	queue: { Vector3 },
 	lastCell: Vector3?,
@@ -97,6 +107,8 @@ type State = {
 }
 
 local OWNED_ATTR = "ForgeGUIGroundScatter"
+local MAX_MISSES = 5
+local RETRY_STEPS = 60 -- about a second at Heartbeat rate
 local CORNERS = { Vector2.new(1, 1), Vector2.new(1, -1), Vector2.new(-1, 1), Vector2.new(-1, -1) }
 -- Cells are keyed by Vector3 (X, 0, Z): a native vector is compared by value as a
 -- table key. A Vector2 is userdata and is keyed by identity, so a cell looked up
@@ -163,29 +175,38 @@ local function release(s: State, patch: Patch)
 end
 
 local function groundAt(s: State, x: number, z: number): RaycastResult?
-	return Workspace:Raycast(Vector3.new(x, s.castTop, z), Vector3.new(0, -s.castDepth, 0), s.ray)
+	local top = s.castTop or s.focusY + s.castDepth / 2
+	return Workspace:Raycast(Vector3.new(x, top, z), Vector3.new(0, -s.castDepth, 0), s.ray)
 end
 
 -- Whether the ground under all four corners of `box` (the patch's bounding box
--- where it will stand, so the probe follows its size, yaw and slope) is `material`.
-local function covered(s: State, box: CFrame, material: Enum.Material, reach: Vector2): boolean
+-- where it will stand, so the probe follows its size, yaw and slope) is
+-- `material`; nil when no corner is on other ground but a ray met no terrain.
+local function covered(s: State, box: CFrame, material: Enum.Material, reach: Vector2): boolean?
+	local missed = false
 	for _, corner in ipairs(CORNERS) do
 		local point = box:PointToWorldSpace(Vector3.new(corner.X * reach.X, 0, corner.Y * reach.Y))
 		local hit = groundAt(s, point.X, point.Z)
-		if not hit or hit.Material ~= material then
+		if not hit then
+			missed = true
+		elseif hit.Material ~= material then
 			return false
 		end
 	end
-	return true
+	return if missed then nil else true
 end
 
--- The patch for one cell, or false when the cell gets none.
-local function lay(s: State, cell: Vector3): Patch | false
+-- The patch for one cell, false when the cell gets none, or nil when a ray met
+-- no terrain and the cell should be tried again.
+local function lay(s: State, cell: Vector3): (Patch | false)?
 	local jx = (hash(cell.X, cell.Z, 1) - 0.5) * s.cell * s.jitter
 	local jz = (hash(cell.X, cell.Z, 2) - 0.5) * s.cell * s.jitter
 	local x, z = (cell.X + 0.5) * s.cell + jx, (cell.Z + 0.5) * s.cell + jz
 	local hit = groundAt(s, x, z)
-	if not hit or hit.Normal.Y < s.minUp then
+	if not hit then
+		return nil
+	end
+	if hit.Normal.Y < s.minUp then
 		return false
 	end
 	local kind = s.kinds[hit.Material]
@@ -196,7 +217,10 @@ local function lay(s: State, cell: Vector3): Patch | false
 	local yaw = math.floor(hash(cell.X, cell.Z, 3) * 4) * math.pi / 2 + (hash(cell.X, cell.Z, 4) - 0.5) * 0.5
 	local level = CFrame.fromMatrix(hit.Position, up:Cross(Vector3.zAxis).Unit, up) * CFrame.Angles(0, yaw, 0)
 	local pivot = level * CFrame.new(0, kind.lift, 0)
-	if not covered(s, pivot * kind.box, hit.Material, kind.reach) then
+	local fits = covered(s, pivot * kind.box, hit.Material, kind.reach)
+	if fits == nil then
+		return nil
+	elseif not fits then
 		return false
 	end
 	local model = clone(s, hit.Material)
@@ -237,6 +261,11 @@ local function plan(s: State, focus: Vector3)
 			s.placed[cell] = nil
 		end
 	end
+	for cell in pairs(s.misses) do
+		if cellDistance(s, cell, focus) > s.leaveRadius then
+			s.misses[cell] = nil
+		end
+	end
 end
 
 -- One frame of work around `focus` (default: the configured focus, the camera's).
@@ -249,15 +278,32 @@ function GroundScatter.step(focus: Vector3?)
 	if not at then
 		return
 	end
+	s.steps += 1
+	s.focusY = at.Y
 	local cell = cellOf(s, at)
-	if cell ~= s.lastCell then
+	local retry = s.retryAt ~= nil and s.steps >= s.retryAt and #s.queue == 0
+	if cell ~= s.lastCell or retry then
 		s.lastCell = cell
+		s.retryAt = nil
 		plan(s, at)
 	end
 	for _ = 1, math.min(s.cellsPerFrame, #s.queue) do
 		local nextCell = table.remove(s.queue) :: Vector3
 		if s.placed[nextCell] == nil then
-			s.placed[nextCell] = lay(s, nextCell)
+			local result = lay(s, nextCell)
+			if result ~= nil then
+				s.placed[nextCell] = result
+				s.misses[nextCell] = nil
+			else
+				local misses = (s.misses[nextCell] or 0) + 1
+				if misses >= MAX_MISSES then
+					s.placed[nextCell] = false
+					s.misses[nextCell] = nil
+				else
+					s.misses[nextCell] = misses
+					s.retryAt = s.retryAt or s.steps + RETRY_STEPS
+				end
+			end
 		end
 	end
 end
@@ -292,12 +338,16 @@ local function build(config: Config): State
 		minUp = config.minUp or 0.86,
 		cellsPerFrame = config.cellsPerFrame or 12,
 		jitter = config.jitter or 0.3,
-		castTop = config.castTop or 400,
+		castTop = config.castTop,
 		castDepth = config.castDepth or 800,
+		focusY = 0,
 		focus = config.focus or cameraFocus,
 		kinds = kinds,
 		folder = folder,
 		placed = {},
+		misses = {},
+		steps = 0,
+		retryAt = nil,
 		pools = {},
 		queue = {},
 		lastCell = nil,
@@ -342,7 +392,7 @@ end
 
 function GroundScatter.stats(): Stats
 	local s = state
-	local result: Stats = { patches = 0, empty = 0, pooled = 0, queued = 0 }
+	local result: Stats = { patches = 0, empty = 0, pooled = 0, queued = 0, retrying = 0 }
 	if not s then
 		return result
 	end
@@ -357,6 +407,9 @@ function GroundScatter.stats(): Stats
 		result.pooled += #pool
 	end
 	result.queued = #s.queue
+	for _ in pairs(s.misses) do
+		result.retrying += 1
+	end
 	return result
 end
 

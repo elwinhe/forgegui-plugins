@@ -169,10 +169,12 @@ end
 
 function MaterialKit.apply(specs: { Spec }): Report
 	local report: Report = { created = {}, updated = {}, skipped = {}, failed = {} }
+	-- Marked before the first change, so clear() can still undo the specs applied
+	-- before one that raises (a spec that is not a table, say).
+	MaterialService:SetAttribute(OWNED_ATTR, true)
 	for _, spec in ipairs(specs) do
 		applyOne(spec, report)
 	end
-	MaterialService:SetAttribute(OWNED_ATTR, true)
 	return report
 end
 

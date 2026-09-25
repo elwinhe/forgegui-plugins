@@ -28,6 +28,9 @@ local function near(actual: number, expected: number, tolerance: number, label: 
 	check(math.abs(actual - expected) <= tolerance, `{label} (expected {expected}, got {actual})`)
 end
 
+-- Checked before anything is made, so a place that fails it is left untouched.
+check(MaterialService:GetAttribute("ForgeGUIMaterialKit") == nil, "the test place has no MaterialKit applied yet")
+
 local scratch = Instance.new("Folder")
 scratch.Name = "ForgeGUISurfaceRegression_" .. HttpService:GenerateGUID(false)
 scratch.Parent = workspace
@@ -38,7 +41,9 @@ local region = Region3.new(ORIGIN - Vector3.new(96, 12, 96), ORIGIN + Vector3.ne
 local savedMaterials, savedOccupancy = Terrain:ReadVoxels(region, 4)
 local priorOverride = MaterialService:GetBaseMaterialOverride(Enum.Material.Sand)
 local priorSandColor = Terrain:GetMaterialColor(Enum.Material.Sand)
-check(MaterialService:GetAttribute("ForgeGUIMaterialKit") == nil, "the test place has no MaterialKit applied yet")
+
+-- Held here so the cleanup below removes it even when a check fails first.
+local strangerVariant: MaterialVariant? = nil
 
 local function materialKitChecks()
 	local stranger = Instance.new("MaterialVariant")
@@ -46,6 +51,7 @@ local function materialKitChecks()
 	stranger.BaseMaterial = Enum.Material.Rock
 	stranger.StudsPerTile = 7
 	stranger.Parent = MaterialService
+	strangerVariant = stranger
 	local specs: { any } = {
 		{ name = "ForgeGUIRegression_Sand", base = Enum.Material.Sand, studsPerTile = 18, terrainColor = Color3.fromRGB(250, 238, 222) },
 		{ name = "ForgeGUIRegression_Stranger", base = Enum.Material.Rock, studsPerTile = 30 },
@@ -82,7 +88,12 @@ local function materialKitChecks()
 	check(stranger.Parent == MaterialService, "the stranger survives clear")
 	check(MaterialService:GetAttribute("ForgeGUIMaterialKitPriorOverride_Sand") == nil and Terrain:GetAttribute("ForgeGUIMaterialKitPriorColor_Sand") == nil, "restored priors are cleaned up")
 	check(MaterialKit.clear() == false, "clear on a clean place reports nothing to do")
-	stranger:Destroy()
+
+	-- A spec that raises part-way must not strand the changes made before it.
+	local partial: { any } = { { name = "ForgeGUIRegression_Partial", base = Enum.Material.Sand, terrainColor = Color3.fromRGB(10, 10, 10) }, 42 }
+	check(not pcall(MaterialKit.apply, partial), "a spec that is not a table raises")
+	check(MaterialKit.clear() == true, "clear still runs after an apply that raised")
+	check(MaterialService:GetBaseMaterialOverride(Enum.Material.Sand) == priorOverride and Terrain:GetMaterialColor(Enum.Material.Sand) == priorSandColor and next(MaterialKit.owned()) == nil, "the specs applied before the raise are undone")
 end
 
 local function ownedTextures(root: Instance): { Texture }
@@ -171,6 +182,15 @@ local function keepOutChecks()
 	check(plainZone.blockedModel(palm), "without a trunk share the same crown is blocked")
 	palm:SetAttribute("KeepOutTrunk", 0.12)
 	check(not plainZone.blockedModel(palm), "a KeepOutTrunk attribute works without a name table")
+	-- A leaning palm: bounds X 8..40 are centred beyond the wall, the trunk stands at X 9.
+	local leaner = testModel("leaner", Vector3.new(24, 8, 0), Vector3.new(32, 16, 16))
+	leaner:SetAttribute("KeepOutTrunk", 0.12)
+	check(not plainZone.blockedModel(leaner), "without a trunk attachment the probe sits at the bounds' centre")
+	local foot = Instance.new("Attachment")
+	foot.Name = "KeepOutTrunk"
+	foot.Parent = leaner:FindFirstChildWhichIsA("BasePart")
+	foot.WorldPosition = Vector3.new(9, 0, 0)
+	check(plainZone.blockedModel(leaner), "a KeepOutTrunk attachment centres the trunk probe on the trunk")
 	plainZone.reset()
 	check(plainZone.count() == 0 and not plainZone.blocked(CFrame.new(5, 1, 5), Vector3.new(2, 2, 2)), "reset empties the zone")
 end
@@ -215,14 +235,14 @@ local function ownedFolders(): { Instance }
 	return list
 end
 
-local function runScatter(template: Model): Instance?
+local function runScatter(template: Model, focusRelative: boolean?): Instance?
 	GroundScatter.start({
 		kinds = { [Enum.Material.Ground] = { template = template, tint = Color3.fromRGB(200, 100, 50) } },
 		manual = true,
 		parent = scratch,
 		radius = 90,
-		castTop = ORIGIN.Y + 60,
-		castDepth = 120,
+		castTop = if focusRelative then nil else ORIGIN.Y + 60,
+		castDepth = if focusRelative then nil else 120,
 	})
 	for _ = 1, 400 do
 		GroundScatter.step(ORIGIN)
@@ -319,6 +339,45 @@ local function groundScatterChecks()
 	check(GroundScatter.stop() == true and #ownedFolders() == 0, "stop removes everything it made")
 	check(template.Parent == nil and template:GetAttribute("ForgeGUIGroundScatter") == nil and slab.Color ~= Color3.fromRGB(200, 100, 50), "the caller's template is never touched")
 	check(GroundScatter.stop() == false, "stop when stopped reports nothing to do")
+
+	-- Without castTop the rays start above the focus, wherever the ground is.
+	local relative = runScatter(template, true) :: Instance
+	check(table.concat(patchPositions(relative), ";") == table.concat(first, ";"), "without castTop the cast follows the focus and lays the same patches")
+	GroundScatter.stop()
+
+	-- Ground that is missing when the scatter starts (not streamed in yet) is retried.
+	local hole = CFrame.new(ORIGIN + Vector3.new(-40, -4, 0))
+	local probe = ORIGIN + Vector3.new(-40, 60, 0)
+	local function groundAtHole(): boolean
+		local hit = workspace:Raycast(probe, Vector3.new(0, -120, 0), ray)
+		return hit ~= nil and hit.Material == Enum.Material.Ground
+	end
+	Terrain:FillBlock(hole, Vector3.new(24, 8, 24), Enum.Material.Air)
+	for _ = 1, 120 do
+		if not groundAtHole() then
+			break
+		end
+		task.wait()
+	end
+	local late = runScatter(template) :: Instance
+	check(not groundAtHole() and GroundScatter.stats().retrying > 0 and #late:GetChildren() < #first, "cells over missing ground wait to be retried")
+	Terrain:FillBlock(hole, Vector3.new(24, 8, 24), Enum.Material.Ground)
+	for _ = 1, 120 do
+		if groundAtHole() then
+			break
+		end
+		task.wait()
+	end
+	for _ = 1, 800 do
+		GroundScatter.step(ORIGIN)
+		local st = GroundScatter.stats()
+		if st.queued == 0 and st.retrying == 0 then
+			break
+		end
+	end
+	check(GroundScatter.stats().retrying == 0, "retries are bounded: every cell settles")
+	check(table.concat(patchPositions(late), ";") == table.concat(first, ";"), "once the ground is there, the retried cells get their patches")
+	check(GroundScatter.stop() == true, "stop after the retry run")
 end
 
 local ok, failure = xpcall(function()
@@ -330,6 +389,9 @@ end, debug.traceback)
 
 -- Hand the place back whatever happened.
 pcall(MaterialKit.clear)
+if strangerVariant then
+	strangerVariant:Destroy()
+end
 pcall(GroundScatter.stop)
 pcall(function()
 	Terrain:WriteVoxels(region, 4, savedMaterials, savedOccupancy)

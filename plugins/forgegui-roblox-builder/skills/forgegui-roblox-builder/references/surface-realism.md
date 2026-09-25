@@ -135,11 +135,14 @@ The template is a generated model (ForgeGUI `generation_model_3d`): a low, wide 
 | `footprint` | 0.46 x each template side | half-extents of the corner test, probed at the patch's own corners as it will stand (turned by the cell's yaw): 5.5 x 5.5 for a 12-stud patch, 5.5 x 2.8 for a 12 x 6 one. A number sets both axes |
 | `cellsPerFrame` | 12 | cells checked per frame, five rays each |
 | `jitter` | 0.3 | per-cell offset as a fraction of the cell |
+| `castTop` / `castDepth` | castDepth / 2 above the focus / 800 | where the downward rays start and how far they reach. Leave `castTop` unset unless the ground sits in a fixed height band |
 | `tint` | none | `SurfaceAppearance.Color`. Generated maps come out warmer and brighter than graded terrain |
 | `manual` | false | no Heartbeat. Call `GroundScatter.step(focus)` yourself |
 
 Jitter and yaw come from a hash of the cell coordinates, so a patch returns to the same place and
-never swims. Patches are anchored and have no collision, query or touch. `stop()` destroys only
+never swims. A cell whose rays meet no terrain (on a client, terrain that has not streamed in
+yet) is tried again about once a second while it stays in reach, up to five times, then left
+empty; `stats().retrying` counts those cells. Patches are anchored and have no collision, query or touch. `stop()` destroys only
 what it made (`ForgeGUIGroundScatter`). Cells are keyed by Vector3. Vector2 is userdata and does
 not work as a table key: a lookup with a new Vector2 misses, and cells would be laid twice after a
 re-plan. The regression checks this.
@@ -176,14 +179,18 @@ if zone.blockedModel(model) then model:Destroy() else model.Parent = props end
 
 Rules: a prop's box is shrunk to 0.7 first, so leaning on a wall is fine and standing inside it is
 not. Trees are tested by the trunk (X and Z at the trunk share, from `trunkShare` or a
-`KeepOutTrunk` attribute), so a crown may overhang a roof. Boxes are oriented, so rotated walls
+`KeepOutTrunk` attribute), so a crown may overhang a roof. The trunk probe is centred on the
+model's bounds, which a leaning trunk or one-sided crown pulls off the trunk: give such a tree an
+Attachment named `KeepOutTrunk` at the foot of its trunk and the probe is centred there. Boxes are oriented, so rotated walls
 are tested exactly. When one section of a world is rebuilt, `reset()` and `collect()` again, so
 the zone still sees the buildings the other sections made.
 
-After the fact, `WorldCheck.run({ clutter = props })` reports `clutter_overlap` (error) for any
-prop whose shrunk box overlaps a collidable part. It uses the same 0.7 shrink and `KeepOutTrunk`.
-Terrain never counts, because props are sunk into it on purpose. Mark an intended overlap
-`AllowOverlap = true`.
+After the fact, `WorldCheck.run({ clutter = props, keepOut = zone })` reports `clutter_overlap`
+(error) for any prop whose shrunk box overlaps a collidable part or, when given the zone, stands
+in one of its footprints or passages. A passage is a virtual box with nothing collidable in it, so
+without `keepOut` a prop blocking a gate walkway is not reported. It uses the same 0.7 shrink and
+`KeepOutTrunk` attribute and attachment. Terrain never counts, because props are sunk into it on
+purpose. Mark an intended overlap `AllowOverlap = true`.
 
 ## What failed (do not repeat)
 
@@ -197,8 +204,9 @@ Terrain never counts, because props are sunk into it on purpose. Mark an intende
   cells again and stacked patches. `Vector3` keys compare by value; GroundScatter uses them.
 - Starting the scatter in the same frame the terrain is written. Measured: terrain from
   `FillBlock` is not raycastable until the next physics step, so every cell was recorded as
-  empty and stays empty until it leaves the radius. Generate the terrain first, wait a frame
-  (or until a probe ray hits it), then `start`.
+  empty and stayed empty until it left the radius. A ray that meets no terrain is now retried a
+  few times, but generate the terrain first, wait a frame (or until a probe ray hits it), then
+  `start`.
 
 ## Verify
 
@@ -211,5 +219,5 @@ Terrain never counts, because props are sunk into it on purpose. Mark an intende
    no visible 3-stud repeat, and the building's colours must be unchanged.
 4. Read the frame time where the most patches are in view (`GroundScatter.stats().patches`) and
    in the densest built area. Compare with the 6 ms and 11 ms figures above.
-5. Run `WorldCheck` with `clutter` set to the scattered props. There must be no
-   `clutter_overlap`.
+5. Run `WorldCheck` with `clutter` set to the scattered props and `keepOut` set to the zone.
+   There must be no `clutter_overlap` or `clutter_unchecked`.

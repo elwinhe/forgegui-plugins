@@ -46,15 +46,25 @@ from PIL import Image
 LUMA = np.array([0.299, 0.587, 0.114])
 
 
+def box_mean(a: np.ndarray, radius: int, axis: int) -> np.ndarray:
+    """Wrapped mean over 2 * radius + 1 samples along `axis`, from a running sum."""
+    width = 2 * radius + 1
+    moved = np.moveaxis(a, axis, 0)
+    padded = np.pad(moved, [(radius, radius)] + [(0, 0)] * (moved.ndim - 1), mode="wrap")
+    total = np.cumsum(padded, axis=0)
+    total = np.concatenate([np.zeros_like(total[:1]), total])
+    return np.moveaxis((total[width:] - total[:-width]) / width, 0, axis)
+
+
 def blur(a: np.ndarray, radius: int) -> np.ndarray:
-    """Box blur with wrap-around, three passes (close to Gaussian). Works on 2-D arrays."""
+    """Box blur with wrap-around, three passes (close to Gaussian). Works on 2-D arrays.
+
+    Each pass costs the same at any radius: a running sum, not one shifted copy per offset.
+    """
     radius = max(1, int(radius))
     for _ in range(3):
         for axis in (0, 1):
-            acc = np.zeros_like(a)
-            for d in range(-radius, radius + 1):
-                acc += np.roll(a, d, axis=axis)
-            a = acc / (2 * radius + 1)
+            a = box_mean(a, radius, axis)
     return a
 
 
@@ -122,8 +132,17 @@ def cavity_map(rgb: np.ndarray, height: np.ndarray, amount: float) -> np.ndarray
     return np.clip(rgb * shade[..., None], 0, 1)
 
 
+def require_opaque(colour: Image.Image) -> None:
+    """Refuse a tile with any transparency: flattening it to RGB would silently drop the alpha,
+    and whatever colour sits under the transparent pixels would become relief."""
+    if colour.convert("RGBA").getchannel("A").getextrema() != (255, 255):
+        raise ValueError("the colour tile must be fully opaque; it has transparency, which "
+                         "conversion to RGB would drop. Flatten it onto its ground colour first")
+
+
 def build(colour: Image.Image, args: argparse.Namespace) -> dict[str, np.ndarray]:
     """All maps for one colour image, as float arrays in 0..1."""
+    require_opaque(colour)
     img = colour.convert("RGB").resize((args.size, args.size), Image.LANCZOS)
     rgb = np.asarray(img).astype(np.float64) / 255
     if args.sharpen > 0:
@@ -224,6 +243,30 @@ def selftest() -> None:
     plates = build(Image.fromarray(grid), parser().parse_args(["--size", str(size), "--plates", "6"]))["height"]
     check(float(plates[16::32, 16::32].mean()) > float(plates[::32, 16::32].mean()) + 0.3,
           "--plates raises tiles above their cracks")
+    rng = np.random.default_rng(3)
+    field = rng.random((40, 56))
+    for radius in (1, 4, 25, 60):
+        rolled = field
+        for _ in range(3):
+            for axis in (0, 1):
+                acc = np.zeros_like(rolled)
+                for d in range(-radius, radius + 1):
+                    acc += np.roll(rolled, d, axis=axis)
+                rolled = acc / (2 * radius + 1)
+        check(float(np.abs(blur(field, radius) - rolled).max()) < 1e-9,
+              f"the running-sum blur matches the shifted-copy blur at radius {radius}")
+    clear = np.asarray(colour.convert("RGBA")).copy()
+    opaque = build(Image.fromarray(clear, "RGBA"), parser().parse_args(["--size", str(size)]))
+    check(float(np.abs(opaque["height"] - flat["height"]).max()) == 0, "an opaque RGBA tile gives the same maps as RGB")
+    clear[: size // 2, :, 3] = 0
+    for label, image in (("RGBA", Image.fromarray(clear, "RGBA")),
+                         ("LA", Image.fromarray(clear, "RGBA").convert("LA"))):
+        try:
+            build(image, parser().parse_args(["--size", str(size)]))
+            refused = False
+        except ValueError as err:
+            refused = "fully opaque" in str(err)
+        check(refused, f"a {label} tile with transparency is refused before any map is built")
     with tempfile.TemporaryDirectory() as tmp:
         paths = write(maps, tmp, "sand")
         check(len(paths) == 4 and all(os.path.getsize(p) > 0 for p in paths), "four PNGs are written")
@@ -244,7 +287,10 @@ def main() -> None:
     if not args.colour or not args.out:
         parser().error("colour and out are required (or --selftest)")
     with Image.open(args.colour) as source:
-        maps = build(source, args)
+        try:
+            maps = build(source, args)
+        except ValueError as err:
+            sys.exit(f"pbr_maps: {args.colour}: {err}")
     stem = os.path.splitext(os.path.basename(args.colour))[0]
     write(maps, args.out, stem)
     print(f"{stem}: {'/'.join(maps)} {args.size}px, strength {args.strength}, "

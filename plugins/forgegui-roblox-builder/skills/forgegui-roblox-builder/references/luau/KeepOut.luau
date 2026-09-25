@@ -24,6 +24,9 @@
 --     share (about 0.12 of the width for a palm or acacia, 0.15 for a bare tree), so
 --     a crown may overhang a roof while the trunk may not stand in the house. Give
 --     a share per name in `trunkShare`, or a KeepOutTrunk attribute on the model.
+--     The trunk probe sits at the centre of the bounds, which a leaning trunk or a
+--     one-sided crown pulls off the trunk; for such a tree put an Attachment named
+--     KeepOutTrunk at the foot of the trunk and the probe is centred on it instead.
 --   * Boxes are oriented (separating-axis test on all 15 axes), so rotated walls
 --     and gates are exact, not their axis-aligned bounds.
 --   * The list is linear: fine for a few hundred footprints and a few thousand
@@ -57,6 +60,7 @@ export type Zone = {
 
 local DEFAULT_SHRINK = 0.7
 local EPSILON = 1e-6
+local TRUNK_MARKER = "KeepOutTrunk"
 
 local function radius(box: Box, axis: Vector3): number
 	local cf, half = box.cframe, box.half
@@ -90,6 +94,18 @@ end
 local function probeHalf(size: Vector3, shrink: number, trunk: number?): Vector3
 	local across = trunk or shrink
 	return Vector3.new(size.X / 2 * across, size.Y / 2 * shrink, size.Z / 2 * across)
+end
+
+-- `cframe` moved level with the model's KeepOutTrunk Attachment, when it has one,
+-- so a trunk probe stands on the trunk rather than the middle of the bounds.
+-- WorldCheck's clutter check centres its probe the same way.
+function KeepOut.trunkCentre(model: Instance, cframe: CFrame): CFrame
+	local marker = model:FindFirstChild(TRUNK_MARKER, true)
+	if marker and marker:IsA("Attachment") then
+		local at = (marker :: Attachment).WorldPosition
+		return cframe + Vector3.new(at.X - cframe.Position.X, 0, at.Z - cframe.Position.Z)
+	end
+	return cframe
 end
 
 function KeepOut.new(options: Options?): Zone
@@ -146,6 +162,9 @@ function KeepOut.new(options: Options?): Zone
 		local cframe, size = model:GetBoundingBox()
 		local attribute = model:GetAttribute("KeepOutTrunk")
 		local trunk = if type(attribute) == "number" then attribute else trunkShare[model.Name]
+		if trunk then
+			cframe = KeepOut.trunkCentre(model, cframe)
+		end
 		return blocked(cframe, size, trunk)
 	end
 

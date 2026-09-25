@@ -26,7 +26,8 @@ explain in the report.
 | `multiple_spawns` | warning | The neutral pool or a team pool has more than one enabled spawn. Roblox picks one at random, so every one must be valid |
 | `floor_covered` | error | Terrain or a prop covers a walkable floor you listed |
 | `interactive_covered` | error | Something covers a pad, pickup or prompt part you listed. Models are checked by their bounding box |
-| `clutter_overlap` | error | A prop you listed in `clutter` stands inside a collidable part: its box, shrunk to 0.7 (trunk share for `KeepOutTrunk` trees), overlaps it. Terrain never counts. See `surface-realism.md` |
+| `clutter_overlap` | error | A prop you listed in `clutter` stands inside a collidable part: its box, shrunk to 0.7 (trunk share for `KeepOutTrunk` trees, centred on a `KeepOutTrunk` attachment when there is one), overlaps it. With `keepOut = zone` it also fires for a prop in the zone's footprints or passages. Terrain never counts. See `surface-realism.md` |
+| `clutter_unchecked` | warning | Props were listed in `clutter`, but the adapter has no `box`, so none was tested |
 | `art_background` | error | Generated art has a visible Roblox background behind it |
 | `art_stroke` | error | A `UIStroke` draws a rectangle around art that already has its own rim |
 | `bordered_icon` | error | An icon sits in a small chip that has a stroke or fill |

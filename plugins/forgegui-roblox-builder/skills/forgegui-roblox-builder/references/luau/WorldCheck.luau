@@ -29,7 +29,8 @@ export type Adapter = {
 	-- First solid thing (terrain or a collidable part) along a ray, ignoring `ignore`.
 	raycast: (origin: Vector3, direction: Vector3, ignore: { any }?) -> Hit?,
 	-- Names of solid things overlapping an axis-aligned box, ignoring `ignore`.
-	solidInBox: (cframe: CFrame, size: Vector3, ignore: { any }?) -> { string },
+	-- With `partsOnly`, terrain is not read (the clutter check never counts it).
+	solidInBox: (cframe: CFrame, size: Vector3, ignore: { any }?, partsOnly: boolean?) -> { string },
 	-- Oriented bounding box of a part or model. Optional: without it `clutter` is not checked.
 	box: ((object: any) -> (CFrame, Vector3))?,
 }
@@ -52,9 +53,14 @@ export type Options = {
 	-- wall or walkway. Each is tested by its bounding box shrunk to `clutterShrink`
 	-- (a prop may touch a wall, not pass into it); terrain never counts, since
 	-- props are sunk into the ground on purpose. A KeepOutTrunk attribute (0..1)
-	-- narrows X and Z to the trunk, so a tree crown may overhang a roof.
+	-- narrows X and Z to the trunk, so a tree crown may overhang a roof; a
+	-- KeepOutTrunk Attachment centres that probe on the trunk, as KeepOut does.
 	clutter: { any }?,
 	clutterShrink: number?,
+	-- The KeepOut zone the placers used. Its passages are virtual boxes with
+	-- nothing collidable to hit, so without it a prop blocking a gate walkway is
+	-- never reported.
+	keepOut: { blocked: (cframe: CFrame, size: Vector3, trunk: number?) -> boolean }?,
 }
 
 local DEFAULT_CLEARANCE = Vector3.new(4, 6, 4)
@@ -163,28 +169,50 @@ local function checkCovered(adapter: Adapter, report: Report, objects: { any }, 
 	end
 end
 
-local function checkClutter(adapter: Adapter, report: Report, objects: { any }, shrink: number)
-	report.checked.clutter = #objects
+-- Same rule as KeepOut.trunkCentre: level with a KeepOutTrunk Attachment, if any.
+local function trunkCentre(object: any, cframe: CFrame): CFrame
+	local marker = object:FindFirstChild("KeepOutTrunk", true)
+	if marker and marker:IsA("Attachment") then
+		local at = marker.WorldPosition
+		return cframe + Vector3.new(at.X - cframe.Position.X, 0, at.Z - cframe.Position.Z)
+	end
+	return cframe
+end
+
+type Zone = { blocked: (cframe: CFrame, size: Vector3, trunk: number?) -> boolean }
+
+local function checkClutter(adapter: Adapter, report: Report, objects: { any }, shrink: number, zone: Zone?)
 	local box = adapter.box
 	if not box then
+		report.checked.clutter = 0
+		if #objects > 0 then
+			add(report, "clutter_unchecked", "warning", "clutter", ("%d prop(s) listed, but the adapter has no `box`, so none was tested for overlap."):format(#objects))
+		end
 		return
 	end
+	report.checked.clutter = #objects
 	for _, object in ipairs(objects) do
 		if object:GetAttribute("AllowOverlap") == true then
 			continue
 		end
 		local cframe, size = box(object)
-		local trunk = object:GetAttribute("KeepOutTrunk")
-		local share = if type(trunk) == "number" then trunk else shrink
+		local attribute = object:GetAttribute("KeepOutTrunk")
+		local trunk = if type(attribute) == "number" then attribute else nil
+		if trunk then
+			cframe = trunkCentre(object, cframe)
+		end
+		local share = trunk or shrink
 		local probe = Vector3.new(size.X * share, size.Y * shrink, size.Z * share)
 		local hits = {}
-		for _, name in ipairs(adapter.solidInBox(cframe, probe, { object })) do
+		for _, name in ipairs(adapter.solidInBox(cframe, probe, { object }, true)) do
 			if string.sub(name, 1, 7) ~= "Terrain" then
 				table.insert(hits, name)
 			end
 		end
 		if #hits > 0 then
 			add(report, "clutter_overlap", "error", nameOf(object), ("its box shrunk to %g overlaps %s: it stands inside something solid."):format(shrink, table.concat(hits, ", ")))
+		elseif zone and zone.blocked(cframe, size, trunk) then
+			add(report, "clutter_overlap", "error", nameOf(object), "it stands in a KeepOut footprint or passage: the placement guard would have refused it.")
 		end
 	end
 end
@@ -201,7 +229,7 @@ function WorldCheck.run(options: Options?): Report
 	checkSpawns(adapter, report, limits)
 	checkCovered(adapter, report, settings.floors or {}, "floor_covered", limits)
 	checkCovered(adapter, report, settings.interactives or {}, "interactive_covered", limits)
-	checkClutter(adapter, report, settings.clutter or {}, settings.clutterShrink or DEFAULT_CLUTTER_SHRINK)
+	checkClutter(adapter, report, settings.clutter or {}, settings.clutterShrink or DEFAULT_CLUTTER_SHRINK, settings.keepOut)
 	return report
 end
 
@@ -302,7 +330,7 @@ function WorldCheck.robloxAdapter(): Adapter
 			end
 			return object.CFrame, object.Size
 		end,
-		solidInBox = function(cframe, size, ignore)
+		solidInBox = function(cframe, size, ignore, partsOnly)
 			local names = {}
 			local params = OverlapParams.new()
 			params.FilterType = Enum.RaycastFilterType.Exclude
@@ -310,6 +338,9 @@ function WorldCheck.robloxAdapter(): Adapter
 			params.RespectCanCollide = true
 			for _, part in ipairs(workspace:GetPartBoundsInBox(cframe, size, params)) do
 				table.insert(names, part:GetFullName())
+			end
+			if partsOnly then
+				return names
 			end
 			-- Part queries do not report terrain; read its voxels directly.
 			local solid = solidVoxelsInBox(cframe.Position - size / 2, cframe.Position + size / 2)

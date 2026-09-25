@@ -40,8 +40,13 @@ function Vector2.new(x, y)
 end
 
 local CFrame = {}
+local cframeMeta = {}
 function CFrame.new(x, y, z)
-	return { Position = Vector3.new(x, y, z) }
+	return setmetatable({ Position = Vector3.new(x, y, z) }, cframeMeta)
+end
+cframeMeta.__add = function(a, b)
+	local p = a.Position + b
+	return CFrame.new(p.X, p.Y, p.Z)
 end
 
 local env = { Vector3 = Vector3, Vector2 = Vector2, CFrame = CFrame }
@@ -80,10 +85,16 @@ local function object(name, props)
 	props.GetFullName = function()
 		return "Workspace." .. name
 	end
+	props.FindFirstChild = function(_, childName)
+		return (props.children or {})[childName]
+	end
 	return props
 end
 
 -- A box is { name, low = Vector3, high = Vector3 }; `owner` lets a check ignore it.
+-- Whether each solidInBox call asked for parts only, in call order.
+local queries = {}
+
 local function world(boxes, spawns)
 	local function ignoredBy(box, ignore)
 		for _, item in ipairs(ignore or {}) do
@@ -116,7 +127,8 @@ local function world(boxes, spawns)
 			end
 			return best and { position = Vector3.new(origin.X, best.high.Y, origin.Z), name = best.name } or nil
 		end,
-		solidInBox = function(cframe, size, ignore)
+		solidInBox = function(cframe, size, ignore, partsOnly)
+			table.insert(queries, partsOnly == true)
 			local low, high = cframe.Position - size / 2, cframe.Position + size / 2
 			local names = {}
 			for _, box in ipairs(boxes) do
@@ -273,9 +285,40 @@ do
 	report = WorldCheck.run({ adapter = adapter, clutter = { wide } })
 	check(count(report, "clutter_overlap") == 1, "without KeepOutTrunk a crown over the roof counts")
 
+	-- A leaning palm: its bounds are centred beyond the wall, its trunk stands inside.
+	local leaner = prop("Props.leaner", Vector3.new(26, 8, 10), Vector3.new(32, 16, 16), { KeepOutTrunk = 0.12 })
+	report = WorldCheck.run({ adapter = adapter, clutter = { leaner } })
+	check(count(report, "clutter_overlap") == 0, "without a trunk attachment the probe sits at the bounds' centre")
+	leaner.children = { KeepOutTrunk = { IsA = function(_, class)
+		return class == "Attachment"
+	end, WorldPosition = Vector3.new(16, 0, 10) } }
+	report = WorldCheck.run({ adapter = adapter, clutter = { leaner } })
+	check(count(report, "clutter_overlap") == 1, "a KeepOutTrunk attachment centres the trunk probe on the trunk")
+
+	-- A crate in an empty gate walkway: nothing collidable, only the zone's passage.
+	local walkway = prop("Props.barrel", Vector3.new(60, 1, 10), Vector3.new(2, 2, 2))
+	local asked = {}
+	local zone = { blocked = function(cframe, size, trunk)
+		table.insert(asked, trunk or false)
+		return cframe.Position.X > 50 and cframe.Position.X < 70
+	end }
+	table.clear(queries)
+	report = WorldCheck.run({ adapter = adapter, clutter = { walkway } })
+	check(count(report, "clutter_overlap") == 0, "without keepOut a passage has nothing solid to report")
+	check(#queries == 1 and queries[1] == true, "the clutter query asks for parts only, so no terrain voxels are read")
+	report = WorldCheck.run({ adapter = adapter, clutter = { walkway, beside, tree }, keepOut = zone })
+	check(count(report, "clutter_overlap") == 1 and report.findings[1].subject == "Workspace.Props.barrel", "with keepOut a prop in a registered passage is reported")
+	check(asked[3] == 0.12, "the zone gets the trunk share, so a tree is judged by its trunk there too")
+	table.clear(queries)
+	WorldCheck.run({ adapter = world(hub, { spawnAt("SpawnLocation", 0, 22.5, 0) }) })
+	check(#queries > 0 and table.find(queries, true) == nil, "the spawn checks still read terrain")
+
 	adapter.box = nil
 	report = WorldCheck.run({ adapter = adapter, clutter = { inside } })
-	check(count(report, "clutter_overlap") == 0, "an adapter without `box` skips the clutter check")
+	check(count(report, "clutter_overlap") == 0, "an adapter without `box` cannot test clutter")
+	check(count(report, "clutter_unchecked") == 1 and report.warnings == 1 and report.checked.clutter == 0, "and says so, rather than counting the props as checked")
+	report = WorldCheck.run({ adapter = adapter })
+	check(count(report, "clutter_unchecked") == 0, "no clutter listed, nothing to warn about")
 end
 
 do

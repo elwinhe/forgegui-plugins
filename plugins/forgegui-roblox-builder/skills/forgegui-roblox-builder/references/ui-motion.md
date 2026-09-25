@@ -8,6 +8,9 @@ extra.
 Reviewed code: `luau/Motion.luau`. Ship it as a ModuleScript under `ReplicatedStorage` and require it
 from LocalScripts; it touches only the objects a caller hands it, plus one `BlurEffect` it owns.
 
+Camera moves are not UI motion: cinematic shots (eased Catmull-Rom paths that hand the camera back) are in
+`ambient-motion.md` (`luau/CameraPath.luau`). They follow the same budget rule.
+
 ## Three rules the module keeps for you
 
 1. **One tween per object per channel.** Starting a new tween on a channel cancels the previous one,

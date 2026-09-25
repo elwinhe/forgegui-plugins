@@ -46,3 +46,12 @@ jobs:
           persist-credentials: false
       - run: cargo install lune --version 0.10.5 --locked
       - run: lune run tests/ground-scatter-footprint.luau
+
+  camera-runtime:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: cargo install lune --version 0.10.5 --locked
+      - run: lune run tests/camera-path-blend.luau

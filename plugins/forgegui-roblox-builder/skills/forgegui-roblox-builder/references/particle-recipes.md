@@ -74,6 +74,8 @@ Retain each persistent holder and reuse it on rerun. To replace a recipe, detach
 
 Keep total live particles in view under a few thousand. Rules of thumb: looping recipes 4–20 particles/s each, at most one `ambient_dust` per room, bursts under 20 particles. `LightEmission = 1` with `LightInfluence = 0` reads bright in `night_neon` and `dungeon_torchlit` without adding lights.
 
+Outdoors, wind-driven weather (lit ribbons, ground wisps, motes and ridge spray that follow the camera and the shared wind) is not a recipe. Use `luau/WindVfx.luau` from `ambient-motion.md`, and keep `ambient_dust` for rooms and light shafts.
+
 ## Verify
 
 `attach`, then `screen_capture` from a close camera; for bursts, run `burst` inside a playtest and capture within the same second. Confirm the emitter count with `inspect_instance` on the holder. Report the recipe name, the holder path, and the capture.

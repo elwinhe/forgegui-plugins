@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "plugin_dir": "plugins/forgegui-roblox-builder",
+  "marketplace_entry": "mcp",
+  "mcp_server": "forgegui",
+  "active": "staging-beta",
+  "channels": {
+    "staging-beta": {
+      "available": true,
+      "mcp_url": "https://vzzqjekupwutoaasswwd.supabase.co/functions/v1/forgegui-mcp",
+      "version_pattern": "^\\d+\\.\\d+\\.\\d+-beta\\.\\d+$",
+      "description_prefix": "Staging beta: ",
+      "notes": "ForgeGUI staging project. Keys, data and behavior are separate from production."
+    },
+    "production": {
+      "available": false,
+      "mcp_url": null,
+      "version_pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description_prefix": "",
+      "blocked_reason": "forgegui-mcp is not deployed to the production project. The backend MCP stack must merge to main and deploy from a clean origin/main checkout, and the production endpoint must be recorded here after hosted verification."
+    }
+  },
+  "forbidden_production_hosts": [
+    "vzzqjekupwutoaasswwd.supabase.co"
+  ]
+}

@@ -1,6 +1,6 @@
 # ForgeGUI MCP for Claude Code
 
-Install ID: `mcp@forgegui`. Version `1.8.0` targets staging at `vzzqjekupwutoaasswwd.supabase.co`.
+Install ID: `mcp@forgegui`. Version `1.9.0-beta.1` is a **staging beta**: it targets ForgeGUI staging at `vzzqjekupwutoaasswwd.supabase.co`, not production. The release channel, endpoint, version and label are declared together in [`release/channels.json`](release/channels.json) and enforced by `python3 release/release_channel.py check`; a production channel stays unavailable until the ForgeGUI MCP service is live in production.
 
 This version adds capability-gated [publishing connections guidance](plugins/forgegui-roblox-builder/skills/forgegui-roblox-builder/references/publishing-connections.md) for selecting the intended creator before paid work. Connection requests match pinned backend contract 1.9.0; deployment acceptance remains pending. Roblox publishing keys go only through authenticated ForgeGUI settings, never agent chat, MCP arguments, commands or the ledger. When the deployed backend advertises Audio support, prefer integrated publish delivery for new audio, or publish existing owned MP3 artifacts through ForgeGUI and keep Studio insertion/playback verification in the caller. See [audio publication](plugins/forgegui-roblox-builder/skills/forgegui-roblox-builder/references/audio-publication.md). Backend deployment, selected-creator experience access and audible playback remain separate acceptance checks; installing the plugin does not establish them.
 
@@ -32,6 +32,24 @@ Invoke the workflow with the namespaced skill shown by Claude Code, for example:
 Enable the separate official Roblox Studio MCP server with the exact Quick Connect steps in [SETUP.md](./SETUP.md), then restart the session. This package does not configure Studio.
 
 Before a manual paid end-to-end test, select the intended Studio place, confirm a bounded asset count and budget, and verify an import route for the expected format. Generate one asset with a stable `request_id`, retain its `job_id`, poll `generation_status` to a terminal result, and never automatically retry `outcome_unknown`. Verify the artifact before import, then record the imported asset ID or instance path and inspect the saved Edit-mode result. The bundled skill distinguishes reported import routes from tools actually exposed by the connected server; do not claim generation proves import or gameplay.
+
+## OpenAI release preview
+
+The separate OpenAI skills + remote MCP artifact is built with
+`python3 release/openai_package.py build` and verified with
+`python3 release/openai_package.py check`. Output is
+`dist/openai/forgegui-roblox-builder`; pass `--output /chosen/path/forgegui-roblox-builder`
+to either command for another destination. Shared source copies are generated,
+not maintained independently. See [OpenAI packaging guidance](release/openai/README.md)
+for drift handling, runtime boundaries and release gates. This is staging only:
+production/submission fail closed and OpenAI OAuth readiness is unverified.
+This builder does not change or install the Claude package.
+
+## Claude release channels
+
+`release/release_channel.py set <channel> --version <semver>` rewrites the bundled endpoint, both manifest versions and both descriptions together, and refuses a channel marked unavailable. Staging releases use `X.Y.Z-beta.N` and the `Staging beta:` description prefix; production releases use plain `X.Y.Z` and must never point at the staging host. `check` also audits the installed package for caches, machine-specific paths and links that escape the plugin directory. CI runs it with `claude plugin validate` on every pull request.
+
+Release steps: bump through `set`, update the root and installed READMEs with the selected version, channel, endpoint and key guidance, and record the change in [CHANGELOG.md](CHANGELOG.md). After review and merge, tag the merged commit with `claude plugin tag plugins/forgegui-roblox-builder --push`, verify the remote tag and a fresh-profile install, then announce it.
 
 ## Update or uninstall
 

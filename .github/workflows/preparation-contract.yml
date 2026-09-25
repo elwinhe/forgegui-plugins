@@ -19,10 +19,33 @@ jobs:
         with:
           python-version: '3.11'
       - run: python -m pip install -r tests/requirements.txt
+      - run: python release/release_channel.py check
+      - run: python tests/test_release_channel.py
+      - run: python tests/test_openai_package.py
+      - run: python release/openai_package.py build
+      - run: python release/openai_package.py check
+      - run: python release/openai_package.py build
+      - run: python release/openai_package.py check
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npx --yes @anthropic-ai/claude-code plugin validate .
+      - run: npx --yes @anthropic-ai/claude-code plugin validate plugins/forgegui-roblox-builder
       - run: python tests/test_publishing_connections.py
       - run: python tests/test_preparation_contract.py
       - run: python plugins/forgegui-roblox-builder/skills/forgegui-roblox-builder/scripts/texture_prep.py --selftest
+      - run: python plugins/forgegui-roblox-builder/skills/forgegui-roblox-builder/references/tools/pbr_maps.py --selftest
+      - run: python plugins/forgegui-roblox-builder/skills/forgegui-roblox-builder/references/tools/make_grain.py --selftest
       - run: bash tests/fidelity-pass-hook.sh
+
+  scatter-runtime:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: cargo install lune --version 0.10.5 --locked
+      - run: lune run tests/ground-scatter-footprint.luau
 
   camera-runtime:
     runs-on: ubuntu-latest

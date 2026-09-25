@@ -174,6 +174,32 @@ class OpenAIPackageTests(unittest.TestCase):
                 with self.assertRaises((ValueError, OSError)):
                     package.expected_files()
 
+    def test_workflow_resources_cannot_be_omitted(self):
+        inventory_path = ROOT / 'release/openai/sources.json'
+        inventory = json.loads(inventory_path.read_text())
+        original = Path.read_text
+        resources = (
+            'references/surface-realism.md',
+            'references/luau/DetailGrain.luau',
+            'references/luau/GroundScatter.luau',
+            'references/luau/KeepOut.luau',
+            'references/luau/MaterialKit.luau',
+            'references/tools/make_grain.py',
+            'references/tools/pbr_maps.py',
+            'references/ambient-motion.md',
+            'references/luau/CameraPath.luau',
+            'scripts/texture_prep.py',
+        )
+        for resource in resources:
+            self.assertIn(resource, inventory)
+            def read(path, *args, **kwargs):
+                if path == inventory_path:
+                    return json.dumps([entry for entry in inventory if entry != resource])
+                return original(path, *args, **kwargs)
+            with self.subTest(resource=resource), patch.object(Path, 'read_text', read):
+                with self.assertRaisesRegex(ValueError, 'missing WORKFLOW.md resource'):
+                    package.expected_files()
+
     def test_runtime_boundaries_and_safety_are_in_skill(self):
         skill = self.files[f'skills/{package.NAME}/SKILL.md'].decode()
         for required in ('Remote-only ChatGPT or Codex', 'Studio-capable Codex',

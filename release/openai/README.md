@@ -39,7 +39,9 @@ when adding shared resources. Source files are copied byte-for-byte; shared
 SKILL.md becomes WORKFLOW.md beside the OpenAI routing SKILL.md, preserving
 relative references. provenance.json records source hashes. Check compares
 every byte and the complete file inventory, rejecting extra files and symlinks.
-Caches and unlisted files are never copied.
+Caches and unlisted files are never copied. Build and check also require the
+backticked resource paths in WORKFLOW.md to be bundled, including its
+`luau/`, `tools/` and `tests/` shorthand under `references/`.
 
 ## Remaining release gates
 

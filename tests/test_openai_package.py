@@ -36,6 +36,20 @@ class OpenAIPackageTests(unittest.TestCase):
             self.assertEqual(self.files[f'skills/{package.NAME}/{destination}'],
                              (ROOT / package.SOURCE / relative).read_bytes())
 
+    def test_combined_lighting_dependencies_are_shipped(self):
+        modules = ("LightingCompositor", "ColourGrade", "GlobalIllumination", "CameraFx",
+                   "FrameSmoothing", "EyeAdaptation", "GraphicsPreset", "LutGrades",
+                   "ContactShadows", "FireLight", "WaterReflections", "PassageShade")
+        resources = [f"luau/{name}.luau" for name in modules]
+        resources += ["unified-lighting.md", "post-processing.md", "light-transport.md",
+                      "tools/lut_fit.py", "tools/make_luts.py", "tools/make_gradient.py"]
+        for relative in resources:
+            key = f"skills/{package.NAME}/references/{relative}"
+            with self.subTest(resource=relative):
+                self.assertIn(key, self.files)
+                self.assertEqual(self.files[key],
+                                 (ROOT / package.SOURCE / "references" / relative).read_bytes())
+
     def test_drift_extra_cache_and_symlink_rejected(self):
         package.build(self.output, self.files)
         manifest = self.output / 'plugin.json'

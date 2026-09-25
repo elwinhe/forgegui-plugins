@@ -270,7 +270,12 @@ local function rememberPrior(instance: Instance, property: string)
 		return -- the first apply wins; a second preset must not overwrite the real prior
 	end
 	local ok, value = pcall(function()
-		return (instance :: any)[property]
+		local current = (instance :: any)[property]
+		local output = instance:GetAttribute("ForgeGUILightingOutput_" .. property)
+		local base = instance:GetAttribute("ForgeGUILightingBase_" .. property)
+		local input = instance:GetAttribute("ForgeGUILightingInput_" .. property)
+		if input ~= nil and current == input then return current end
+		return if output ~= nil and current == output and base ~= nil then base else current
 	end)
 	if not ok or value == nil or typeof(value) == "Instance" then
 		return
@@ -280,12 +285,20 @@ local function rememberPrior(instance: Instance, property: string)
 	end)
 end
 
+-- Mark explicit preset inputs even when they equal the compositor's visible output.
+local function markBaseInput(instance: Instance, property: string)
+	if instance == Lighting and instance:GetAttribute("ForgeGUILightingOutput_" .. property) ~= nil then
+		instance:SetAttribute("ForgeGUILightingInput_" .. property, (instance :: any)[property])
+	end
+end
+
 local function restorePriors(instance: Instance)
 	for key, value in instance:GetAttributes() do
 		if string.sub(key, 1, #PRIOR_PREFIX) == PRIOR_PREFIX then
 			local property = string.sub(key, #PRIOR_PREFIX + 1)
 			pcall(function()
 				(instance :: any)[property] = value
+				markBaseInput(instance, property)
 			end)
 			instance:SetAttribute(key, nil)
 		end
@@ -302,6 +315,7 @@ local function setProps(instance: Instance, props: { [string]: any }, remember: 
 		end
 		local ok, err = pcall(function()
 			(instance :: any)[name] = value
+			markBaseInput(instance, name)
 		end)
 		if not ok then
 			table.insert(failed, `{instance.ClassName}.{name}`)

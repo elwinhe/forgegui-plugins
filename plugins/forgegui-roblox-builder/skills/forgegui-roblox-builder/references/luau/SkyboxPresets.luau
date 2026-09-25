@@ -88,21 +88,35 @@ local PRIOR_PREFIX = "ForgeGUISkyboxPrior_"
 local STORAGE_ATTR = "ForgeGUISkyboxStorage"
 local FACE_KEYS = { "Ft", "Bk", "Lf", "Rt", "Up", "Dn" }
 
+local function markBaseInput(instance: Instance, property: string)
+	if instance == game:GetService("Lighting") and instance:GetAttribute("ForgeGUILightingOutput_" .. property) ~= nil then
+		instance:SetAttribute("ForgeGUILightingInput_" .. property, (instance :: any)[property])
+	end
+end
+
 -- Persist the first baseline on each borrowed instance, independently of LightingPresets.
 local function setProps(instance: Instance, props: { [string]: any })
 	for property, value in props do
 		local key = PRIOR_PREFIX .. property
 		if instance:GetAttribute(OWNED_ATTR) ~= true and instance:GetAttribute(key) == nil then
-			instance:SetAttribute(key, (instance :: any)[property])
+			local current = (instance :: any)[property]
+			local output = instance:GetAttribute("ForgeGUILightingOutput_" .. property)
+			local base = instance:GetAttribute("ForgeGUILightingBase_" .. property)
+			local input = instance:GetAttribute("ForgeGUILightingInput_" .. property)
+			instance:SetAttribute(key, if input ~= nil and current == input then current elseif output ~= nil and current == output and base ~= nil then base else current)
 		end
 		(instance :: any)[property] = value
+		markBaseInput(instance, property)
 	end
 end
 
 local function restorePriors(instance: Instance)
 	for key, value in instance:GetAttributes() do
 		if string.sub(key, 1, #PRIOR_PREFIX) == PRIOR_PREFIX then
-			(instance :: any)[string.sub(key, #PRIOR_PREFIX + 1)] = value
+			local target = instance :: any
+			local property = string.sub(key, #PRIOR_PREFIX + 1)
+			target[property] = value
+			markBaseInput(instance, property)
 			instance:SetAttribute(key, nil)
 		end
 	end

@@ -61,6 +61,16 @@ CameraFx restores the old view's adopted DoF on CurrentCamera changes, including
 
 ## Verification
 
+The runners below live in the source repository, not the installed skill. First check out the source revision matching your installed plugin (use its release tag or commit as `<installed-revision>`):
+
+```bash
+git clone https://github.com/elwinhe/forgegui-plugins.git forgegui-regression
+cd forgegui-regression
+git checkout --detach <installed-revision>
+```
+
+All runner paths below are relative to that checkout. Use its `docs/evidence/post-stack-regression.luau`, `docs/evidence/light-transport-regression.luau`, and `docs/evidence/unified-lighting-regression.luau` with the matching module sources. Do not substitute the latest default branch for an older installed release.
+
 - Offline: `lune run tests/unified-lighting.luau` (Lune 0.10.5). It loads actual module sources with mocked services and quantized Lighting writes, checks both start/stop orders, 160 stable alternating updates per ordering, off/on, repeated lifecycle, external edits, getBase, preset/sky clear, and retained/destroyed/nil camera transitions. It also compiles every shipped Luau source. It is not a Roblox typecheck or a rendering test.
 - Studio: in a disposable owned test place, install all sources as siblings and stop the normal stack. Run `docs/evidence/unified-lighting-regression.luau` from a Play client LocalScript. It exercises both modules together and camera swaps. Run the original post-stack and light-transport regressions too using their updated dependency instructions. The combined client test does not invoke SkyboxPresets (ServerStorage boundary); the offline test covers its ownership logic.
 - Then inspect real rendering: orbit, respawn, switch cameras, walk between outdoor/interior areas, change presets and grade/GI settings, and verify teardown. Capture matched views and measure frame times; Lune cannot verify engine effect stacking, raycast visuals, camera destruction timing, replication or performance. Historical measurements in the feature guides are not validation of this integration.

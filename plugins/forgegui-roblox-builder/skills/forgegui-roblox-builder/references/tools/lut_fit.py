@@ -298,7 +298,9 @@ def split_tone(rgb, target, fitted):
     luma = rgb @ LUMA_W
     result = []
     for mask in (luma < SHADOW_LUMA, luma > HIGHLIGHT_LUMA):
-        ratio = target[mask].sum(axis=0) / np.maximum(fitted[mask].sum(axis=0), 1e-6)
+        denominator = fitted[mask].sum(axis=0)
+        ratio = np.divide(target[mask].sum(axis=0), np.maximum(denominator, 1e-6),
+                          out=np.ones_like(denominator, dtype=float), where=denominator > 1e-6)
         result.append(np.round(np.clip(ratio, *SPLIT_RANGE), 3))
     return result
 
@@ -416,6 +418,13 @@ SELFTEST_CASES = [
 
 def selftest():
     """Truths are canonical (max tint 1), the only form the fit can return."""
+    for rgb, target, fitted, expected in (
+        ([[0.5] * 3], [[0.5] * 3], [[0.5] * 3], [[1.0] * 3, [1.0] * 3]),
+        ([[0.0] * 3, [1.0] * 3], [[0.0] * 3, [0.0] * 3], [[0.0] * 3, [0.0] * 3], [[1.0] * 3, [1.0] * 3]),
+        ([[0.0] * 3], [[0.8, 0.24, 0.01]], [[0.0, 0.2, 0.2]], [[1.0, SPLIT_RANGE[1], SPLIT_RANGE[0]], [1.0] * 3]),
+    ):
+        assert np.allclose(split_tone(np.array(rgb), np.array(target), np.array(fitted)), expected)
+    print("split tones: empty bands, zero signal, and valid clipped ratios ok")
     y = np.linspace(0, 1, 1001)
     inv_err = float(np.max(np.abs(tone(tone_inv(y)) - y)))
     monotone = bool(np.all(np.diff(tone(np.geomspace(1e-4, 4, 4000))) >= 0))

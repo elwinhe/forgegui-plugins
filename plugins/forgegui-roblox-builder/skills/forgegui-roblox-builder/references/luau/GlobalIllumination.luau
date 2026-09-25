@@ -128,6 +128,7 @@ local vpls: { [string]: Vpl } = {}
 local pool: { Vpl } = {}
 local candidates: { Candidate } = {}
 local sweep: { Vector2 } = {}
+local sweepActive = false
 local sweepCentre = Vector3.zero
 local downDirs: { Vector3 } = {}
 local upDirs: { Vector3 } = {}
@@ -420,6 +421,7 @@ local function commit(q: Quality)
 end
 
 local function startSweep(focus: Vector3, q: Quality)
+	sweepActive = true
 	sweepCentre = Vector3.new(math.floor(focus.X / q.cell + 0.5) * q.cell, focus.Y, math.floor(focus.Z / q.cell + 0.5) * q.cell)
 	table.clear(sweep)
 	for x = -q.extent, q.extent do
@@ -444,6 +446,8 @@ end
 local function stepVpls(focus: Vector3, q: Quality?, dt: number)
 	local strength = sunStrength()
 	if not q or strength <= 0.05 then
+		sweepActive = false
+		sweepRest = 0
 		table.clear(sweep)
 		table.clear(candidates)
 		for _, vpl in vpls do
@@ -453,8 +457,9 @@ local function stepVpls(focus: Vector3, q: Quality?, dt: number)
 		return
 	end
 	if #sweep == 0 then
-		if #candidates > 0 then
+		if sweepActive then
 			commit(q)
+			sweepActive = false
 			sweepRest = SWEEP_REST
 		end
 		sweepRest -= dt
@@ -605,6 +610,8 @@ function GlobalIllumination.stop(): boolean
 	end
 	table.clear(vpls)
 	table.clear(pool)
+	sweepActive = false
+	sweepRest = 0
 	table.clear(sweep)
 	table.clear(candidates)
 	local ok, failure = pcall(updateBase)

@@ -81,7 +81,7 @@ The textures look smoother and cost less, so upload them before shipping.
 
 ### Stop and clear
 
-`GI.stop()`, `Contact.stop()`, `Fire.stop()`, `Water.clear()` and `PassageShade.clear(model)` are idempotent and return `false` when there was nothing to undo.
+`GI.stop()`, `Contact.stop()`, `Fire.stop()` and `Water.clear()` are idempotent and return `false` when there was nothing to undo. `PassageShade.clear(model)` returns the number of panels removed, including `0` when none are removed.
 
 ## Settings and defaults
 

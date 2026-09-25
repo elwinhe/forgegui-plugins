@@ -163,6 +163,9 @@ local function write(layer: Layer, value: any)
 	if layer.written ~= nil and current ~= layer.written then
 		correctForeignPriors(layer.instance, layer.property, layer.written, layer.base)
 		layer.base = current
+		if layer.ownsPrior then
+			layer.instance:SetAttribute(PRIOR_PREFIX .. layer.property, current)
+		end
 	end
 	if not same(current, value) then
 		target[layer.property] = value

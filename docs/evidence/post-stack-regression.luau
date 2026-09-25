@@ -85,6 +85,8 @@ for _, property in WATCHED do
 	placeValues[property] = (Lighting :: any)[property]
 end
 local cameraType, cameraCFrame, cameraFocus = camera.CameraType, camera.CFrame, camera.Focus
+local appliedPreset = false
+local createdParts: { BasePart } = {}
 local parked: { { effect: Instance, parent: Instance } } = {} -- place DoFs lifted out for a test
 
 local function parkPlaceDofs(keep: Instance?)
@@ -309,6 +311,7 @@ local function testLutGradesAndPresets()
 	end
 	ColourGrade.start({ keyframes = { { clock = 0, grade = WARM } } })
 	ColourGrade.step()
+	appliedPreset = true
 	LightingPresets.apply("sunset") -- applied while the grade's layers are on
 	local ours = camera:FindFirstChild("ForgeGUI_ColourGrade")
 	check(ours ~= nil and ours:GetAttribute("ForgeGUIPresetAdopted") == nil, "LightingPresets never adopts the grade's effect")
@@ -317,6 +320,7 @@ local function testLutGradesAndPresets()
 	ColourGrade.stop()
 	check(sameColour(Lighting.ColorShift_Top, presetShift), "a preset applied mid-run survives ColourGrade.stop")
 	LightingPresets.clear()
+	appliedPreset = false
 	check(sameColour(Lighting.ColorShift_Top, placeValues.ColorShift_Top), "and LightingPresets.clear still restores the original")
 end
 
@@ -329,6 +333,7 @@ local function testEyeAdaptationProbe()
 	near(EyeAdaptation.targetFor(100, 1), -0.7, "closing down is capped at -0.7")
 
 	local part = Instance.new("Part")
+	table.insert(createdParts, part)
 	part.Name = "TestKit_3"
 	part.Anchored, part.Size, part.Color = true, Vector3.new(20, 20, 1), Color3.new(0.2, 0.4, 0.6)
 	part.CFrame = CFrame.new(0, 200, -10)
@@ -406,6 +411,12 @@ end, debug.traceback)
 
 for _, module in { CameraFx, FrameSmoothing, ColourGrade, EyeAdaptation, GraphicsPreset } do
 	pcall(module.stop)
+end
+if appliedPreset then
+	pcall(LightingPresets.clear)
+end
+for _, part in createdParts do
+	part:Destroy()
 end
 for _, entry in parked do
 	entry.effect.Parent = entry.parent

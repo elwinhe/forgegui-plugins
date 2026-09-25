@@ -265,6 +265,31 @@ check(not GI.stats().running, "failing callback still stops lifecycle")
 colours(snapshot(), initial, "failing callback still removes GI layer")
 check(GI.stop() == false, "stop remains idempotent after callback error")
 
+reset()
+local surface = instance("Part")
+surface.Color, surface.Transparency = Color3.new(0.8, 0.8, 0.8), 0
+Workspace.Raycast = function(_, origin, direction)
+    return { Instance = surface, Position = Vector3.zero, Normal = Vector3.yAxis }
+end
+startGI()
+for _ = 1, 100 do GI.step(0.05) end
+check(GI.stats().lights > 0, "populated sweeps create bounce lights")
+Workspace.Raycast = function() return nil end
+for _ = 1, 150 do GI.step(0.05) end
+check(GI.stats().lights == 0, "empty sweeps fade previous bounce lights")
+while GI.stats().sweepLeft == 0 do GI.step(0.01) end
+while GI.stats().sweepLeft > 0 do GI.step(0.01) end
+GI.step(0.01)
+check(GI.stats().sweepLeft == 0, "empty completed sweep enters rest")
+GI.step(0.1)
+check(GI.stats().sweepLeft == 0, "empty sweep respects rest interval")
+GI.setLevel(0); GI.step(0.01)
+GI.setLevel(1); GI.step(0.01)
+check(GI.stats().sweepLeft > 0, "re-enable starts a fresh sweep")
+GI.stop(); startGI()
+check(GI.stats().sweepLeft > 0, "restart starts a fresh sweep")
+GI.stop()
+
 -- Borrowed effects on retained/destroyed cameras, nil gaps and Lighting.
 local function foreign(parent)
 	local d = instance("DepthOfFieldEffect"); d.Parent = parent
@@ -313,6 +338,19 @@ do
 	Fx.stop()
 	check(old.Parent == a and nextDof.Parent == b, "retained camera foreign effects survive")
 	a:Destroy(); b:Destroy()
+end
+do
+    local c = camera()
+    Workspace.CurrentCamera = c
+    local dof = foreign(c)
+    Fx.start(); Fx.step(c, 1/60)
+    dof.FocusDistance = 81
+    Fx.step(c, 1/60)
+    check(dof:GetAttribute("ForgeGUICameraFxPrior_FocusDistance") == 81, "saved prior follows external writes")
+    local fresh = luau.load(fs.readFile(source .. "CameraFx.luau"), { environment = env })()
+    fresh.stop()
+    check(dof.FocusDistance == 81, "fresh module recovery restores latest external value")
+    Fx.stop(); c:Destroy()
 end
 local a, b = camera(), camera()
 Workspace.CurrentCamera = a

@@ -5,7 +5,8 @@ import unittest
 from jsonschema import Draft7Validator
 
 ROOT = Path(__file__).resolve().parents[1]
-PIN = json.loads((ROOT / "tests/backend-sound-effect-contract.json").read_text())
+PIN = json.loads((ROOT / "tests/backend-preparation-contract.json").read_text())
+TOOL = next(tool for tool in PIN["tools"] if tool["name"] == "generation_sound_effect")
 
 
 class SoundEffectContractTests(unittest.TestCase):
@@ -13,7 +14,7 @@ class SoundEffectContractTests(unittest.TestCase):
         doc = ROOT / "plugins/forgegui-roblox-builder/skills/forgegui-roblox-builder/references/audio-publication.md"
         section = doc.read_text().split("## Sound-effect input contract", 1)[1]
         example = json.loads(section.split("```json\n", 1)[1].split("```", 1)[0])
-        schema = PIN["tool"]["input_schema"]
+        schema = TOOL["input_schema"]
         validator = Draft7Validator(schema)
         validator.validate(example)
         categories = ["ui", "combat", "ambient", "movement", "collectible", "notification", "default"]

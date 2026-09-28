@@ -57,3 +57,33 @@ For a ready Audio publication, verify its asset type, creator, moderation and ta
 In the intended experience, check loading errors, duration and actual audible playback. For spatial effects, move toward and away from the emitter; for loops, listen across the seam. A property such as `IsPlaying` alone is not audible verification. Record the instance path, source artifact, generation/publication IDs, creator and checks in ledger v2; append playback checks to the owned run as caller-reported evidence using `preparation-installation.md`. Leave unperformed checks marked `not_performed` and do not upgrade server verification flags.
 
 If the selected destination cannot serve the intended experience, stop and explain the access blocker. Never fall back to the shared group or change creator on failure. OAuth remains unavailable for this release. The local Open Cloud helper is retained for separate legacy use, not connection setup or recovery of an ambiguous ForgeGUI submission; do not collect Roblox keys for this workflow.
+
+## Sound-effect input contract
+
+The redesign audio endpoint accepts exactly these `audio_category` values:
+`ui`, `combat`, `ambient`, `movement`, `collectible`, `notification`, `default`.
+Use lowercase exact values; do not invent categories such as `weapon` or `footstep`.
+Describe those sounds in `prompt` and select `combat` or `movement`, respectively.
+Omit the category when uncertain: the endpoint chooses `ambient` for a loop and
+`default` otherwise. Omitting `duration_seconds` retains the category-specific
+endpoint duration; explicit duration is 0.5–30 seconds. `count` is an integer 1–5,
+`loopable` is a boolean (default false), and `prompt` is 1–1000 characters.
+
+Example arguments for `generation_sound_effect`:
+
+```json
+{
+  "request_id": "wooden-click-001",
+  "prompt": "A single dry wooden button click, close and quiet",
+  "audio_category": "ui",
+  "duration_seconds": 0.5,
+  "count": 1,
+  "loopable": false
+}
+```
+
+This is an input-contract correction, not evidence of backend deployment. Inspect
+live tool capabilities before submission. A server still advertising a free-form
+category does not make additional categories valid in its audio handler. Keep the
+stable request ID for identical retries; an intentional payload change needs a
+new request ID. Delivery and publication remain subject to the gates above.

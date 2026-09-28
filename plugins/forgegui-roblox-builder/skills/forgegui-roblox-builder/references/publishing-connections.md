@@ -1,7 +1,7 @@
 # Roblox publishing connections
 
 The request examples match backend contract **1.9.0**, pinned in
-the plugin repository's `tests/backend-preparation-contract.json` (not installed with the plugin) at backend commit `7f21d40aeb556528f28d38c228282c1ea0eb5177`. This is local contract validation,
+the plugin repository's `tests/backend-preparation-contract.json` (not installed with the plugin) at backend commit `3cc98a44aa56fdf12ec697a6c3787e884601ea31`. This is local contract validation,
 not deployment or Studio acceptance. Discover live schemas and account
 capabilities before using a connection tool or field.
 

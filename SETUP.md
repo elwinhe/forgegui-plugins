@@ -4,7 +4,7 @@ This download installs local client configuration and connects that client to th
 
 ## Account key and endpoint
 
-In ForgeGUI, open **Profile → MCP API keys** and create an expiring, revocable account key with only the scopes you need:
+In production ForgeGUI (https://forgegui.com), open **Profile → MCP API keys** and create an expiring, revocable account key with only the scopes you need:
 
 - `library:read` allows free library discovery.
 - `generation:read` reads account-owned jobs and preparation results.
@@ -14,7 +14,9 @@ In ForgeGUI, open **Profile → MCP API keys** and create an expiring, revocable
 
 The ForgeGUI account key is separate from a Claude or Codex subscription and from the Roblox Studio connection. Never put the key in chat, command arguments, shell history, logs, screenshots, source files, or archives.
 
-This package targets the ForgeGUI staging project at `vzzqjekupwutoaasswwd.supabase.co`; confirm it before installation by opening `plugins/forgegui-roblox-builder/.mcp.json` and reading the `url`. Staging keys, data, and behavior are not production. Do not hand-edit that URL to repoint the bundle; a package for a different environment must be rebuilt from source against a reviewed endpoint.
+This package targets the ForgeGUI production project at `azyjlkhpdgafuobyxoax.supabase.co`; confirm it before installation by opening `plugins/forgegui-roblox-builder/.mcp.json` and reading the `url`. Use production credentials: staging keys do not authenticate production requests. Verify the production account and credit balance before paid work. Do not hand-edit that URL to repoint the bundle; a package for a different environment must be rebuilt from source against a reviewed endpoint.
+
+**Release pending:** the production endpoint returned HTTP 404 (`Requested function was not found`) on September 29, 2026. Complete backend deployment, release metadata alignment and authenticated discovery before distributing this package. Changing credentials cannot fix a missing function.
 
 Before installing, disable or remove any manually configured ForgeGUI MCP connection in the client. Record its name and settings first so you can roll back. Running the bundled and manual definitions together can produce duplicate connections or ambiguous tool names.
 

@@ -7,7 +7,7 @@
   "channels": {
     "staging-beta": {
       "available": true,
-      "mcp_url": "https://vzzqjekupwutoaasswwd.supabase.co/functions/v1/forgegui-mcp",
+      "mcp_url": "https://azyjlkhpdgafuobyxoax.supabase.co/functions/v1/forgegui-mcp",
       "version_pattern": "^\\d+\\.\\d+\\.\\d+-beta\\.\\d+$",
       "description_prefix": "Staging beta: ",
       "notes": "ForgeGUI staging project. Keys, data and behavior are separate from production."
@@ -21,6 +21,6 @@
     }
   },
   "forbidden_production_hosts": [
-    "vzzqjekupwutoaasswwd.supabase.co"
+    "azyjlkhpdgafuobyxoax.supabase.co"
   ]
 }

@@ -1,6 +1,6 @@
 # ForgeGUI Roblox Builder
 
-**Staging beta.** This package connects to ForgeGUI's staging project (`azyjlkhpdgafuobyxoax.supabase.co`). Use staging credentials and verify the intended account, data and credit balance before paid work; package validation alone does not verify backend isolation. Staging behavior can change without notice. A production release will use a non-beta version after hosted production verification.
+**Production endpoint; release pending.** This package targets ForgeGUI's production project (`azyjlkhpdgafuobyxoax.supabase.co`). Use a production MCP API key from https://forgegui.com (**Profile → MCP API keys**); staging keys do not authenticate production requests. Verify the intended production account, data and credit balance before paid work. The endpoint returned HTTP 404 (`Requested function was not found`) on September 29, 2026. Backend deployment, authenticated discovery and release metadata alignment are required before release; package validation alone does not verify backend availability.
 
 The plugin helps Claude Code build Roblox Studio experiences with ForgeGUI-generated assets. It coordinates two separate MCP connections: ForgeGUI (bundled here) for generation, search, preparation and publication, and the official Roblox Studio MCP (configured separately in Studio) for inspecting, editing, inserting and playtesting.
 
@@ -17,7 +17,7 @@ The package includes shell and Python scripts. Its Bash Stop hook runs when Clau
 ## Requirements
 
 - Bash for the bundled Stop hook.
-- A ForgeGUI account and an expiring MCP key from **Profile → MCP API keys**, entered through `/plugin configure` as a masked value. Request only the scopes you need; `generation:write` spends credits and requires a paid Starter-or-higher plan.
+- A production ForgeGUI account and an expiring production MCP key from **Profile → MCP API keys**, entered through `/plugin configure` as a masked value. Request only the scopes you need; `generation:write` spends credits and requires a paid Starter-or-higher plan.
 - Roblox Studio with **Enable Studio as MCP server** turned on, for any Studio work. See <https://create.roblox.com/docs/studio/mcp>.
 - Optional local helpers, used only when the skill or you run them:
   - Python 3 with Pillow and NumPy: image, palette, texture, skybox and GLB diagnostics.

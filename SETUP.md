@@ -10,13 +10,13 @@ In production ForgeGUI (https://forgegui.com), open **Profile → MCP API keys**
 - `generation:read` reads account-owned jobs and preparation results.
 - `publication:read` polls owned publications and, when live advertised, discovers publishing connections; `publication:write` publishes through the explicitly selected usable destination. Legacy shared-group shapes are replay-only; new publication requires a selected connection.
 - `runs:read` retrieves run records; `runs:write` creates and records runs.
-- `generation:write` also authorizes preparation (which does not charge generation credits); generation can spend credits and requires a paid Starter-or-higher entitlement. Omit it until the account owner authorizes generation.
+- `generation:write` also authorizes preparation (which does not charge generation credits); generation spends credits and requires sufficient ForgeGUI credits. Omit it until the account owner authorizes generation.
 
 The ForgeGUI account key is separate from a Claude or Codex subscription and from the Roblox Studio connection. Never put the key in chat, command arguments, shell history, logs, screenshots, source files, or archives.
 
 This package targets the ForgeGUI production project at `azyjlkhpdgafuobyxoax.supabase.co`; confirm it before installation by opening `plugins/forgegui-roblox-builder/.mcp.json` and reading the `url`. Use production credentials: staging keys do not authenticate production requests. Verify the production account and credit balance before paid work. Do not hand-edit that URL to repoint the bundle; a package for a different environment must be rebuilt from source against a reviewed endpoint.
 
-**Release pending:** the production endpoint returned HTTP 404 (`Requested function was not found`) on September 29, 2026. Complete backend deployment, release metadata alignment and authenticated discovery before distributing this package. Changing credentials cannot fix a missing function.
+**Upgrading from staging:** version `1.9.0` uses production. Update the `forgegui` marketplace and `mcp@forgegui` plugin, replace the saved staging key through `/plugin configure mcp@forgegui`, and start a new session. Staging credentials and balances do not transfer to production. Run the free discovery check below before generating.
 
 Before installing, disable or remove any manually configured ForgeGUI MCP connection in the client. Record its name and settings first so you can roll back. Running the bundled and manual definitions together can produce duplicate connections or ambiguous tool names.
 
@@ -48,7 +48,7 @@ No paid call is part of connection verification.
 Proceed only after the free check succeeds and the account owner authorizes a bounded spend:
 
 - Select the intended Studio place and carry its `studio_id` through Studio calls.
-- Confirm `generation:write`, paid entitlement, requested asset count, and budget.
+- Confirm `generation:write`, sufficient credits, requested asset count, and budget.
 - Verify a supported route from the expected ForgeGUI artifact format into Studio before spending. For publication, follow [publishing connections](plugins/forgegui-roblox-builder/skills/forgegui-roblox-builder/references/publishing-connections.md): discover live connections, resolve the user-selected creator, check status/type/route/scopes and experience access, and record safe identity before paid work. Direct files need no connection.
 - Generate one authorized asset with one stable `request_id`; retain the returned `job_id`.
 - Poll `generation_status` to a terminal result. Never automatically retry `outcome_unknown`, timeouts, or ambiguous provider outcomes.

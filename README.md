@@ -1,12 +1,12 @@
 # ForgeGUI MCP for Claude Code
 
-Install ID: `mcp@forgegui`. This branch targets ForgeGUI production at `azyjlkhpdgafuobyxoax.supabase.co`. Use a production ForgeGUI MCP API key. **Production release pending:** the package still carries version `1.9.0-beta.1` and staging release metadata in [`release/channels.json`](release/channels.json); these must be aligned before release. The configured endpoint alone does not establish backend availability.
+Install ID: `mcp@forgegui`. Version **1.9.0** targets ForgeGUI production at `azyjlkhpdgafuobyxoax.supabase.co`. Use a production ForgeGUI MCP API key. Release metadata is declared in [`release/channels.json`](release/channels.json).
 
 This version adds capability-gated [publishing connections guidance](plugins/forgegui-roblox-builder/skills/forgegui-roblox-builder/references/publishing-connections.md) for selecting the intended creator before paid work. Connection requests match pinned backend contract 1.9.0; deployment acceptance remains pending. Roblox publishing keys go only through authenticated ForgeGUI settings, never agent chat, MCP arguments, commands or the ledger. When the deployed backend advertises Audio support, prefer integrated publish delivery for new audio, or publish existing owned MP3 artifacts through ForgeGUI and keep Studio insertion/playback verification in the caller. See [audio publication](plugins/forgegui-roblox-builder/skills/forgegui-roblox-builder/references/audio-publication.md). Backend deployment, selected-creator experience access and audible playback remain separate acceptance checks; installing the plugin does not establish them.
 
 This repository is a Claude Code marketplace. It targets the production ForgeGUI endpoint recorded in `plugins/forgegui-roblox-builder/.mcp.json`. It asks for a production ForgeGUI MCP API key as sensitive user configuration. Create the key using your production account at https://forgegui.com; staging keys do not authenticate production requests. Generation uses your production account and credit balance. Read the [shared setup checklist](./SETUP.md) for key scopes, the exact Studio Quick Connect flow, free verification, the bounded end-to-end checklist, limitations, and rollback.
 
-Create the key in production ForgeGUI **Profile → MCP API keys**. Use `library:read` for free discovery, add `generation:read` only to inspect account-owned jobs, and add `generation:write` only when paid generation is intended and authorized. Generation write access requires a paid Starter-or-higher entitlement. The key is separate from the Claude subscription and from the Roblox Studio connection.
+Create the key in production ForgeGUI **Profile → MCP API keys**. Use `library:read` for free discovery, add `generation:read` only to inspect account-owned jobs, and add `generation:write` only when paid generation is intended and authorized. Generation requires sufficient ForgeGUI credits. The key is separate from the Claude subscription and from the Roblox Studio connection.
 
 ## Install
 
@@ -54,10 +54,11 @@ Release steps: bump through `set`, update the root and installed READMEs with th
 ```bash
 claude plugin marketplace update forgegui
 claude plugin update mcp@forgegui
-claude plugin uninstall mcp@forgegui
 ```
 
-Restart after update/uninstall. If rolling back, restore the previously recorded manual ForgeGUI MCP entry only after the bundled copy is gone. Revoke the ForgeGUI key in **Profile → MCP API keys** when it is no longer needed or may have been exposed.
+When upgrading from `1.9.0-beta.1` or an earlier staging install, run the two update commands above, then `/plugin configure mcp@forgegui` and replace the saved staging key with a production key from https://forgegui.com (**Profile → MCP API keys**). Staging keys and balances do not transfer. Start a new session and verify free discovery before generating. Users pinned to another branch or tag must first select this repository’s `release/claude-mcp-v1` release branch.
+
+To uninstall, run `claude plugin uninstall mcp@forgegui`. Restart after update/uninstall. If rolling back, restore the previously recorded manual ForgeGUI MCP entry only after the bundled copy is gone. Revoke the ForgeGUI key in **Profile → MCP API keys** when it is no longer needed or may have been exposed.
 
 ## Prepared asset installation
 

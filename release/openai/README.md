@@ -1,7 +1,8 @@
 # ForgeGUI OpenAI staging preview
 
 This package is generated from the shared Claude skill source. It is an offline
-release artifact, not an installed, authenticated or submitted plugin. The
+release artifact, not an installed, authenticated or submitted plugin. Its staging channel and version (`1.9.0-beta.1`) are selected independently of
+the Claude production release in `release/channels.json`. The
 endpoint is staging, with separate accounts/data from production. OpenAI OAuth
 readiness is **unverified**; do not put API keys in manifests or headers.
 

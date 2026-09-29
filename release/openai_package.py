@@ -37,7 +37,7 @@ def safe_path(root, relative):
 
 def channel_config(root, channel, mode):
     config = json.loads((root / "release/channels.json").read_text())
-    name = channel or config["active"]
+    name = channel or "staging-beta"
     channel = config["channels"].get(name)
     if not channel or channel.get("available") is not True or not channel.get("mcp_url"):
         raise ValueError(f"channel {name!r} unavailable; production service is not ready")
@@ -59,7 +59,7 @@ def expected_files(root=ROOT, channel=None, mode="preview"):
     name, selected = channel_config(root, channel, mode)
     source = root / SOURCE
     metadata = json.loads((root / "plugins" / NAME / ".claude-plugin/plugin.json").read_text())
-    version = metadata["version"]
+    version = selected.get("version", metadata["version"])
     if not re.fullmatch(selected["version_pattern"], version):
         raise ValueError("shared version does not match selected channel")
     description = selected["description_prefix"] + "ForgeGUI remote assets and optional Roblox Studio workflow. OAuth readiness unverified."

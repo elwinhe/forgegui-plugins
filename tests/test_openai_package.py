@@ -135,6 +135,15 @@ class OpenAIPackageTests(unittest.TestCase):
         with patch.object(package.json, 'loads', return_value=config), self.assertRaisesRegex(ValueError, 'OAuth'):
             package.channel_config(ROOT, 'production', 'preview')
 
+    def test_preview_stays_on_staging_after_claude_production_release(self):
+        manifest = json.loads(self.files['plugin.json'])
+        server = json.loads(self.files['mcp.json'])['mcpServers']['forgegui']
+        self.assertEqual(manifest['version'], '1.9.0-beta.1')
+        self.assertEqual(server['url'],
+                         'https://vzzqjekupwutoaasswwd.supabase.co/functions/v1/forgegui-mcp')
+        with self.assertRaisesRegex(ValueError, 'OAuth'):
+            package.expected_files(channel='production')
+
     def test_manifests_and_remote_transport(self):
         portable = json.loads(self.files['plugin.json'])
         legacy = json.loads(self.files['.codex-plugin/plugin.json'])

@@ -70,3 +70,9 @@ Offline validation: install `tests/requirements.txt`, then run `python3 tests/te
 ## Combined lighting stack
 
 The [combined setup](plugins/forgegui-roblox-builder/skills/forgegui-roblox-builder/references/unified-lighting.md) installs light transport and post-processing together with one shared Lighting compositor. Offline runtime coverage: `lune run tests/unified-lighting.luau`. Studio rendering and performance verification remain separate checks.
+
+## Place-aware conversations (rollout pending)
+
+The installed Claude skill now includes [place-context guidance](plugins/forgegui-roblox-builder/skills/forgegui-roblox-builder/references/place-context.md): read the selected Edit-mode Studio place, create separate session runs, preserve old operation bindings, and display backend-returned conversation IDs/links after success. Input fields match a pinned backend export; conversation response support must be checked live. This is natural-language caller guidance, not runtime enforcement or live acceptance. Unsaved places can use the disclosed legacy unbound flow. Private history grants no Roblox authority, and publication does not prove insertion.
+
+Run `python3 tests/test_place_context.py` for offline request-shape checks. The reference includes the remaining installed-Claude/Studio acceptance matrix; no paid or live calls were made for these checks.

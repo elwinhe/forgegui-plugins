@@ -12,13 +12,26 @@ account, not just whether a schema contains a variant. Preparation requires
 `publication:write/read`, and run recording `runs:write/read`. Never broaden a
 key without authorization. A configured route may still be disabled or restricted.
 
-Create or retrieve an owned run when available. Pass its `run_id` on preparation,
-publication and generation calls that expose that field. Server-observed work is
+Follow [place context](place-context.md): create a fresh owned run for new session
+work or a changed place. Preserve each already admitted operation's exact request
+and original `run_id` during replay/retry, including preparation/publication.
+New dependent preparation/publication requests require an open run: use the
+original source run if open and available, otherwise create a new open run for
+the same original source place and returned owner/place conversation, never the
+currently switched-to place. Pass that run's `run_id` where supported and retain
+the new operation's receipt separately. Unknown source bindings require a blocker,
+not a guessed place. Cross-place source rebinding is rejected as
+`source_place_mismatch`; report unsupported reuse unless the live schema exposes
+an explicit separate-copy operation. Do not invent a protocol or automatically
+regenerate. Recovery of old work must not redirect the next batch. Server-observed work is
 linked automatically; record actual Studio checks separately with `run_append`.
 Use the returned revision, rereading on `revision_conflict`. Never overwrite a
 completed run; use a new run for further work. Follow pagination when rebuilding
 the ledger through `run_get`/`run_list`, and recover prepared bundles through their linked preparation jobs with
 `generation_status`. The local ledger is a cache, not the only source of truth.
+After success, including status/replay recovery, show returned `conversation_id`
+and `conversation_url` to the user as described in place context; absent fields
+do not justify constructing a history link.
 
 Keep separate stable request IDs for generation, preparation and publication.
 Replay only identical parameters. After a timeout, reconcile the recorded job or

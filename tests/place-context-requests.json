@@ -1,0 +1,149 @@
+{
+  "notice": "Synthetic offline request fixtures; not live receipts, not permission to spend.",
+  "cases": [
+    {
+      "tool": "generation_image",
+      "arguments": {
+        "request_id": "place-a-generation_image",
+        "run_id": "00000000-0000-4000-8000-000000000002",
+        "prompt": "A stone icon",
+        "type": "icon_gfx"
+      }
+    },
+    {
+      "tool": "generation_gui",
+      "arguments": {
+        "request_id": "place-a-generation_gui",
+        "run_id": "00000000-0000-4000-8000-000000000002",
+        "prompt": "An inventory panel"
+      }
+    },
+    {
+      "tool": "generation_model_3d",
+      "arguments": {
+        "request_id": "place-a-generation_model_3d",
+        "run_id": "00000000-0000-4000-8000-000000000002",
+        "prompt": "One stone sword"
+      }
+    },
+    {
+      "tool": "generation_rig_3d",
+      "arguments": {
+        "request_id": "place-a-generation_rig_3d",
+        "run_id": "00000000-0000-4000-8000-000000000002",
+        "source_job_id": "00000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "tool": "generation_remesh_3d",
+      "arguments": {
+        "request_id": "place-a-generation_remesh_3d",
+        "run_id": "00000000-0000-4000-8000-000000000002",
+        "source_job_id": "00000000-0000-4000-8000-000000000001",
+        "target_polycount": 5000
+      }
+    },
+    {
+      "tool": "generation_animate_3d",
+      "arguments": {
+        "request_id": "place-a-generation_animate_3d",
+        "run_id": "00000000-0000-4000-8000-000000000002",
+        "source_job_id": "00000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "tool": "generation_sound_effect",
+      "arguments": {
+        "request_id": "place-a-generation_sound_effect",
+        "run_id": "00000000-0000-4000-8000-000000000002",
+        "prompt": "A short chime"
+      }
+    },
+    {
+      "tool": "generation_music",
+      "arguments": {
+        "request_id": "place-a-generation_music",
+        "run_id": "00000000-0000-4000-8000-000000000002",
+        "prompt": "Quiet ambient music"
+      }
+    },
+    {
+      "tool": "remove_background",
+      "arguments": {
+        "request_id": "place-a-remove_background",
+        "run_id": "00000000-0000-4000-8000-000000000002",
+        "image_asset_id": "00000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "tool": "enhance_prompt",
+      "arguments": {
+        "request_id": "place-a-enhance_prompt",
+        "run_id": "00000000-0000-4000-8000-000000000002",
+        "prompt": "A stone sword",
+        "mode": "icon"
+      }
+    },
+    {
+      "tool": "drawing_reference",
+      "arguments": {
+        "request_id": "place-a-drawing_reference",
+        "run_id": "00000000-0000-4000-8000-000000000002",
+        "sketch_asset_id": "00000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "tool": "auto_separate",
+      "arguments": {
+        "request_id": "place-a-auto_separate",
+        "run_id": "00000000-0000-4000-8000-000000000002",
+        "project_id": "00000000-0000-4000-8000-000000000001",
+        "image_asset_ids": [
+          "00000000-0000-4000-8000-000000000001"
+        ]
+      }
+    },
+    {
+      "tool": "asset_prepare",
+      "arguments": {
+        "request_id": "place-a-asset_prepare",
+        "run_id": "00000000-0000-4000-8000-000000000002",
+        "asset": {
+          "kind": "model",
+          "source_ref": "mcp-artifact:00000000-0000-4000-8000-000000000001:0"
+        }
+      }
+    },
+    {
+      "tool": "artifact_publish",
+      "arguments": {
+        "request_id": "place-a-artifact_publish",
+        "run_id": "00000000-0000-4000-8000-000000000002",
+        "artifact_ref": "mcp-artifact:00000000-0000-4000-8000-000000000001:0",
+        "asset_type": "Model",
+        "destination": {
+          "platform": "roblox",
+          "connection_id": "00000000-0000-4000-8000-000000000001"
+        }
+      }
+    },
+    {
+      "tool": "generation_status",
+      "arguments": {
+        "job_id": "00000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "tool": "generation_retry",
+      "arguments": {
+        "job_id": "00000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "tool": "publication_status",
+      "arguments": {
+        "publication_id": "00000000-0000-4000-8000-000000000001"
+      }
+    }
+  ]
+}

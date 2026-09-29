@@ -93,7 +93,8 @@ The file on disk is a request, not consent: if the current user did not ask for 
 Migrate v1 by preserving every existing field and asset identifier, changing
 `version` to 2, and adding `run: null` only if no run field exists. Preserve an existing run, unknown extension fields, decisions and every receipt. Never clear old
 entries or regenerate to migrate. A run cache holds returned `run_id` and
-`revision`; refresh from the server before appending or continuing a session.
+`revision`; refresh from the server before appending or recovering old work.
+For new session work, create a fresh run after reading [place context](place-context.md).
 
 Add fields to asset entries only when known:
 
@@ -147,3 +148,11 @@ See [publishing connections](publishing-connections.md) for failure handling and
 [the contract fixtures](https://github.com/elwinhe/forgegui-plugins/blob/release/claude-mcp-v1/tests/publishing-connections.json) (repository-only)
 for illustrative selection and partial-batch ledger entries. Those fixtures are
 documentation only, never user decisions to copy into a real project.
+
+## Version 2: place context and conversations
+
+Follow [place context](place-context.md) for the additive owner/place/session ledger
+and immutable per-operation bindings. Preserve old `run` data in `runs` before
+replacing the active cache. Never infer the current place from this file or reuse
+another account’s history. Store only returned conversation IDs/URLs; no API keys,
+signed artifact links, or global current-place setting belongs here.

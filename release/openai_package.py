@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build/check the offline staging OpenAI preview; never installs or submits it."""
+"""Build/check the staging preview or local Codex package; never installs or submits it."""
 import argparse
 import hashlib
 import json
@@ -37,7 +37,7 @@ def safe_path(root, relative):
 
 def channel_config(root, channel, mode):
     config = json.loads((root / "release/channels.json").read_text())
-    name = channel or "staging-beta"
+    name = channel or ("production" if mode == "codex" else "staging-beta")
     channel = config["channels"].get(name)
     if not channel or channel.get("available") is not True or not channel.get("mcp_url"):
         raise ValueError(f"channel {name!r} unavailable; production service is not ready")
@@ -48,9 +48,9 @@ def channel_config(root, channel, mode):
     if name == "production" and url.hostname in config["forbidden_production_hosts"]:
         raise ValueError("production cannot target staging")
     # Availability of an endpoint alone is not evidence of OpenAI OAuth readiness.
-    if mode == "submission" or name != "staging-beta":
+    if mode not in {"preview", "codex"} or (name != "staging-beta" and mode != "codex"):
         raise ValueError("production/submission blocked: OpenAI OAuth readiness is unverified")
-    if not channel["description_prefix"].startswith("Staging beta:"):
+    if name == "staging-beta" and not channel["description_prefix"].startswith("Staging beta:"):
         raise ValueError("staging preview must be labeled Staging beta")
     return name, channel
 
@@ -62,8 +62,11 @@ def expected_files(root=ROOT, channel=None, mode="preview"):
     version = selected.get("version", metadata["version"])
     if not re.fullmatch(selected["version_pattern"], version):
         raise ValueError("shared version does not match selected channel")
-    description = selected["description_prefix"] + "ForgeGUI remote assets and optional Roblox Studio workflow. OAuth readiness unverified."
-    interface = dict(displayName="ForgeGUI (Staging beta)", shortDescription=description,
+    local_codex = mode == "codex"
+    description = selected["description_prefix"] + (
+        "ForgeGUI assets and Roblox Studio workflow for local Codex. Account API key required."
+        if local_codex else "ForgeGUI remote assets and optional Roblox Studio workflow. OAuth readiness unverified.")
+    interface = dict(displayName="ForgeGUI" if name == "production" else "ForgeGUI (Staging beta)", shortDescription=description,
                      longDescription=description, developerName="ForgeGUI", category="Productivity",
                      capabilities=["Read", "Write"],
                      defaultPrompt=["Find reusable ForgeGUI assets before planning paid generation."])
@@ -80,6 +83,24 @@ def expected_files(root=ROOT, channel=None, mode="preview"):
         "README.md": (root / "release/openai/README.md").read_bytes(),
         f"skills/{NAME}/SKILL.md": (root / "release/openai/SKILL.md").read_bytes(),
     }
+    if local_codex:
+        del result["mcp.json"]
+        del result[".mcp.json"]
+        result[".codex-plugin/plugin.json"] = encoded({**identity, "skills": "./skills/", "interface": interface})
+        result["codex-config.toml"] = (
+            '[mcp_servers.forgegui]\n'
+            f'url = {json.dumps(selected["mcp_url"])}\n'
+            'bearer_token_env_var = "FORGEGUI_API_KEY"\n'
+        ).encode()
+        result["README.md"] = (root / "release/openai/CODEX.md").read_bytes()
+        skill_path = f"skills/{NAME}/SKILL.md"
+        result[skill_path] = result[skill_path].replace(
+            b"This is a staging beta preview. Production service and OpenAI OAuth readiness\nare unverified. Installing this package does not establish authentication,\npublication access, Studio connectivity or successful import.",
+            b"This is a local Codex package. Use the channel endpoint in codex-config.toml\n"
+            b"and supply FORGEGUI_API_KEY through the Codex process environment. OAuth is\n"
+            b"not required for this account-key connection. Installing the skill does not\n"
+            b"establish authentication, publication access, Studio connectivity or import."
+        )
     inventory = json.loads((root / "release/openai/sources.json").read_text())
     if not inventory or len(inventory) != len(set(inventory)) or "SKILL.md" not in inventory:
         raise ValueError("invalid shared source inventory")
@@ -97,6 +118,10 @@ def expected_files(root=ROOT, channel=None, mode="preview"):
         hashes[relative] = hashlib.sha256(data).hexdigest()
     result["provenance.json"] = encoded({"generator": "release/openai_package.py", "channel": name,
         "oauth_readiness": "unverified", "shared_source": SOURCE.as_posix(), "sha256": hashes})
+    if local_codex:
+        provenance = json.loads(result["provenance.json"])
+        provenance.update(runtime="local-codex", authentication="bearer_token_env_var")
+        result["provenance.json"] = encoded(provenance)
     # Installed markdown links must remain usable without the repository.
     for relative, data in result.items():
         if not relative.endswith(".md"):
@@ -163,18 +188,18 @@ def build(output, expected):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("command", choices=["build", "check"])
-    parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument("--output", type=Path, default=None)
     parser.add_argument("--channel", default=None)
-    parser.add_argument("--mode", choices=["preview", "submission"], default="preview")
+    parser.add_argument("--mode", choices=["preview", "submission", "codex"], default="preview")
     args = parser.parse_args()
     try:
         expected = expected_files(channel=args.channel, mode=args.mode)
-        output = output_path(args.output)
+        output = output_path(args.output or (DEFAULT_OUTPUT.parent / "codex" / NAME if args.mode == "codex" else DEFAULT_OUTPUT))
         (build if args.command == "build" else check)(output, expected)
     except (ValueError, OSError, KeyError, TypeError) as error:
         print(f"FAIL {error}", file=sys.stderr)
         return 1
-    print(f"ok   OpenAI staging preview {args.command}: {output} ({len(expected)} files); OAuth unverified")
+    print(f"ok   OpenAI {args.mode} {args.command}: {output} ({len(expected)} files); live acceptance not implied")
     return 0
 
 

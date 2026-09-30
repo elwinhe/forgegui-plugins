@@ -29,6 +29,15 @@ jobs:
       - run: python release/openai_package.py check
       - run: python release/openai_package.py build
       - run: python release/openai_package.py check
+      - run: python release/openai_package.py build --mode codex
+      - run: python release/openai_package.py check --mode codex
+      - name: Archive Codex production package
+        run: tar -czf dist/openai/forgegui-codex-production.tar.gz -C dist/openai/codex forgegui-roblox-builder
+      - uses: actions/upload-artifact@v4
+        with:
+          name: forgegui-codex-production
+          path: dist/openai/forgegui-codex-production.tar.gz
+          if-no-files-found: error
       - uses: actions/setup-node@v4
         with:
           node-version: '22'

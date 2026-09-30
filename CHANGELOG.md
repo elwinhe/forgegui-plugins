@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.9.2 — production
+
+- Terrain and structure surfaces now get ForgeGUI materials by default. The builder skill plans one tiled material per player-visible surface (sand, grass, rock, paths, dock planks, walls): a `generation_image` colour tile, prepared with `texture_prep.py`, given normal, roughness and cavity maps by `pbr_maps.py`, and applied as a MaterialVariant with `MaterialKit.luau`. Before this change, the skill left floors, docks and terrain on stock Roblox materials and reached the texture route only after ground "read flat up close".
+- Close-up ground that needs relief gets a generated `GroundScatter` patch template, and terrain dressing (rocks, boulders, driftwood, dock pilings, grass clumps) joins the generated kit. Water stays native terrain water.
+- Surface materials count in the plan, the typical first pass and the intake spend recommendation, and are generated early, right after the style card. A player-visible surface left on a stock material is logged and reported as a `blockout`.
+- Guidance only: no scripts, MCP endpoint or tool contract changes. The OpenAI staging preview keeps its `1.9.0-beta.1` label.
+
 ## 1.9.1 — production
 
 - `scripts/reference_frames.py` requires yt-dlp 2026.08.19 (the latest release) or newer before fetching a link. With an older copy it stops before downloading and prints the update command, instead of failing partway through a YouTube download.

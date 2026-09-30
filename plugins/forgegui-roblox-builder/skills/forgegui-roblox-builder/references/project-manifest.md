@@ -62,7 +62,7 @@ Fields:
 | `assets[].key` | Stable human name (`hud.panel`, `prop.tree.pine`). |
 | `assets[].artifact_ref` | The content reference to pass when regenerating or deriving *this object*. Pass it in `reference_asset_ids` only when it resolves to an image; for a 3D model entry, carry the look through a concept image or the prompt. |
 | `assets[].roblox_asset_id` / `studio_path` | Filled after import; a URL is never written here. |
-| `assets[].status` | `planned`, `generating`, `generated`, `handoff`, `inserted`, `verified`, `failed`, or `blockout` for a part-built stand-in that a generated model will replace (`references/3d-assets.md`). |
+| `assets[].status` | `planned`, `generating`, `generated`, `handoff`, `inserted`, `verified`, `failed`, or `blockout` for a part-built stand-in that a generated model will replace, or a player-visible surface still on a stock Roblox material that a generated material will replace (`references/3d-assets.md`). |
 
 ## Rules
 

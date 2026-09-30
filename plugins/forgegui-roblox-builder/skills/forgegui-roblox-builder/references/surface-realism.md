@@ -1,8 +1,10 @@
 # Surface realism: ground and buildings that do not read flat
 
-Use this after the world is built and lit, when the camera near the ground shows flat paint
-(terrain, paving, cracked earth) or generated buildings go blocky up close, and whenever a
-scatter pass places props among buildings. It covers five pieces, which work together:
+Sections 1 and 2 (PBR maps and the material kit) are the default route for every surface material
+planned in SKILL.md §2: apply them once the grey-box ground exists, not only when something looks
+wrong. The rest is for after the world is built and lit, when the camera near the ground still
+shows flat paint (terrain, paving, cracked earth) or generated buildings go blocky up close, and
+whenever a scatter pass places props among buildings. It covers five pieces, which work together:
 
 | Piece | File | Fixes |
 | --- | --- | --- |

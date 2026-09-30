@@ -36,7 +36,7 @@ numbered format in `SKILL.md`. Every question carries likely options and your re
 | 2 | **Interface tone.** Restrained and flat (hairline edges, one accent colour, lots of air), or ornate and stylised (rims, crests, glow)? Name a game whose menus they like | The genre does not settle it | The stock panel and button prompts produce ornate gold rims. On a grounded game that is what users call "AI-looking", and it costs a full regeneration to undo |
 | 3 | **What is in the game.** Offer a checklist for the genre rather than an open question (below) | The request names a genre, not a feature list | Users assume features. A checklist turns an assumption into a decision in one reply |
 | 4 | **Players.** Solo against bots, multiplayer, or multiplayer with bots filling empty slots? | Not stated | Changes the server architecture, not just content |
-| 5 | **Spend.** How many paid generations, and is paid generation authorized? | Always, unless already given | Recommend a number. 0 is a valid recommendation |
+| 5 | **Spend.** How many paid generations, and is paid generation authorized? | Always, unless already given | Recommend a number that counts the surface materials (ground, paths, docks, walls) as well as the 3D identity assets. 0 is a valid recommendation |
 | 6 | **Finish.** Playable prototype, or a polished build that is checked screen by screen? | Not stated | Sets how much verification and iteration to plan |
 | 7 | **Fidelity pass.** | Ask plainly with a supplied reference; otherwise ask "if you have a reference, do you want a fidelity pass against it?" in the same round. A "none" reference answer also settles this as inapplicable; never fold it into "finish" or add a second intake round | See `fidelity-pass.md` |
 

@@ -79,11 +79,14 @@ Two practical notes that route does not cover:
 
 For terrain, or every part of one base material, apply the tile and its maps as a MaterialVariant
 through `references/luau/MaterialKit.luau` (`surface-realism.md` §2). On a single part, use a
-`Texture` with `StudsPerTileU` / `StudsPerTileV` rather than a `Decal`,
-and size the tile from the surface: at 1024 px a 12-stud tile gives about 85 px per stud.
+`Texture` with `StudsPerTileU` / `StudsPerTileV` rather than a `Decal`, and size the tile from the
+surface: at 1024 px a 12-stud tile gives about 85 px per stud. A `Texture` covers only the face named
+by its `Face` property, which defaults to `Front`: set `Top` for a floor or deck, and add one
+`Texture` per other visible face.
 
 ## Check before you call it done
 
 - the property you wrote reads back the id you set
 - `StudsPerTileU` / `StudsPerTileV` are the values you intended
+- each `Texture`'s `Face` is the face the player sees (`Top` for floors)
 - the surface is viewed **in Play, across its full extent**, not in a close-up in Edit

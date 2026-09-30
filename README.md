@@ -1,6 +1,6 @@
 # ForgeGUI MCP for Claude Code
 
-Install ID: `mcp@forgegui`. Version **1.9.2** targets ForgeGUI production at `azyjlkhpdgafuobyxoax.supabase.co`. Use a production ForgeGUI MCP API key. Release metadata is declared in [`release/channels.json`](release/channels.json).
+Install ID: `mcp@forgegui`. Version **1.9.3** targets ForgeGUI production at `azyjlkhpdgafuobyxoax.supabase.co`. Use a production ForgeGUI MCP API key. Release metadata is declared in [`release/channels.json`](release/channels.json).
 
 This version adds capability-gated [publishing connections guidance](plugins/forgegui-roblox-builder/skills/forgegui-roblox-builder/references/publishing-connections.md) for selecting the intended creator before paid work. Connection requests match pinned backend contract 1.9.0; deployment acceptance remains pending. Roblox publishing keys go only through authenticated ForgeGUI settings, never agent chat, MCP arguments, commands or the ledger. When the deployed backend advertises Audio support, prefer integrated publish delivery for new audio, or publish existing owned MP3 artifacts through ForgeGUI and keep Studio insertion/playback verification in the caller. See [audio publication](plugins/forgegui-roblox-builder/skills/forgegui-roblox-builder/references/audio-publication.md). Backend deployment, selected-creator experience access and audible playback remain separate acceptance checks; installing the plugin does not establish them.
 
@@ -60,7 +60,7 @@ This builder does not change or install the Claude package.
 
 `release/release_channel.py set <channel> --version <semver>` rewrites the bundled endpoint, both manifest versions and both descriptions together, and refuses a channel marked unavailable. Staging releases use `X.Y.Z-beta.N` and the `Staging beta:` description prefix; production releases use plain `X.Y.Z` and must never point at the staging host. `check` also audits the installed package for caches, machine-specific paths and links that escape the plugin directory. CI runs it with `claude plugin validate` on every pull request.
 
-Release steps: bump through `set`, update the root and installed READMEs with the selected version, channel, endpoint and key guidance, and record the change in [CHANGELOG.md](CHANGELOG.md). After review and merge, tag the merged commit with `claude plugin tag plugins/forgegui-roblox-builder --push`, verify the remote tag and a fresh-profile install, then announce it.
+Release steps: bump through `set`, update the root and installed READMEs with the selected version, channel, endpoint and key guidance, and record the change in [CHANGELOG.md](CHANGELOG.md). `set` also writes the `X-ForgeGUI-Plugin-Version` header in `.mcp.json`, and `check` fails when it drifts from the manifest version. After review and merge, tag the merged commit with `claude plugin tag plugins/forgegui-roblox-builder --push`, verify the remote tag and a fresh-profile install, then set `FORGEGUI_CLAUDE_PLUGIN_LATEST_VERSION` to the new version on the channel's Supabase project (production: `azyjlkhpdgafuobyxoax`; staging: `vzzqjekupwutoaasswwd`). Older installs then get ForgeGUI's update notice, and until the secret is set they get none. Announce the release after that.
 
 ## Update or uninstall
 
@@ -68,6 +68,8 @@ Release steps: bump through `set`, update the root and installed READMEs with th
 claude plugin marketplace update forgegui
 claude plugin update mcp@forgegui
 ```
+
+Claude Code leaves auto-update off for third-party marketplaces. To receive releases automatically, open `/plugin`, go to the **Marketplaces** tab, select `forgegui` and choose **Enable auto-update**. Without it, ForgeGUI tells Claude when your installed plugin is behind the latest release, and Claude recommends running the commands above.
 
 When upgrading from `1.9.0-beta.1` or an earlier staging install, run the two update commands above, then `/plugin configure mcp@forgegui` and replace the saved staging key with a production key from https://forgegui.com (**Profile → MCP API keys**). Staging keys and balances do not transfer. Start a new session and verify free discovery before generating. Users pinned to another branch or tag must first select this repository’s `release/claude-mcp-v1` release branch.
 

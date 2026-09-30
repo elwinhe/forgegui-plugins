@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.9.3 — production
+
+- The bundled `forgegui` server sends the plugin version as an `X-ForgeGUI-Plugin-Version` header on every request. ForgeGUI compares it with the latest release. When an install is behind, ForgeGUI's MCP instructions tell Claude to recommend the update once, with the update commands, without blocking the request.
+- Installs from 1.9.2 and earlier send no version header. ForgeGUI treats a Claude Code connection without it as an older plugin or a manually added server and recommends the same update, so existing installs are covered from the day the server change ships.
+- `release/release_channel.py set` writes the header with the version, and `check` fails when the header and `plugin.json` disagree. Release steps now include setting ForgeGUI's latest-version secret after merge.
+- The README recommends enabling auto-update for the `forgegui` marketplace. Claude Code leaves it off by default for third-party marketplaces.
+- No skill guidance or tool contract changes. The OpenAI staging preview keeps its `1.9.0-beta.1` label and sends no version header.
+
 ## 1.9.2 — production
 
 - Terrain and structure surfaces now get ForgeGUI materials by default. The builder skill plans one tiled material per player-visible surface (sand, grass, rock, paths, dock planks, walls): a `generation_image` colour tile, prepared with `texture_prep.py`, given normal, roughness and cavity maps by `pbr_maps.py`, and applied as a MaterialVariant with `MaterialKit.luau`. Before this change, the skill left floors, docks and terrain on stock Roblox materials and reached the texture route only after ground "read flat up close".

@@ -1,6 +1,6 @@
 # ForgeGUI Roblox Builder
 
-**Version 1.9.2 — production.** This package targets ForgeGUI's production project (`azyjlkhpdgafuobyxoax.supabase.co`). Use a production MCP API key from https://forgegui.com (**Profile → MCP API keys**); staging keys do not authenticate production requests. Existing staging users must update `mcp@forgegui`, replace their saved key through `/plugin configure mcp@forgegui`, and start a new session. Verify free discovery and the intended production account and credit balance before generation. Actual publication and Studio import require separate verification.
+**Version 1.9.3 — production.** This package targets ForgeGUI's production project (`azyjlkhpdgafuobyxoax.supabase.co`). Use a production MCP API key from https://forgegui.com (**Profile → MCP API keys**); staging keys do not authenticate production requests. Existing staging users must update `mcp@forgegui`, replace their saved key through `/plugin configure mcp@forgegui`, and start a new session. Verify free discovery and the intended production account and credit balance before generation. Actual publication and Studio import require separate verification.
 
 The plugin helps Claude Code build Roblox Studio experiences with ForgeGUI-generated assets. It coordinates two separate MCP connections: ForgeGUI (bundled here) for generation, search, preparation and publication, and the official Roblox Studio MCP (configured separately in Studio) for inspecting, editing, inserting and playtesting.
 
@@ -29,7 +29,7 @@ The package includes shell and Python scripts. Its Bash Stop hook runs when Clau
 
 - Prompts, references and tool arguments you send through the `forgegui` server go to ForgeGUI. ForgeGUI forwards generation inputs to its AI generation providers to produce the requested assets.
 - Generation tools spend ForgeGUI credits. Publishing tools create assets on Roblox under the ForgeGUI publishing connection you select; Roblox moderation applies.
-- Your ForgeGUI key is sent only as the `Authorization` header to the configured ForgeGUI endpoint. Roblox publishing keys belong only in ForgeGUI settings, never in MCP arguments, chat or project files.
+- Your ForgeGUI key is sent only as the `Authorization` header to the configured ForgeGUI endpoint. Each request also sends this plugin's version as `X-ForgeGUI-Plugin-Version`, which contains no account or machine data, so ForgeGUI can tell Claude when a newer plugin release is available. Roblox publishing keys belong only in ForgeGUI settings, never in MCP arguments, chat or project files.
 - Studio actions run through the separate Roblox Studio MCP, on your machine, under your Studio session.
 
 ## Support and policies

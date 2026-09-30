@@ -1,0 +1,26 @@
+import { build } from 'esbuild';
+import { readFile, mkdir, rm, copyFile, writeFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+
+const root = fileURLToPath(new URL('../../', import.meta.url));
+const output = resolve(root, 'dist/desktop');
+const channels = JSON.parse(await readFile(resolve(root, 'release/channels.json')));
+const endpoint = channels.channels.production.mcp_url;
+const plugin = JSON.parse(await readFile(resolve(root, 'plugins/forgegui-roblox-builder/.mcp.json')));
+if (channels.active !== 'production' || !channels.channels.production.available || plugin.mcpServers.forgegui.url !== endpoint || !endpoint.startsWith('https://') || channels.forbidden_production_hosts.includes(new URL(endpoint).hostname)) throw new Error('Production channel mismatch');
+await rm(output, { recursive: true, force: true });
+await mkdir(resolve(output, 'server'), { recursive: true });
+await build({ entryPoints: [resolve(root, 'desktop/server/index.mjs')], outfile: resolve(output, 'server/index.mjs'), bundle: true, platform: 'node', format: 'esm', target: 'node22', define: { FORGEGUI_ENDPOINT: JSON.stringify(endpoint) }, legalComments: 'eof' });
+await copyFile(resolve(root, 'desktop/manifest.json'), resolve(output, 'manifest.json'));
+await copyFile(resolve(root, 'desktop/README.md'), resolve(output, 'README.md'));
+await copyFile(resolve(root, 'desktop/node_modules/@modelcontextprotocol/sdk/LICENSE'), resolve(output, 'SDK-LICENSE'));
+const cli = resolve(root, 'desktop/node_modules/@anthropic-ai/mcpb/dist/cli/cli.js');
+execFileSync(process.execPath, [cli, 'validate', resolve(output, 'manifest.json')], { stdio: 'inherit' });
+const archive = resolve(root, 'dist/forgegui.mcpb');
+execFileSync(process.execPath, [cli, 'pack', output, archive], { stdio: 'inherit' });
+const hash = createHash('sha256').update(await readFile(archive)).digest('hex');
+await writeFile(`${archive}.sha256`, `${hash}  forgegui.mcpb\n`);
+console.log(archive);

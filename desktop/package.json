@@ -1,0 +1,22 @@
+{
+  "name": "forgegui-desktop-extension",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/bridge.test.mjs",
+    "build": "node scripts/build.mjs",
+    "validate": "mcpb validate ../dist/desktop/manifest.json",
+    "test:bundle": "node --test test/bundle.test.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.31.0"
+  },
+  "devDependencies": {
+    "@anthropic-ai/mcpb": "2.1.2",
+    "esbuild": "0.28.2"
+  },
+  "overrides": {
+    "tmp": "0.2.7"
+  }
+}

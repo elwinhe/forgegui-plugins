@@ -2,3 +2,6 @@ __pycache__/
 *.py[cod]
 .test-deps/
 dist/openai/
+desktop/node_modules/
+dist/desktop/
+dist/forgegui.mcpb*

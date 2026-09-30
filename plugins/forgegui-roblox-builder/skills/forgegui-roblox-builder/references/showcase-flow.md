@@ -59,10 +59,11 @@ Decision point: for a small addition to an existing game, the grey-box is the ex
   scene as one mesh (13 of 13 calls in one run). Concept images belong to `generation_image` and
   `generation_gui`; a 3D call gets an image of that one object on a plain background, or text alone.
 - **Script-built beats generated for structure.** Floors, walls, fillets, trigger volumes, lines, and anything
-  whose shape is a number in the look-spec comes from primitives in the build script and is textured, not
-  generated. Generate the identity: the vehicle, the hero prop, the pickup, the landmark, the HUD art, the sky
-  panorama, the tileable textures. Where a build's genre inverts this (a diorama, a mostly-organic island
-  world), let the look-spec decide.
+  whose shape is a number in the look-spec comes from primitives in the build script and is textured with
+  ForgeGUI tiled materials (`SKILL.md` §2), not generated and not left on stock Roblox materials. Generate the
+  identity: the vehicle, the hero prop, the pickup, the landmark, the HUD art, the sky panorama, the tileable
+  textures. Where a build's genre inverts this (a diorama, a mostly-organic island world), let the look-spec
+  decide.
 - **Order the spend by what unblocks other work:** concepts and the style card, the sky and ground textures,
   then the hero objects, then set dressing. Generation limits exist (`SKILL.md` §5); the first assets should be
   the ones that let the rest of the build continue while later ones are pending.

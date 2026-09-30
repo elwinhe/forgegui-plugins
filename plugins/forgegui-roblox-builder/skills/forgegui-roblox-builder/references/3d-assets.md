@@ -5,7 +5,9 @@ realistic team shooter built through the Studio MCP (a rail-yard map, five
 weapons) played well and still looked like a prototype: every weapon, prop and
 vehicle was assembled from boxes and cylinders. ForgeGUI's `generation_model_3d`
 exists to close that gap. Use it for every asset that gives the game its
-identity, and keep Roblox primitives for what primitives do well.
+identity, and keep Roblox primitives for what primitives do well: shape, not
+surface. Floors, docks and terrain stay script-built, but the surfaces players
+see get ForgeGUI materials rather than stock Roblox ones.
 
 Publishing and animation inputs below were checked against the
 [backend contract at `9815cfa`](https://github.com/farewellagain18-byte/gitreposit/blob/9815cfa2096f4d5ac755b337348b9a282f2c7743/docs/mcp/tool-contract.json).
@@ -23,25 +25,32 @@ Delivery response handling was checked against
 | Rigid gear (helmets, vests, packs) | ForgeGUI, attached or welded in Studio | Moving with a character does not itself require rigging or paid animation |
 | Vehicles, machines, signature props (forklift, generator, crane cab) | ForgeGUI | Landmarks players navigate by |
 | Set dressing seen within ~40 studs (barrels, crates, pallets, benches, lamps) | A generated kit, placed many times | One good crate beats forty box crates |
-| Floors, walls, platforms, stairs, road, terrain | Roblox parts, terrain, materials | Collision, level design iteration, cheap |
+| Floors, walls, platforms, docks, stairs, road, terrain | Shape: Roblox parts and terrain. Surface: a ForgeGUI tiled material applied as a MaterialVariant (`textures.md`, `surface-realism.md`) | Collision and layout stay cheap to iterate; a stock material on a surface the player walks on reads as a stock Roblox game |
+| Close-up ground that needs relief (cracked earth, gravel, mud) | A generated ground-patch template laid by `GroundScatter` | Terrain cannot displace a texture; only real geometry reads as relief |
+| Terrain dressing (rocks, boulders, driftwood, dock pilings, grass clumps) | A generated kit, scattered behind `KeepOut` | Seen up close like any set dressing |
+| Water | Native terrain water | Reflections and swimming come with it |
 | Collision proxies, spawn markers, triggers | Roblox parts (invisible) | Gameplay geometry, never art |
 | Distant backdrop (skyline, far buildings) | Parts + Textures | Seen from far away; a window Texture per facade costs no triangles |
 
-A part-built stand-in is fine as a **blockout**: build it, play-test the layout
-and gameplay, and log it in the asset ledger as `status: "blockout"`. A build
-is not finished while identity assets are still blockouts, unless the user
+A part-built stand-in, or a surface still on a stock Roblox material, is fine
+as a **blockout**: build it, play-test the layout and gameplay, and log it in
+the asset ledger as `status: "blockout"`. A build is not finished while
+identity assets or player-visible surfaces are still blockouts, unless the user
 declined generation or the import handoff (record which).
 
 ## Plan a kit, not a scene
 
 Generate a small kit and place it many times:
 
-- List every identity asset and every dressing prop that appears more than once.
+- List every identity asset, every dressing prop that appears more than once,
+  and every distinct surface material the player walks on or stands beside.
   Merge near-duplicates ("wooden crate", "supply crate" → one crate with two
   colours).
 - Typical first pass for a map-based game: 1-5 weapons or held items, 1 character
-  set, 8-20 kit props, 1-3 landmarks. State the count and ask for the budget if
-  it isn't already authorised. These are asset counts, not paid-operation totals.
+  set, 8-20 kit props, 1-3 landmarks, and 2-5 surface materials (one generated
+  colour tile each) plus a ground-patch template for each material that needs
+  close-up relief. State the count and ask for the budget if it isn't already
+  authorised. These are asset counts, not paid-operation totals.
 - Count the whole pipeline against the approved paid-call ceiling: base models,
   separately generated moving parts, any generated reference images, remeshes,
   rigging, animations, and permitted retries. For example, five weapons plus five
@@ -49,6 +58,9 @@ Generate a small kit and place it many times:
   follow-up calls before starting; if actual geometry or scope requires more than
   the remaining allowance, obtain approval for the increased total first. Report
   credit cost as unknown unless billing evidence supplies it.
+- Generate the surface materials early, right after the style card: every prop
+  is judged against the ground it stands on, and `showcase-flow.md` orders the
+  spend the same way.
 - Generate one hero asset first per category (a weapon, a piece of gear, a
   prop). For direct delivery, inspect available stored previews and model
   artifacts; measure triangle counts from actual geometry where possible,
@@ -244,8 +256,10 @@ an artifact ref for published output. Track local status separately (`generated`
 ## When primitives are the right answer
 
 Structure, collision, blockouts, and anything the user explicitly wants built in
-Studio. Primitives are not the fallback for "generation is paid" or "import needs
-a click"; those are reasons to ask, not to downgrade silently.
+Studio. Structure still gets a ForgeGUI surface material unless the user declined
+generation. Primitives and stock materials are not the fallback for "generation is
+paid" or "import needs a click"; those are reasons to ask, not to downgrade
+silently.
 
 ## Establish the publication route
 

@@ -1,6 +1,6 @@
 # ForgeGUI MCP for Claude Code
 
-Install ID: `mcp@forgegui`. Version **1.9.1** targets ForgeGUI production at `azyjlkhpdgafuobyxoax.supabase.co`. Use a production ForgeGUI MCP API key. Release metadata is declared in [`release/channels.json`](release/channels.json).
+Install ID: `mcp@forgegui`. Version **1.9.2** targets ForgeGUI production at `azyjlkhpdgafuobyxoax.supabase.co`. Use a production ForgeGUI MCP API key. Release metadata is declared in [`release/channels.json`](release/channels.json).
 
 This version adds capability-gated [publishing connections guidance](plugins/forgegui-roblox-builder/skills/forgegui-roblox-builder/references/publishing-connections.md) for selecting the intended creator before paid work. Connection requests match pinned backend contract 1.9.0; deployment acceptance remains pending. Roblox publishing keys go only through authenticated ForgeGUI settings, never agent chat, MCP arguments, commands or the ledger. When the deployed backend advertises Audio support, prefer integrated publish delivery for new audio, or publish existing owned MP3 artifacts through ForgeGUI and keep Studio insertion/playback verification in the caller. See [audio publication](plugins/forgegui-roblox-builder/skills/forgegui-roblox-builder/references/audio-publication.md). Backend deployment, selected-creator experience access and audible playback remain separate acceptance checks; installing the plugin does not establish them.
 

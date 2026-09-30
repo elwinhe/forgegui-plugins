@@ -9,6 +9,10 @@ Two different things get called "texture", and a build has to keep them apart:
 A build made only of the first kind still looks textured while containing no texturing decision.
 Say which kind a surface uses when it matters.
 
+Every terrain or structure surface the player walks on or stands beside gets a standalone material
+by default (SKILL.md §2); a stock Roblox material there is a blockout, not a finished surface.
+Sections 1-3 make the colour tile, and `surface-realism.md` turns it into a MaterialVariant.
+
 ## 1. Generate
 
 Use `generation_image` type `thumbnail` for materials (see the generator-behaviour notes in
@@ -73,7 +77,9 @@ Two practical notes that route does not cover:
   to raise a capability error by a separate pass and was not reproduced here -- the instruction stands
   on the security model rather than on that report.
 
-For a tiling surface use a `Texture` with `StudsPerTileU` / `StudsPerTileV` rather than a `Decal`,
+For terrain, or every part of one base material, apply the tile and its maps as a MaterialVariant
+through `references/luau/MaterialKit.luau` (`surface-realism.md` §2). On a single part, use a
+`Texture` with `StudsPerTileU` / `StudsPerTileV` rather than a `Decal`,
 and size the tile from the surface: at 1024 px a 12-stud tile gives about 85 px per stud.
 
 ## Check before you call it done

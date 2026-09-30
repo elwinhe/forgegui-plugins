@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.9.1 — production
+
+- `scripts/reference_frames.py` requires yt-dlp 2026.08.19 (the latest release) or newer before fetching a link. With an older copy it stops before downloading and prints the update command, instead of failing partway through a YouTube download.
+- Updates the yt-dlp install hint to follow yt-dlp's current guidance: `pipx install "yt-dlp[default]"` plus a JavaScript runtime such as Deno for full YouTube support (Homebrew's `yt-dlp` already includes Deno).
+- `--selftest` covers yt-dlp version parsing. No MCP endpoint or workflow changes. The OpenAI staging preview keeps its `1.9.0-beta.1` label.
+
 ## 1.9.0 — production
 
 - Bumps both Claude manifests so existing `1.9.0-beta.1` installs can detect the production endpoint update.

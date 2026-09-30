@@ -6,12 +6,13 @@ usage: reference_frames.py <video-or-url> <outdir> [--frames 30] [--width 1280] 
 
 Point it at the reference the user provided: a local file or a link they gave. It does not
 search for footage and downloads nothing the user did not hand over; before pointing it at a
-link, confirm the user is entitled to that footage. A URL is fetched with yt-dlp; frames are extracted with ffmpeg. Frames are written as frame_001.png ... and tiled
+link, confirm the user is entitled to that footage. A URL is fetched with yt-dlp (2026.08.19 or newer); frames are extracted with ffmpeg. Frames are written as frame_001.png ... and tiled
 into sheet_00.png ... (rows x cols per --sheet). Keep the frames: the fidelity pass compares
 Studio captures against these same stills. Each invocation creates a fresh capture directory
 under outdir and writes manifest.json; earlier captures are never removed.
 """
 import json
+import re
 from datetime import datetime, timezone
 import shutil
 import subprocess
@@ -22,8 +23,10 @@ from pathlib import Path
 INSTALL = {
     "ffprobe": "ffprobe not found (ships with ffmpeg). Install: brew install ffmpeg  (macOS)  |  apt install ffmpeg  (Debian/Ubuntu)",
     "ffmpeg": "ffmpeg not found. Install: brew install ffmpeg  (macOS)  |  apt install ffmpeg  (Debian/Ubuntu)",
-    "yt-dlp": "yt-dlp not found (needed for URLs). Install: brew install yt-dlp  |  pipx install yt-dlp",
+    "yt-dlp": 'yt-dlp not found (needed for URLs). Install: brew install yt-dlp  |  pipx install "yt-dlp[default]" plus Deno (https://deno.land) for YouTube',
 }
+YT_DLP_MIN = "2026.08.19"  # latest release; sites such as YouTube break older ones
+YT_DLP_UPGRADE = 'Update: brew upgrade yt-dlp  |  pipx install --force "yt-dlp[default]"  |  yt-dlp -U (standalone binary)'
 
 
 def need(tool):
@@ -48,8 +51,20 @@ def duration(video):
         sys.exit(f"could not read duration of {video}: {out!r}")
 
 
-def fetch(url, workdir):
+def release(text):
+    m = re.match(r"\d+(?:\.\d+)+", text.strip())
+    return tuple(int(part) for part in m.group().split(".")) if m else None
+
+
+def need_current_yt_dlp():
     need("yt-dlp")
+    have = run(["yt-dlp", "--version"]).strip()
+    got = release(have)
+    if got is None or got < release(YT_DLP_MIN):
+        sys.exit(f"yt-dlp {have or '(no version)'} is older than {YT_DLP_MIN}. {YT_DLP_UPGRADE}")
+
+
+def fetch(url, workdir):
     target = workdir / "reference.%(ext)s"
     run(["yt-dlp", "--no-playlist", "-f", "bv*[height<=720]+ba/b[height<=720]/b",
          "--merge-output-format", "mp4", "-o", str(target), url])
@@ -88,6 +103,8 @@ def sheets(paths, outdir, rows, cols):
 
 def capture(src, outdir, frames=30, width=1280, sheet="3x4"):
     rows, cols = (int(v) for v in sheet.lower().split("x"))
+    if "://" in src:
+        need_current_yt_dlp()
     started = datetime.now(timezone.utc).isoformat()
     parent = Path(outdir)
     parent.mkdir(parents=True, exist_ok=True)
@@ -114,6 +131,9 @@ def capture(src, outdir, frames=30, width=1280, sheet="3x4"):
 
 
 def selftest():
+    assert release("2026.08.19\n") == release(YT_DLP_MIN) == (2026, 8, 19)
+    assert release("2026.08.19.232012") > release(YT_DLP_MIN) > release("2025.11.12")
+    assert release("unknown") is None and release("") is None
     need("ffmpeg")
     with tempfile.TemporaryDirectory() as tmp:
         clip = Path(tmp) / "clip.mp4"

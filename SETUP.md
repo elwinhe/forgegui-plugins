@@ -16,7 +16,7 @@ The ForgeGUI account key is separate from a Claude or Codex subscription and fro
 
 This package targets the ForgeGUI production project at `azyjlkhpdgafuobyxoax.supabase.co`; confirm it before installation by opening `plugins/forgegui-roblox-builder/.mcp.json` and reading the `url`. Use production credentials: staging keys do not authenticate production requests. Verify the production account and credit balance before paid work. Do not hand-edit that URL to repoint the bundle; a package for a different environment must be rebuilt from source against a reviewed endpoint.
 
-**Upgrading from staging:** version `1.9.0` uses production. Update the `forgegui` marketplace and `mcp@forgegui` plugin, replace the saved staging key through `/plugin configure mcp@forgegui`, and start a new session. Staging credentials and balances do not transfer to production. Run the free discovery check below before generating.
+**Upgrading from staging:** version `1.9.0` and later use production. Update the `forgegui` marketplace and `mcp@forgegui` plugin, replace the saved staging key through `/plugin configure mcp@forgegui`, and start a new session. Staging credentials and balances do not transfer to production. Run the free discovery check below before generating.
 
 Before installing, disable or remove any manually configured ForgeGUI MCP connection in the client. Record its name and settings first so you can roll back. Running the bundled and manual definitions together can produce duplicate connections or ambiguous tool names.
 

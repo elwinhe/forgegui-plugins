@@ -66,8 +66,10 @@ and a free production search do not prove these Studio acceptance steps.
 
 When this package is behind the latest release, ForgeGUI says so in its tool
 description and Codex recommends updating. Tools keep working on the installed
-version. To update, build the new package from the latest `release/claude-mcp-v1`
-branch of https://github.com/elwinhe/forgegui-plugins with
+version. To update, pull the latest `release/claude-mcp-v1` branch of
+https://github.com/elwinhe/forgegui-plugins, move any previous
+`dist/openai/codex/forgegui-roblox-builder` build aside (`build` refuses to
+overwrite a package whose contents changed), and run
 `python3 release/openai_package.py build --mode codex`. Move the installed
 `~/.agents/skills/forgegui-roblox-builder` outside the discovery directory as a
 rollback copy, install the new skill (step 4), replace the `[mcp_servers.forgegui]`

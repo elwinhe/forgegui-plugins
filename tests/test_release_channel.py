@@ -89,19 +89,23 @@ class VersionHeaderTests(unittest.TestCase):
             self.assertEqual(release.set_channel("production", "9.8.7"), 0)
         headers = self.server()["headers"]
         self.assertEqual(headers[release.VERSION_HEADER], "9.8.7")
+        self.assertEqual(headers[release.CLIENT_HEADER], "claude-code")
         self.assertEqual(headers["Authorization"], "Bearer ${user_config.forgegui_api_key}")
         self.assertEqual(release.channel_problems(), [])
 
     def test_missing_or_stale_header_fails_check(self):
-        for value in (None, "0.0.1"):
-            with self.subTest(value=value):
+        for name, value in ((release.VERSION_HEADER, None), (release.VERSION_HEADER, "0.0.1"),
+                            (release.CLIENT_HEADER, None), (release.CLIENT_HEADER, "codex")):
+            with self.subTest(header=name, value=value):
+                with contextlib.redirect_stdout(io.StringIO()):
+                    release.set_channel("production", "9.8.7")
                 mcp = release.load(release.MCP_JSON)
                 headers = mcp["mcpServers"][release.CONFIG["mcp_server"]]["headers"]
-                headers.pop(release.VERSION_HEADER, None)
+                headers.pop(name)
                 if value:
-                    headers[release.VERSION_HEADER] = value
+                    headers[name] = value
                 release.MCP_JSON.write_text(json.dumps(mcp))
-                self.assertTrue(any(release.VERSION_HEADER in p for p in release.channel_problems()))
+                self.assertTrue(any(name in p for p in release.channel_problems()))
 
 
 if __name__ == "__main__":

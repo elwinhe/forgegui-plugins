@@ -28,7 +28,13 @@ class OpenAIPackageTests(unittest.TestCase):
         claude = json.loads((ROOT / 'plugins' / package.NAME / '.mcp.json').read_text())
         self.assertEqual(config['url'], claude['mcpServers']['forgegui']['url'])
         self.assertEqual(config['bearer_token_env_var'], 'FORGEGUI_API_KEY')
-        self.assertEqual(set(config), {'url', 'bearer_token_env_var'})
+        self.assertEqual(set(config), {'url', 'bearer_token_env_var', 'http_headers'})
+        version = json.loads((ROOT / 'plugins' / package.NAME / '.claude-plugin/plugin.json').read_text())['version']
+        self.assertEqual(config['http_headers'], {'X-ForgeGUI-Plugin-Version': version,
+                                                  'X-ForgeGUI-Plugin-Client': 'codex'})
+        self.assertEqual(json.loads(files['.codex-plugin/plugin.json'])['version'], version)
+        self.assertEqual({k: v for k, v in claude['mcpServers']['forgegui']['headers'].items() if k != 'Authorization'},
+                         {'X-ForgeGUI-Plugin-Version': version, 'X-ForgeGUI-Plugin-Client': 'claude-code'})
         self.assertNotIn('mcp.json', files)
         self.assertNotIn('.mcp.json', files)
         self.assertNotIn('mcpServers', json.loads(files['.codex-plugin/plugin.json']))
@@ -48,8 +54,11 @@ class OpenAIPackageTests(unittest.TestCase):
 
     def test_codex_explicit_staging_and_hosted_release_boundaries(self):
         files = package.expected_files(channel='staging-beta', mode='codex')
-        self.assertEqual(tomllib.loads(files['codex-config.toml'].decode())['mcp_servers']['forgegui']['url'],
-                         json.loads(self.files['mcp.json'])['mcpServers']['forgegui']['url'])
+        staging = tomllib.loads(files['codex-config.toml'].decode())['mcp_servers']['forgegui']
+        self.assertEqual(staging['url'], json.loads(self.files['mcp.json'])['mcpServers']['forgegui']['url'])
+        self.assertEqual(staging['http_headers']['X-ForgeGUI-Plugin-Version'],
+                         json.loads(files['.codex-plugin/plugin.json'])['version'])
+        self.assertNotIn('headers', json.loads(self.files['.mcp.json'])['mcpServers']['forgegui'])
         for channel in ('production', 'staging-beta'):
             with self.subTest(channel=channel), self.assertRaisesRegex(ValueError, 'OAuth'):
                 package.expected_files(channel=channel, mode='submission')

@@ -43,6 +43,10 @@ and follow [the Codex setup guide](release/openai/CODEX.md). Authentication uses
 `FORGEGUI_API_KEY` through Codex's native bearer-token configuration; no OAuth
 or backend deployment is needed. Studio remains a separate local connection.
 Live Studio import and playback require the documented acceptance checks.
+The packaged `codex-config.toml` table sends the package version and
+`X-ForgeGUI-Plugin-Client: codex`, so ForgeGUI tells Codex when the package is
+behind; the guide's Update section lists the steps. A server added with
+`codex mcp add` sends neither header and gets no update notices.
 
 ## OpenAI release preview
 
@@ -60,7 +64,7 @@ This builder does not change or install the Claude package.
 
 `release/release_channel.py set <channel> --version <semver>` rewrites the bundled endpoint, both manifest versions and both descriptions together, and refuses a channel marked unavailable. Staging releases use `X.Y.Z-beta.N` and the `Staging beta:` description prefix; production releases use plain `X.Y.Z` and must never point at the staging host. `check` also audits the installed package for caches, machine-specific paths and links that escape the plugin directory. CI runs it with `claude plugin validate` on every pull request.
 
-Release steps: bump through `set`, update the root and installed READMEs with the selected version, channel, endpoint and key guidance, and record the change in [CHANGELOG.md](CHANGELOG.md). `set` also writes the `X-ForgeGUI-Plugin-Version` header in `.mcp.json`, and `check` fails when it drifts from the manifest version. After review and merge, tag the merged commit with `claude plugin tag plugins/forgegui-roblox-builder --push`, verify the remote tag and a fresh-profile install, then set `FORGEGUI_CLAUDE_PLUGIN_LATEST_VERSION` to the new version on the channel's Supabase project (production: `azyjlkhpdgafuobyxoax`; staging: `vzzqjekupwutoaasswwd`). Older installs then get ForgeGUI's update notice, and until the secret is set they get none. Announce the release after that.
+Release steps: bump through `set`, update the root and installed READMEs with the selected version, channel, endpoint and key guidance, and record the change in [CHANGELOG.md](CHANGELOG.md). `set` also writes the `X-ForgeGUI-Plugin-Version` and `X-ForgeGUI-Plugin-Client: claude-code` headers in `.mcp.json`, and `check` fails when either drifts. The Codex package takes the same version from `plugin.json` and sends `X-ForgeGUI-Plugin-Client: codex`. After review and merge, tag the merged commit with `claude plugin tag plugins/forgegui-roblox-builder --push`, verify the remote tag and a fresh-profile install, then set `FORGEGUI_MCP_PLUGIN_LATEST_VERSION` to the new version on the channel's Supabase project (production: `azyjlkhpdgafuobyxoax`; staging: `vzzqjekupwutoaasswwd`). Older Claude and Codex installs then get ForgeGUI's update notice, and until the secret is set they get none. Announce the release after that.
 
 ## Update or uninstall
 

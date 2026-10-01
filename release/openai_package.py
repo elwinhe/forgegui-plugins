@@ -13,6 +13,9 @@ NAME = "forgegui-roblox-builder"
 SOURCE = Path("plugins") / NAME / "skills" / NAME
 DEFAULT_OUTPUT = ROOT / "dist/openai" / NAME
 SCHEMA = "https://agent-plugins.org/schemas/1.0.0/"
+# Same headers as the Claude plugin's .mcp.json; ForgeGUI uses them for update notices.
+VERSION_HEADER = "X-ForgeGUI-Plugin-Version"
+CLIENT_HEADER = "X-ForgeGUI-Plugin-Client"
 
 
 def encoded(value):
@@ -91,6 +94,8 @@ def expected_files(root=ROOT, channel=None, mode="preview"):
             '[mcp_servers.forgegui]\n'
             f'url = {json.dumps(selected["mcp_url"])}\n'
             'bearer_token_env_var = "FORGEGUI_API_KEY"\n'
+            f'http_headers = {{ {json.dumps(VERSION_HEADER)} = {json.dumps(version)}, '
+            f'{json.dumps(CLIENT_HEADER)} = "codex" }}\n'
         ).encode()
         result["README.md"] = (root / "release/openai/CODEX.md").read_bytes()
         skill_path = f"skills/{NAME}/SKILL.md"

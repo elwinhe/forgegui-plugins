@@ -29,7 +29,7 @@ The package includes shell and Python scripts. Its Bash Stop hook runs when Clau
 
 - Prompts, references and tool arguments you send through the `forgegui` server go to ForgeGUI. ForgeGUI forwards generation inputs to its AI generation providers to produce the requested assets.
 - Generation tools spend ForgeGUI credits. Publishing tools create assets on Roblox under the ForgeGUI publishing connection you select; Roblox moderation applies.
-- Your ForgeGUI key is sent only as the `Authorization` header to the configured ForgeGUI endpoint. Each request also sends this plugin's version as `X-ForgeGUI-Plugin-Version`, which contains no account or machine data, so ForgeGUI can tell Claude when a newer plugin release is available. Roblox publishing keys belong only in ForgeGUI settings, never in MCP arguments, chat or project files.
+- Your ForgeGUI key is sent only as the `Authorization` header to the configured ForgeGUI endpoint. Each request also sends this plugin's version as `X-ForgeGUI-Plugin-Version` and `claude-code` as `X-ForgeGUI-Plugin-Client`, which contain no account or machine data, so ForgeGUI can tell Claude when a newer plugin release is available. Roblox publishing keys belong only in ForgeGUI settings, never in MCP arguments, chat or project files.
 - Studio actions run through the separate Roblox Studio MCP, on your machine, under your Studio session.
 
 ## Support and policies

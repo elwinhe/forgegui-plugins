@@ -31,6 +31,15 @@ Enable the separate official Roblox Studio MCP server with the exact Quick Conne
 
 Before a manual paid end-to-end test, select the intended Studio place, confirm a bounded asset count and budget, and verify an import route for the expected format. Generate one asset with a stable `request_id`, retain its `job_id`, poll `generation_status` to a terminal result, and never automatically retry `outcome_unknown`. Verify the artifact before import, then record the imported asset ID or instance path and inspect the saved Edit-mode result. The bundled skill distinguishes reported import routes from tools actually exposed by the connected server; do not claim generation proves import or gameplay.
 
+## Codex production support
+
+Local Codex uses the same production MCP endpoint and shared generation and
+publishing skill as Claude. Build with `python3 release/openai_package.py build --mode codex`
+and follow [the Codex setup guide](release/openai/CODEX.md). Authentication uses
+`FORGEGUI_API_KEY` through Codex's native bearer-token configuration; no OAuth
+or backend deployment is needed. Studio remains a separate local connection.
+Live Studio import and playback require the documented acceptance checks.
+
 ## OpenAI release preview
 
 The separate OpenAI skills + remote MCP artifact is built with

@@ -4,6 +4,7 @@ import importlib.util
 import json
 from pathlib import Path
 import tempfile
+import tomllib
 import unittest
 from unittest.mock import patch
 from jsonschema import Draft202012Validator
@@ -20,6 +21,42 @@ class OpenAIPackageTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.output = Path(self.temp.name) / package.NAME
         self.files = package.expected_files()
+
+    def test_codex_production_native_auth_and_shared_workflow(self):
+        files = package.expected_files(mode='codex')
+        config = tomllib.loads(files['codex-config.toml'].decode())['mcp_servers']['forgegui']
+        claude = json.loads((ROOT / 'plugins' / package.NAME / '.mcp.json').read_text())
+        self.assertEqual(config['url'], claude['mcpServers']['forgegui']['url'])
+        self.assertEqual(config['bearer_token_env_var'], 'FORGEGUI_API_KEY')
+        self.assertEqual(set(config), {'url', 'bearer_token_env_var'})
+        self.assertNotIn('mcp.json', files)
+        self.assertNotIn('.mcp.json', files)
+        self.assertNotIn('mcpServers', json.loads(files['.codex-plugin/plugin.json']))
+        for path, data in self.files.items():
+            if path.startswith('skills/') and not path.endswith('/SKILL.md'):
+                self.assertEqual(files[path], data, path)
+        skill = files[f'skills/{package.NAME}/SKILL.md'].decode()
+        self.assertIn('FORGEGUI_API_KEY', skill)
+        self.assertNotIn('This is a staging beta preview', skill)
+        self.assertIn('There is no Stop hook', skill)
+        self.assertEqual(json.loads(files['provenance.json'])['channel'], 'production')
+        schema = json.loads((ROOT / 'tests/schemas/openai-plugin.schema.json').read_text())
+        Draft202012Validator(schema).validate(json.loads(files['plugin.json']))
+        package.build(self.output, files)
+        package.check(self.output, files)
+        package.build(self.output, files)
+
+    def test_codex_explicit_staging_and_hosted_release_boundaries(self):
+        files = package.expected_files(channel='staging-beta', mode='codex')
+        self.assertEqual(tomllib.loads(files['codex-config.toml'].decode())['mcp_servers']['forgegui']['url'],
+                         json.loads(self.files['mcp.json'])['mcpServers']['forgegui']['url'])
+        for channel in ('production', 'staging-beta'):
+            with self.subTest(channel=channel), self.assertRaisesRegex(ValueError, 'OAuth'):
+                package.expected_files(channel=channel, mode='submission')
+        with self.assertRaisesRegex(ValueError, 'OAuth'):
+            package.expected_files(channel='production', mode='preview')
+        with self.assertRaisesRegex(ValueError, 'OAuth'):
+            package.expected_files(channel='production', mode='typo')
 
     def test_repeated_and_independent_builds_identical(self):
         package.build(self.output, self.files)

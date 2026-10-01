@@ -1,0 +1,32 @@
+{
+  "manifest_version": "0.3",
+  "name": "forgegui",
+  "display_name": "ForgeGUI",
+  "version": "1.0.0",
+  "description": "Generate and manage Roblox assets with your production ForgeGUI account.",
+  "long_description": "Connects to ForgeGUI production. Generation uses your ForgeGUI credits. Roblox Studio requires a separate connection; this extension does not include Claude Code skills or terminal helpers.",
+  "author": { "name": "ForgeGUI", "url": "https://forgegui.com" },
+  "homepage": "https://forgegui.com",
+  "repository": { "type": "git", "url": "https://github.com/elwinhe/forgegui-plugins" },
+  "server": {
+    "type": "node",
+    "entry_point": "server/index.mjs",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/server/index.mjs"],
+      "env": { "FORGEGUI_API_KEY": "${user_config.forgegui_api_key}" }
+    }
+  },
+  "tools_generated": true,
+  "prompts_generated": true,
+  "compatibility": { "platforms": ["darwin", "win32"], "runtimes": { "node": ">=22" } },
+  "user_config": {
+    "forgegui_api_key": {
+      "type": "string",
+      "title": "Production ForgeGUI API key",
+      "description": "Create a production key at forgegui.com, Profile → MCP API keys. Start with library:read for free verification. This is not a Roblox Open Cloud key.",
+      "required": true,
+      "sensitive": true
+    }
+  }
+}

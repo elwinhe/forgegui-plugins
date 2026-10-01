@@ -8,6 +8,10 @@ This repository is a Claude Code marketplace. It targets the production ForgeGUI
 
 Create the key in production ForgeGUI **Profile → MCP API keys**. Use `library:read` for free discovery, add `generation:read` only to inspect account-owned jobs, and add `generation:write` only when paid generation is intended and authorized. Generation requires sufficient ForgeGUI credits. The key is separate from the Claude subscription and from the Roblox Studio connection.
 
+## Claude Desktop
+
+The separate [Desktop extension](desktop/README.md) builds `forgegui.mcpb` with a masked production API-key setting. Download the installer from the Desktop extension CI artifact after review. Studio remains a separate connection; Claude Code skills and local scripts are not included. Desktop installation acceptance is still pending.
+
 ## Install
 
 Remove or disable any existing manual ForgeGUI MCP entry first, while keeping a rollback copy of its settings.

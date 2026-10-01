@@ -1,0 +1,37 @@
+name: Desktop extension
+on:
+  pull_request:
+    paths: ['desktop/**', 'release/channels.json', 'plugins/forgegui-roblox-builder/.mcp.json', '.github/workflows/desktop-extension.yml']
+  push:
+    branches: [release/claude-mcp-v1]
+    paths: ['desktop/**', 'release/channels.json', 'plugins/forgegui-roblox-builder/.mcp.json', '.github/workflows/desktop-extension.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - run: npm ci
+        working-directory: desktop
+      - run: npm test
+        working-directory: desktop
+      - run: npm run build
+        working-directory: desktop
+      - run: npm run test:bundle
+        working-directory: desktop
+      - uses: actions/upload-artifact@v4
+        with:
+          name: forgegui-desktop
+          path: |
+            dist/forgegui.mcpb
+            dist/forgegui.mcpb.sha256
+          if-no-files-found: error

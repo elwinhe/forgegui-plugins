@@ -75,6 +75,50 @@ class LocalPlaceIdentityTests(unittest.TestCase):
         self.assertEqual(original["run"], {"run_id": "old"})
         self.assertNotIn(original["local_place_id"], helper.probe_source())
 
+    def test_manifest_merges_selection_and_preserves_nested_extensions(self):
+        original = {"local_place_id": LOCAL, "run": {"run_id": "active"},
+                    "runs": [{"run_id": "archived"}], "place_context": {
+                        "studio_id": "old-studio", "checked_at": "old-time",
+                        "extension": {"enabled": True}, "place_id": "123",
+                        "universe_id": "456", "name": "Old place"}}
+        selection = {"studio_id": "new-studio", "checked_at": "new-time",
+                     "caller_extension": {"value": 1}, "local_place_id": "stale",
+                     "place_id": "999", "universe_id": "888", "name": "Stale"}
+        before = copy.deepcopy(original)
+        selection_before = copy.deepcopy(selection)
+        result = helper.mirror_manifest(original, self.probe(place_id="789"), selection)
+        self.assertEqual(result["place_context"], {
+            "studio_id": "new-studio", "checked_at": "new-time",
+            "extension": {"enabled": True}, "caller_extension": {"value": 1},
+            "local_place_id": LOCAL, "place_id": "789", "name": "Local place"})
+        self.assertEqual(result["run"], original["run"])
+        self.assertEqual(result["runs"], original["runs"])
+        result["place_context"]["extension"]["enabled"] = False
+        result["place_context"]["caller_extension"]["value"] = 2
+        self.assertEqual(original, before)
+        self.assertEqual(selection, selection_before)
+
+    def test_manifest_removes_stale_ids_and_keeps_additive_ledger(self):
+        old_run = {"run_id": "old"}
+        original = {"local_place_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+                    "run": old_run, "runs": [{"run_id": "earlier"}],
+                    "assets": [{"job_id": "old-job"}], "place_context": {
+                        "place_id": "123", "universe_id": "456", "extension": 1}}
+        for probe in (self.probe(), self.probe(place_id="0", universe_id="0")):
+            result = helper.mirror_manifest(original, probe)
+            self.assertEqual(result["place_context"], {
+                "local_place_id": LOCAL, "name": "Local place", "extension": 1})
+            self.assertEqual(result["runs"], [{"run_id": "earlier"}, old_run])
+            self.assertIsNone(result["run"])
+            self.assertEqual(result["assets"], original["assets"])
+        self.assertEqual(original["runs"], [{"run_id": "earlier"}])
+
+    def test_manifest_accepts_null_or_missing_context(self):
+        for original in ({}, {"place_context": None}):
+            result = helper.mirror_manifest(original, self.probe(), {"studio_id": "selected"})
+            self.assertEqual(result["place_context"], {
+                "local_place_id": LOCAL, "name": "Local place", "studio_id": "selected"})
+
     def test_shipped_luau_lifecycle(self):
         subprocess.run(["lune", "run", "tests/local-place-identity.luau"], cwd=ROOT, check=True,
                        capture_output=True, text=True)

@@ -55,7 +55,7 @@ def run_arguments(probe, live_schema, request_id, name):
     return result
 
 
-def mirror_manifest(manifest, probe):
+def mirror_manifest(manifest, probe, selection_metadata=None):
     """Mirror only a fresh observation; preserve all old receipts and extensions."""
     context = observed_context(probe)
     result = copy.deepcopy(manifest)
@@ -63,7 +63,12 @@ def mirror_manifest(manifest, probe):
         result.setdefault("runs", []).append(result["run"])
         result["run"] = None
     result["local_place_id"] = context["local_place_id"]
-    result["place_context"] = context
+    place_context = result.get("place_context") or {}
+    place_context.update(copy.deepcopy(selection_metadata or {}))
+    for field in ("local_place_id", "place_id", "universe_id", "name"):
+        place_context.pop(field, None)
+    place_context.update(context)
+    result["place_context"] = place_context
     return result
 
 

@@ -157,7 +157,10 @@ authorize a retry. Publication is not insertion or verified experience access.
 Extend ledger v2 additively; preserve receipts and unknown fields. Use local
 `place_context` for the freshly observed studio ID, local UUID, string IDs, label
 and check time. Mirror the observed UUID to top-level `local_place_id` in
-`forgegui-project.json` with `mirror_manifest`; the attribute always wins. Never
+`forgegui-project.json` with `mirror_manifest(manifest, probe, selection_metadata)`;
+pass the fresh `studio_id` and check time in `selection_metadata`. Existing nested
+extensions survive; observed identity fields replace cached values, and absent
+Roblox IDs are removed. The attribute always wins. Never
 inject a manifest UUID into a blank/different place. A changed observed UUID
 archives the prior active run; old operation receipts stay unchanged. Keep `run` as the active session cache, archive prior caches in `runs`, and
 retain original run IDs on each operation (generation, preparation, publication).

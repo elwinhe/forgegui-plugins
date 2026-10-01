@@ -25,6 +25,11 @@ unauthenticated connection or a credential embedded in an archive.
    it. Merge the packaged `codex-config.toml` table into `~/.codex/config.toml`,
    replacing an existing `[mcp_servers.forgegui]` table rather than duplicating it.
    Do not replace the entire user configuration or remove the Studio connection.
+   The table also sends this package's version and `codex` as the
+   `X-ForgeGUI-Plugin-Version` and `X-ForgeGUI-Plugin-Client` headers, which
+   contain no account or machine data, so ForgeGUI can tell Codex when a newer
+   package is available. A server added with `codex mcp add` sends neither header
+   and gets no update notices; replace it with this table.
 4. From this extracted package directory, copy the shared skill to Codex's user
    skill directory. The command refuses to overwrite an existing skill:
 
@@ -56,6 +61,21 @@ publication tools and pinned receipts as Claude. Verify insertion and orientatio
 in the selected Studio place; for audio, verify experience access and actual
 playback. Never automatically retry ambiguous paid requests. Package validation
 and a free production search do not prove these Studio acceptance steps.
+
+## Update
+
+When this package is behind the latest release, ForgeGUI says so in its tool
+description and Codex recommends updating. Tools keep working on the installed
+version. To update, pull the latest `release/claude-mcp-v1` branch of
+https://github.com/elwinhe/forgegui-plugins, move any previous
+`dist/openai/codex/forgegui-roblox-builder` build aside (`build` refuses to
+overwrite a package whose contents changed), and run
+`python3 release/openai_package.py build --mode codex`. Move the installed
+`~/.agents/skills/forgegui-roblox-builder` outside the discovery directory as a
+rollback copy, install the new skill (step 4), replace the `[mcp_servers.forgegui]`
+table with the new `codex-config.toml` (step 3), and restart Codex. Replace the
+table as well as the skill: the table carries the version ForgeGUI checks, so
+skipping it keeps the notice showing.
 
 ## Build and rollback
 

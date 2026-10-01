@@ -1,4 +1,7 @@
+import contextlib
 import importlib.util
+import io
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -57,6 +60,52 @@ class PackageBoundaryTests(unittest.TestCase):
                     self.assertTrue(any(expected in p for p in problems))
                 else:
                     self.assertEqual(problems, [])
+
+
+class VersionHeaderTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        root = Path(self.temp.name)
+        for name in ("ROOT", "PLUGIN", "PLUGIN_JSON", "MCP_JSON", "MARKETPLACE_JSON", "CONFIG"):
+            self.addCleanup(setattr, release, name, getattr(release, name))
+        for source in (release.PLUGIN_JSON, release.MCP_JSON, release.MARKETPLACE_JSON,
+                       release.ROOT / "release/channels.json"):
+            target = root / source.relative_to(release.ROOT)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(source.read_text())
+        release.ROOT = root
+        release.PLUGIN = root / release.CONFIG["plugin_dir"]
+        release.PLUGIN_JSON = release.PLUGIN / ".claude-plugin/plugin.json"
+        release.MCP_JSON = release.PLUGIN / ".mcp.json"
+        release.MARKETPLACE_JSON = root / ".claude-plugin/marketplace.json"
+        release.CONFIG = json.loads((root / "release/channels.json").read_text())
+
+    def server(self):
+        return release.load(release.MCP_JSON)["mcpServers"][release.CONFIG["mcp_server"]]
+
+    def test_set_writes_version_header_beside_the_key(self):
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(release.set_channel("production", "9.8.7"), 0)
+        headers = self.server()["headers"]
+        self.assertEqual(headers[release.VERSION_HEADER], "9.8.7")
+        self.assertEqual(headers[release.CLIENT_HEADER], "claude-code")
+        self.assertEqual(headers["Authorization"], "Bearer ${user_config.forgegui_api_key}")
+        self.assertEqual(release.channel_problems(), [])
+
+    def test_missing_or_stale_header_fails_check(self):
+        for name, value in ((release.VERSION_HEADER, None), (release.VERSION_HEADER, "0.0.1"),
+                            (release.CLIENT_HEADER, None), (release.CLIENT_HEADER, "codex")):
+            with self.subTest(header=name, value=value):
+                with contextlib.redirect_stdout(io.StringIO()):
+                    release.set_channel("production", "9.8.7")
+                mcp = release.load(release.MCP_JSON)
+                headers = mcp["mcpServers"][release.CONFIG["mcp_server"]]["headers"]
+                headers.pop(name)
+                if value:
+                    headers[name] = value
+                release.MCP_JSON.write_text(json.dumps(mcp))
+                self.assertTrue(any(name in p for p in release.channel_problems()))
 
 
 if __name__ == "__main__":

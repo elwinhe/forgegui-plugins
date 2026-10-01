@@ -6,6 +6,11 @@
 
 `check` also audits what an installation copies: no caches, no links or paths
 that escape the plugin directory. `set` refuses unavailable channels.
+
+The bundled server sends the package version as `X-ForgeGUI-Plugin-Version` and
+`X-ForgeGUI-Plugin-Client: claude-code`, so ForgeGUI can tell Claude when an
+install is behind the latest release and which update steps apply. `set` writes
+both; `check` fails when either drifts.
 """
 import argparse
 import json
@@ -20,6 +25,9 @@ PLUGIN = ROOT / CONFIG["plugin_dir"]
 PLUGIN_JSON = PLUGIN / ".claude-plugin/plugin.json"
 MCP_JSON = PLUGIN / ".mcp.json"
 MARKETPLACE_JSON = ROOT / ".claude-plugin/marketplace.json"
+VERSION_HEADER = "X-ForgeGUI-Plugin-Version"
+CLIENT_HEADER = "X-ForgeGUI-Plugin-Client"
+CLIENT = "claude-code"
 BASE_DESCRIPTION = "Build Roblox experiences with ForgeGUI assets and the official Roblox Studio MCP."
 CACHE_PARTS = {"__pycache__", ".pytest_cache", ".test-deps", "node_modules", ".DS_Store"}
 LINK = re.compile(r"\]\(([^)#\s]+)(?:#[^)]*)?\)")
@@ -76,11 +84,17 @@ def channel_problems():
         problems.append(f"active channel '{name}' is unavailable: {channel.get('blocked_reason', '')}")
     plugin = load(PLUGIN_JSON)
     market = entry(load(MARKETPLACE_JSON))
-    url = load(MCP_JSON)["mcpServers"][CONFIG["mcp_server"]]["url"]
+    server = load(MCP_JSON)["mcpServers"][CONFIG["mcp_server"]]
+    url = server["url"]
     if url != channel["mcp_url"]:
         problems.append(f".mcp.json url {url} does not match channel '{name}' ({channel['mcp_url']})")
     if name == "production" and urlparse(url).hostname in CONFIG["forbidden_production_hosts"]:
         problems.append(f"production channel points at a staging host: {url}")
+    headers = server.get("headers", {})
+    if headers.get(VERSION_HEADER) != plugin["version"]:
+        problems.append(f".mcp.json {VERSION_HEADER} header {headers.get(VERSION_HEADER)!r} != plugin.json version {plugin['version']}")
+    if headers.get(CLIENT_HEADER) != CLIENT:
+        problems.append(f".mcp.json {CLIENT_HEADER} header {headers.get(CLIENT_HEADER)!r} != {CLIENT!r}")
     if plugin["version"] != market.get("version"):
         problems.append(f"plugin.json version {plugin['version']} != marketplace version {market.get('version')}")
     if not re.match(channel["version_pattern"], plugin["version"]):
@@ -112,7 +126,9 @@ def set_channel(name, version):
         raise SystemExit(f"version {version} does not match {channel['version_pattern']}")
     description = channel["description_prefix"] + BASE_DESCRIPTION
     mcp = load(MCP_JSON)
-    mcp["mcpServers"][CONFIG["mcp_server"]]["url"] = channel["mcp_url"]
+    server = mcp["mcpServers"][CONFIG["mcp_server"]]
+    server["url"] = channel["mcp_url"]
+    server.setdefault("headers", {}).update({VERSION_HEADER: version, CLIENT_HEADER: CLIENT})
     plugin = load(PLUGIN_JSON)
     plugin.update(version=version, description=description)
     market = load(MARKETPLACE_JSON)

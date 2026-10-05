@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.9.4 — production
+
+- ForgeGUI 3D is now the default for every object the player sees whenever a generation route exists, including small props, furniture and background set dressing. Before this change the default covered identity assets and close-up props, the skill called generating every scene object "the expensive failure", and its plan example built a campfire log from Roblox parts.
+- The intake spend question recommends a number sized to the build: one generation for each distinct object plus the main surface materials. It recommends 0 only when the user has already declined paid generation.
+- Roblox parts and terrain stay for ground and structure shape, collision, triggers, the grey-box layout and backdrops the player can never reach. Main surfaces keep their ForgeGUI materials. Minor surfaces (a trim, a small or rarely seen patch) can stay on a Roblox material by judgment and are not logged as blockouts.
+- The typical kit grows from 8-20 to 10-30 props, stated as a typical range rather than a cap.
+- Guidance only: no scripts, MCP endpoint or tool contract changes. The OpenAI staging preview keeps its `1.9.0-beta.1` label.
+
 ## 1.9.3 — production
 
 - The bundled `forgegui` server sends the plugin version as `X-ForgeGUI-Plugin-Version` and `claude-code` as `X-ForgeGUI-Plugin-Client` on every request. ForgeGUI compares the version with the latest release. When an install is behind, ForgeGUI's MCP instructions tell Claude to recommend the update once, with the update commands, without blocking the request.

@@ -1,6 +1,6 @@
 # ForgeGUI Roblox Builder
 
-**Version 1.9.3 — production.** This package targets ForgeGUI's production project (`azyjlkhpdgafuobyxoax.supabase.co`). Use a production MCP API key from https://forgegui.com (**Profile → MCP API keys**); staging keys do not authenticate production requests. Existing staging users must update `mcp@forgegui`, replace their saved key through `/plugin configure mcp@forgegui`, and start a new session. Verify free discovery and the intended production account and credit balance before generation. Actual publication and Studio import require separate verification.
+**Version 1.9.4 — production.** This package targets ForgeGUI's production project (`azyjlkhpdgafuobyxoax.supabase.co`). Use a production MCP API key from https://forgegui.com (**Profile → MCP API keys**); staging keys do not authenticate production requests. Existing staging users must update `mcp@forgegui`, replace their saved key through `/plugin configure mcp@forgegui`, and start a new session. Verify free discovery and the intended production account and credit balance before generation. Actual publication and Studio import require separate verification.
 
 The plugin helps Claude Code build Roblox Studio experiences with ForgeGUI-generated assets. It coordinates two separate MCP connections: ForgeGUI (bundled here) for generation, search, preparation and publication, and the official Roblox Studio MCP (configured separately in Studio) for inspecting, editing, inserting and playtesting.
 

@@ -1,13 +1,15 @@
-# 3D assets: generate the identity, build the structure
+# 3D assets: generate the objects, build the structure
 
 A game reads as finished or as a blockout mostly through its 3D assets. A
 realistic team shooter built through the Studio MCP (a rail-yard map, five
 weapons) played well and still looked like a prototype: every weapon, prop and
 vehicle was assembled from boxes and cylinders. ForgeGUI's `generation_model_3d`
-exists to close that gap. Use it for every asset that gives the game its
-identity, and keep Roblox primitives for what primitives do well: shape, not
-surface. Floors, docks and terrain stay script-built, but the surfaces players
-see get ForgeGUI materials rather than stock Roblox ones.
+exists to close that gap. Use it for every object the player sees whenever a
+generation route exists, small and background props included, and keep Roblox
+primitives for what is not an object: the shape of ground and structure,
+gameplay geometry and backdrops the player can never reach. Floors, docks and
+terrain stay script-built, and their main surfaces get ForgeGUI materials
+rather than stock Roblox ones.
 
 Publishing and animation inputs below were checked against the
 [backend contract at `9815cfa`](https://github.com/farewellagain18-byte/gitreposit/blob/9815cfa2096f4d5ac755b337348b9a282f2c7743/docs/mcp/tool-contract.json).
@@ -24,33 +26,42 @@ Delivery response handling was checked against
 | Characters, creatures | ForgeGUI; rig and animate only compatible deforming characters | Silhouette and detail carry the art direction; provider rigs require compatibility checks |
 | Rigid gear (helmets, vests, packs) | ForgeGUI, attached or welded in Studio | Moving with a character does not itself require rigging or paid animation |
 | Vehicles, machines, signature props (forklift, generator, crane cab) | ForgeGUI | Landmarks players navigate by |
-| Set dressing seen within ~40 studs (barrels, crates, pallets, benches, lamps) | A generated kit, placed many times | One good crate beats forty box crates |
+| Set dressing, furniture and small props wherever the player can see them (barrels, crates, pallets, benches, lamps, fences, signs) | A generated kit, placed many times | One good crate beats forty box crates |
 | Floors, walls, platforms, docks, stairs, road, terrain | Shape: Roblox parts and terrain. Surface: a ForgeGUI tiled material applied as a MaterialVariant (`textures.md`, `surface-realism.md`) | Collision and layout stay cheap to iterate; a stock material on a surface the player walks on reads as a stock Roblox game |
+| Minor surfaces (a trim, a small or rarely seen patch, a surface a Roblox material already suits) | Roblox parts or terrain on a Roblox material, by judgment | Not every surface carries the look; the main ground and main structural surfaces are never minor |
 | Close-up ground that needs relief (cracked earth, gravel, mud) | A generated ground-patch template laid by `GroundScatter` | Terrain cannot displace a texture; only real geometry reads as relief |
 | Terrain dressing (rocks, boulders, driftwood, dock pilings, grass clumps) | A generated kit, scattered behind `KeepOut` | Seen up close like any set dressing |
 | Water | Native terrain water | Reflections and swimming come with it |
 | Collision proxies, spawn markers, triggers | Roblox parts (invisible) | Gameplay geometry, never art |
-| Distant backdrop (skyline, far buildings) | Parts + Textures | Seen from far away; a window Texture per facade costs no triangles |
+| Backdrop the player can never reach (skyline, far buildings) | Parts + Textures | Seen only from far away; a window Texture per facade costs no triangles |
 
-A part-built stand-in, or a surface still on a stock Roblox material, is fine
-as a **blockout**: build it, play-test the layout and gameplay, and log it in
-the asset ledger as `status: "blockout"`. A build is not finished while
-identity assets or player-visible surfaces are still blockouts, unless the user
-declined generation or the import handoff (record which).
+The rule behind the table: an object the player sees is generated whenever a
+generation route exists, meaning ForgeGUI can make that kind of asset and
+"Getting it into Studio" below gives it a way in. Size and distance decide
+`quality` and the triangle budget, not whether to generate. Parts are for
+ground and structure shape, gameplay geometry, the grey-box and backdrops the
+player can never reach.
+
+A part-built stand-in for an object, or a main surface still on a stock Roblox
+material, is fine as a **blockout**: build it, play-test the layout and
+gameplay, and log it in the asset ledger as `status: "blockout"`. A build is
+not finished while visible objects or main surfaces are still blockouts, unless
+the user declined generation or the import handoff (record which).
 
 ## Plan a kit, not a scene
 
 Generate a small kit and place it many times:
 
-- List every identity asset, every dressing prop that appears more than once,
-  and every distinct surface material the player walks on or stands beside.
+- List every distinct object the player will see, single-use props included,
+  and every main surface material the player walks on or stands beside.
   Merge near-duplicates ("wooden crate", "supply crate" → one crate with two
   colours).
 - Typical first pass for a map-based game: 1-5 weapons or held items, 1 character
-  set, 8-20 kit props, 1-3 landmarks, and 2-5 surface materials (one generated
+  set, 10-30 kit props, 1-3 landmarks, and 2-5 surface materials (one generated
   colour tile each) plus a ground-patch template for each material that needs
-  close-up relief. State the count and ask for the budget if it isn't already
-  authorised. These are asset counts, not paid-operation totals.
+  close-up relief. Size the kit to the scene: these ranges describe typical
+  builds and are not a cap. State the count and ask for the budget if it isn't
+  already authorised. These are asset counts, not paid-operation totals.
 - Count the whole pipeline against the approved paid-call ceiling: base models,
   separately generated moving parts, any generated reference images, remeshes,
   rigging, animations, and permitted retries. For example, five weapons plus five
@@ -255,11 +266,13 @@ an artifact ref for published output. Track local status separately (`generated`
 
 ## When primitives are the right answer
 
-Structure, collision, blockouts, and anything the user explicitly wants built in
-Studio. Structure still gets a ForgeGUI surface material unless the user declined
-generation. Primitives and stock materials are not the fallback for "generation is
-paid" or "import needs a click"; those are reasons to ask, not to downgrade
-silently.
+Structure and ground shape, collision, triggers, blockouts, backdrops the player
+can never reach, an asset class with no generation route, and anything the user
+explicitly wants built in Studio. Main structure surfaces still get a ForgeGUI
+material unless the user declined generation; minor surfaces can stay on a
+Roblox material by judgment. Primitives and stock materials are not the fallback
+for "generation is paid", "it is only a small prop" or "import needs a click";
+those are reasons to ask, not to downgrade silently.
 
 ## Establish the publication route
 

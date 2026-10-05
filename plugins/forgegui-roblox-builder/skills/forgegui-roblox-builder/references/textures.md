@@ -9,8 +9,9 @@ Two different things get called "texture", and a build has to keep them apart:
 A build made only of the first kind still looks textured while containing no texturing decision.
 Say which kind a surface uses when it matters.
 
-Every terrain or structure surface the player walks on or stands beside gets a standalone material
-by default (SKILL.md §2); a stock Roblox material there is a blockout, not a finished surface.
+Every main terrain or structure surface the player walks on or stands beside gets a standalone material
+by default (SKILL.md §2); a stock Roblox material there is a blockout, not a finished surface. Minor
+surfaces can stay on a Roblox material by judgment.
 Sections 1-3 make the colour tile, and `surface-realism.md` turns it into a MaterialVariant.
 
 ## 1. Generate

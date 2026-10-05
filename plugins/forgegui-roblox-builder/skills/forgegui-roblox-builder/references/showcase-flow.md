@@ -62,8 +62,8 @@ Decision point: for a small addition to an existing game, the grey-box is the ex
   whose shape is a number in the look-spec comes from primitives in the build script and is textured with
   ForgeGUI tiled materials (`SKILL.md` §2), not generated and not left on stock Roblox materials. Generate every
   object the player sees: the vehicle, the props and set dressing, the pickup, the landmark, plus the HUD art,
-  the sky panorama and the tileable textures. Where a build's genre inverts this (a diorama, a mostly-organic
-  island world), let the look-spec decide.
+  the sky panorama and the tileable textures. Where a build's genre calls for generated structure as well (a
+  diorama, a mostly-organic island world), let the look-spec decide.
 - **Order the spend by what unblocks other work:** concepts and the style card, the sky and ground textures,
   then the hero objects, then set dressing. Generation limits exist (`SKILL.md` §5); the first assets should be
   the ones that let the rest of the build continue while later ones are pending.

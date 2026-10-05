@@ -107,7 +107,7 @@ class PublishingConnectionsGuidanceTests(unittest.TestCase):
 
     def test_new_publication_examples_require_connections_and_legacy_is_replay_only(self):
         pinned = json.loads((ROOT / "tests/backend-preparation-contract.json").read_text())
-        self.assertEqual(pinned["backend_commit"], "3cc98a44aa56fdf12ec697a6c3787e884601ea31")
+        self.assertEqual(pinned["backend_commit"], "5634c6fc29488a92451d98540b2d5992ccdcd290")
         for filename in ["publishing-connections.json", "preparation-requests.json"]:
             cases = json.loads((ROOT / "tests" / filename).read_text())["cases"]
             legacy = []

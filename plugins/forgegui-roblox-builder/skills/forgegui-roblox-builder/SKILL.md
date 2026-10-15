@@ -14,7 +14,7 @@ Questions belong in two places: **once at the start of a project**, and **at the
 
 **Whether to ask.** Ask only when all three hold: the answer changes what gets built, how it looks, or what gets spent; it is not settled by the prompt, an earlier answer, or `decisions` in `forgegui-project.json`; and you cannot find it out yourself. Never ask for facts you can check: connected tools, Studio state, the import route, an existing manifest. If any one fails, state the assumption in one line and build.
 
-**Round one, for a new game or a large feature.** Skip it for a small, fully specified change, or when the request already settles every decision below, including the fidelity pass, which "polished" does not settle.
+**Round one, for a new game or a large feature.** Skip it for a small, fully specified change, or when the request already settles every decision below, including the fidelity pass, which "polished" does not settle. A request written in the shape of the complete opening prompt in `references/intake.md` settles every slot, including the fidelity pass: skip round one, record each line with `by: "user"`, play back the brief and build; a placeholder or missing line is the one question left to ask.
 
 - At most five questions, plus a fidelity pass question asked conditionally when reference availability is not yet known. Five is a ceiling, not a target; ask only what is still open, most consequential first.
 - Use the client's structured question tool when it has one (`AskUserQuestion` in Claude Code). Otherwise number each question, give the likely options, and end with your recommended answer, so "defaults" is a complete reply: `❓ **Q1** - **<title>**: <options>` then `➡️ <recommended answer>`.

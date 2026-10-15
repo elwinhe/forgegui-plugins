@@ -62,6 +62,55 @@ players of that genre take for granted.
 Anything unticked is **out**, and you say so in the brief, so its absence later is a decision the
 user made rather than something you forgot.
 
+## A complete opening prompt
+
+A request can settle every round-one slot itself. When it does, there is nothing left to ask: skip
+round one, record each line in `decisions` with `by: "user"`, play back the brief and build. This
+template is the shape that does it, one line per slot:
+
+```text
+Build a Roblox game that matches the attached references as closely as possible.
+
+Reference: <game name and link>. Attached: at least four screenshots (a wide shot, a ground-level shot, the HUD, mid-action), or a clip or link I own, covering build style, VFX, skybox and GUI. Match them in palette, scale, HUD layout and effects.
+Interface tone: <restrained and flat | ornate and stylised>; menus like <game>.
+Features: <the items you want from the genre checklist, e.g. title screen with my character, lobby, HUD with minimap and kill feed, progression, bots, admin panel, mobile layout>. Anything not listed is out.
+Players: <solo against bots | multiplayer | multiplayer with bots filling empty slots>.
+Spend: paid generation authorized, up to <N> generations. If you need more, tell me the number and wait.
+Finish: polished build, checked screen by screen.
+Fidelity pass: yes, against the attached references. After the report I may ask for another.
+```
+
+| Line | Slot | What it settles |
+| --- | --- | --- |
+| Reference | 1 | A supplied reference, so the likeness claim can be measured (`reference-capture.md`). "I own" is the entitlement statement `scripts/reference_frames.py` needs before it fetches a link. The four shots named are the ones the fidelity pass compares against |
+| Interface tone | 2 | The restrained-or-ornate choice and a named game, so the stock gold-rim prompts are not the default |
+| Features | 3 | The checklist as an explicit list; "anything not listed is out" is the exclusion the brief would otherwise have to state |
+| Players | 4 | Server architecture |
+| Spend | 5 | Paid generation authorized and a numeric ceiling. The second sentence is the escalation path from `fidelity-pass.md`: say the number and wait |
+| Finish | 6 | Polished build, verified screen by screen |
+| Fidelity pass | 7 | Opt-in with a supplied reference: write `opted_in` to `.forgegui-fidelity`. Consent is per session, so "ask for another" after the report is how a second pass is requested |
+
+Users who want a maximal-fidelity build often write the same intent in a looser form: "make it
+exactly like X, no cap on generations, spam fidelity passes until it is perfect, search up as many
+pictures and videos as you need". Read each phrase as the slot it belongs to, and take the template's
+wording rather than the literal instruction:
+
+- **"No cap on generations"** is a spend answer without a number. The ledger needs a numeric
+  ceiling; a pass that needs more states the number and waits. Ask question 5 for the number.
+- **"Spam fidelity passes until perfect"** is a fidelity-pass opt-in. One consented pass already
+  loops compare, fix the biggest gaps, compare again; another pass is a new request after the
+  report, not a standing order.
+- **"Search up pictures and videos"** is a reference answer with nothing supplied. The builder never
+  goes looking for footage. Ask question 1 for a clip, screenshots or a link the user owns.
+- **"Exactly like X"** with nothing attached is a likeness claim that cannot be measured. Without a
+  supplied reference, build to the style words, record `"reference": { "supplied": false }` and
+  make no likeness claim.
+
+A placeholder left in angle brackets, or a line that is missing, is an open slot: ask that question
+and only that one. The template is an opening prompt for a directory with no `forgegui-project.json`.
+On an existing project the same text is a later round: a line that explicitly changes a recorded
+decision supersedes it, and only an ambiguous contradiction earns a question.
+
 ## Later rounds: the start of a prompt
 
 Before acting on each new user message, read it against what is already decided and apply the rule

@@ -1,6 +1,6 @@
 {
-  "backend_commit": "3cc98a44aa56fdf12ec697a6c3787e884601ea31",
-  "export_sha256": "a9884eb85e99fa7d31767760697ab7f1bd25fb672ed99c15e4e7eb66ac08d89b",
+  "backend_commit": "5634c6fc29488a92451d98540b2d5992ccdcd290",
+  "export_sha256": "6fedfbb1b0228605894c552176760cedfef0db976c6bb80a439fc7cfc20223db",
   "schema_version": "1.9.0",
   "tools": [
     {
@@ -1321,6 +1321,11 @@
           },
           "intended_place_id": {
             "$ref": "#/properties/intended_universe_id"
+          },
+          "local_place_id": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
+            "description": "Persistent Studio place UUIDv4; owner-scoped history context, never Roblox authority."
           },
           "external_project_label": {
             "type": "string",

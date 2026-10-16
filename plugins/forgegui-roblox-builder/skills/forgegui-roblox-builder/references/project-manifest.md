@@ -30,6 +30,7 @@ Illustrative IDs below are placeholders, not usable assets. Start a real project
     { "asked": "2026-09-15", "topic": "spend", "answer": "accepted recommendation: paid generation authorized, ceiling 40 paid generations", "by": "defaults" }
   ],
   "run": null,
+  "local_place_id": "12345678-1234-4234-8234-123456789abc",
   "assets": [
     {
       "key": "hud.panel",
@@ -156,3 +157,12 @@ and immutable per-operation bindings. Preserve old `run` data in `runs` before
 replacing the active cache. Never infer the current place from this file or reuse
 another account’s history. Store only returned conversation IDs/URLs; no API keys,
 signed artifact links, or global current-place setting belongs here.
+
+`local_place_id` mirrors the latest selected Edit place's `ServerStorage`
+`ForgeGUI_LocalPlaceId` UUIDv4. The starter manifest leaves it absent until observed;
+never generate it from the ledger or restore a stale value into a blank place.
+`references/tools/local_place_identity.py` provides `mirror_manifest`, preserving
+unknown fields/assets/receipts and archiving an old active run on identity change.
+The attribute, not the manifest, persists identity with a saved `.rbxl`/`.rbxlx`.
+Keep it after publication, record real positive string IDs separately, and use the
+explicit copy/fork workflow in place-context.md for independent projects.

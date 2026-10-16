@@ -71,7 +71,7 @@ class PlaceContextContractTests(unittest.TestCase):
 
     def test_old_schema_rejects_context_instead_of_guessing_support(self):
         schema = copy.deepcopy(TOOLS["run_create"]["input_schema"])
-        for field in ["intended_place_id", "intended_universe_id", "external_project_label"]:
+        for field in ["local_place_id", "intended_place_id", "intended_universe_id", "external_project_label"]:
             del schema["properties"][field]
         self.assertFalse(Draft7Validator(schema).is_valid(EXAMPLE["arguments"]))
         Draft7Validator(schema).validate({"request_id": "legacy-session", "name": "Local asset"})

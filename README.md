@@ -31,6 +31,20 @@ Invoke the workflow with the namespaced skill shown by Claude Code, for example:
 /mcp:forgegui-roblox-builder Build a small prop, checking Studio import support before paid generation.
 ```
 
+To start a game without the intake questions, open a fresh project directory with a prompt that answers every intake slot, one per line. Claude records each line as your decision, plays back a short brief and starts building. Attach the references and replace the angle-bracket placeholders; a placeholder left in is the one question Claude will ask. The line-by-line reasons are in [the intake reference](plugins/forgegui-roblox-builder/skills/forgegui-roblox-builder/references/intake.md#a-complete-opening-prompt).
+
+```text
+/mcp:forgegui-roblox-builder Build a Roblox game that matches the attached references as closely as possible.
+
+Reference: <game name and link>. Attached: at least four screenshots (a wide shot, a ground-level shot, the HUD, mid-action), or a clip or link I own, covering build style, VFX, skybox and GUI. Match them in palette, scale, HUD layout and effects.
+Interface tone: <restrained and flat | ornate and stylised>; menus like <game>.
+Features: <the items you want from the genre checklist, e.g. title screen with my character, lobby, HUD with minimap and kill feed, progression, bots, admin panel, mobile layout>. Anything not listed is out.
+Players: <solo against bots | multiplayer | multiplayer with bots filling empty slots>.
+Spend: paid generation authorized, up to <N> generations. If you need more, tell me the number and wait.
+Finish: polished build, checked screen by screen.
+Fidelity pass: yes, against the attached references. After the report I may ask for another.
+```
+
 Enable the separate official Roblox Studio MCP server with the exact Quick Connect steps in [SETUP.md](./SETUP.md), then restart the session. This package does not configure Studio.
 
 Before a manual paid end-to-end test, select the intended Studio place, confirm a bounded asset count and budget, and verify an import route for the expected format. Generate one asset with a stable `request_id`, retain its `job_id`, poll `generation_status` to a terminal result, and never automatically retry `outcome_unknown`. Verify the artifact before import, then record the imported asset ID or instance path and inspect the saved Edit-mode result. The bundled skill distinguishes reported import routes from tools actually exposed by the connected server; do not claim generation proves import or gameplay.

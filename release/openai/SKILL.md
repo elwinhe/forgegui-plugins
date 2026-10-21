@@ -61,10 +61,11 @@ tenant, ownership, reference, publisher selection and pinned receipt rules.
 Use only the authenticated account's owned jobs/assets and granted scopes;
 never broaden scopes or supply another tenant/account ID to bypass a failure.
 Free discovery uses library:read; owned status needs generation:read; paid
-generation needs generation:write, account entitlement, explicit paid-work
-authorization and a numeric ceiling covering the whole pipeline. Existing
-authorization remains valid within its scope and ceiling; ask before exceeding
-it. Credit cost remains unknown without billing evidence.
+generation needs generation:write, account entitlement and explicit paid-work
+authorization; spend is uncapped by default, so never require a number, and a
+cap applies only when the user set one. Existing authorization remains valid
+within its scope; ask before exceeding a user-set cap. Credit cost remains
+unknown without billing evidence.
 An error_code of insufficient_credits or an upgrade_url on any ForgeGUI result
 means the account's ForgeGUI balance ran out, not a provider fault: stop every
 paid call, tell the user in one sentence that their ForgeGUI account is out of
@@ -100,8 +101,9 @@ the intended creator; it does not prove Studio usability.
 ## Ledger and completion
 
 Use forgegui-project.json and ledger v2 when filesystem access exists. Without
-filesystem access, maintain the same decisions, paid ceiling/usage, reference
-pins, exact requests, timestamps, job/artifact/prepared-member/publication IDs,
+filesystem access, maintain the same decisions, paid usage and any user-set
+cap, reference pins, exact requests, timestamps,
+job/artifact/prepared-member/publication IDs,
 selected publisher and receipts in the response or a downloadable artifact.
 Do not pretend to read or write a file. Carry this ledger into later turns;
 if it is missing, reconcile before repeating work. Never include secrets.
@@ -114,5 +116,6 @@ verification unverified and do not set server Studio-verification flags.
 All correctness-critical checks run from skill guidance in the current turn.
 There is no Stop hook. An opted-in fidelity pass applies only with Studio and
 reference access: run the shared fidelity guidance directly after verification,
-within the paid ceiling. Store its state in the ledger if files are unavailable;
-otherwise report it pending for the Studio handoff. Never wait for a hook.
+uncapped unless the user set a cap. Store its state in the ledger if files are
+unavailable; otherwise report it pending for the Studio handoff. Never wait for
+a hook.

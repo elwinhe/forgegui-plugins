@@ -44,6 +44,12 @@ unauthenticated connection or a credential embedded in an archive.
    install both copies.
 5. Restart Codex. Confirm exactly one ForgeGUI server in `/mcp`, invoke
    `$forgegui-roblox-builder`, and perform a free `library_search` for `tree`.
+   To start a game, open a fresh project directory with the opening prompt from
+   the skill's `references/intake.md` (the game idea and link in the quotes, at
+   least four reference images attached). Codex asks only the intake questions
+   the prompt leaves open (never how many generations: uncapped is the
+   default), then builds. Without images, it asks for the game
+   and the references first and builds the brief from your answers.
    Missing credentials or HTTP 401 mean authentication failed; do not generate
    or change endpoints to work around it. Missing scopes require a deliberately
    selected replacement key, not automatic privilege expansion.

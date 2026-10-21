@@ -32,11 +32,11 @@ numbered format in `SKILL.md`. Every question carries likely options and your re
 
 | # | Question | Ask it when | Why it earns a slot |
 | --- | --- | --- | --- |
-| 1 | **Reference.** A game, a video, screenshots to match? | No reference was given | Decides the look more than any adjective. Prefer extracting frames from supplied videos or links with `scripts/reference_frames.py` (see `reference-capture.md`); ask for screenshots only if extraction is unavailable or fails. Retain the selected capture path in the ledger |
+| 1 | **Reference.** A game, a video, screenshots to match? For a whole game, ask for four shots: a wide shot of the play area or build, one with the HUD visible, a title or menu screen, and a sky or VFX moment | No reference was given, or the prompt names a game or an idea with nothing attached | Decides the look more than any adjective, and it is the one slot the builder cannot fill itself: references come from the user (`reference-capture.md`). Prefer extracting frames from supplied videos or links with `scripts/reference_frames.py`; ask for screenshots only if extraction is unavailable or fails. Retain the selected capture path in the ledger |
 | 2 | **Interface tone.** Restrained and flat (hairline edges, one accent colour, lots of air), or ornate and stylised (rims, crests, glow)? Name a game whose menus they like | The genre does not settle it | The stock panel and button prompts produce ornate gold rims. On a grounded game that is what users call "AI-looking", and it costs a full regeneration to undo |
 | 3 | **What is in the game.** Offer a checklist for the genre rather than an open question (below) | The request names a genre, not a feature list | Users assume features. A checklist turns an assumption into a decision in one reply |
 | 4 | **Players.** Solo against bots, multiplayer, or multiplayer with bots filling empty slots? | Not stated | Changes the server architecture, not just content |
-| 5 | **Spend.** How many paid generations, and is paid generation authorized? | Always, unless already given | Recommend a number sized to the build: one generation for each distinct object the player will see, plus the main surface materials (ground, paths, docks, walls) and planned follow-ups. Recommend 0 only when the user has already declined paid generation |
+| 5 | **Spend.** Is paid generation authorized, and does the user want a cap? | The prompt does not already authorize paid generation | Uncapped is the default and the recommended answer, so "defaults" authorizes paid generation with no cap. Never ask for a number: the plan sizes itself to the build (one generation for each distinct object the player will see, plus the main surface materials, follow-ups and fidelity-pass work) and the brief states the count as notice. Record a cap only when the user names one. Recommend 0 only when the user has already declined paid generation |
 | 6 | **Finish.** Playable prototype, or a polished build that is checked screen by screen? | Not stated | Sets how much verification and iteration to plan |
 | 7 | **Fidelity pass.** | Ask plainly with a supplied reference; otherwise ask "if you have a reference, do you want a fidelity pass against it?" in the same round. A "none" reference answer also settles this as inapplicable; never fold it into "finish" or add a second intake round | See `fidelity-pass.md` |
 
@@ -62,6 +62,79 @@ players of that genre take for granted.
 Anything unticked is **out**, and you say so in the brief, so its absence later is a decision the
 user made rather than something you forgot.
 
+## The opening prompt
+
+Users who want a maximal-fidelity build open with the prompt below; it is the starter prompt in the
+root README and the Codex guide. It is written in the user's words rather than one line per slot,
+and it does not skip round one. Read it against the question bank, record what it settles in
+`decisions` with `by: "user"`, and ask only the questions it leaves open.
+
+```text
+I want you to make the game exactly like "<put the exact game idea and game link if helpful here, and provide minimum 4 image references for builds and GUI if you want a specific style>", no cap on generations, do as much as needed on all ends to make it exactly like the references I provided in VFX, build style, skybox, and GUI style down to the tiniest detail, take as long as you need. Spam fidelity passes until it is perfect, triple-A style quality like the references. Search up as many pictures and videos as needed to make everything 1 to 1 perfect for the game, so get the references.
+```
+
+The prompt makes a likeness claim, and a likeness claim exists only when there is something to
+compare against. So the reading splits on one fact: **were references attached?**
+
+### With references attached
+
+Read each phrase as the slot it belongs to, and take the slot's rule rather than the literal
+instruction:
+
+| Phrase | Slot | Reading |
+| --- | --- | --- |
+| "exactly like <game>" | 1 Reference | Supplied. The attached images are the reference the likeness claim is measured against and the stills the fidelity pass compares (`reference-capture.md`). Run `scripts/reference_frames.py` on a linked clip only after the user confirms they own it |
+| "search up as many pictures and videos as needed" | 1 Reference | Not an instruction to fetch footage: the builder never goes looking (`reference-capture.md`). It points at the images the user attached |
+| "no cap on generations" | 5 Spend | Paid generation authorized, uncapped, which is the default anyway. Settled outright: record `authorized, no cap` and do not ask question 5. The plan still states its count (one generation per distinct object, the surface materials, planned follow-ups, fidelity-pass work) as notice in the brief, and nothing waits on it: the user has said they would rather spend than stop |
+| "down to the tiniest detail", "take as long as you need", "triple-A quality" | 6 Finish | Polished build, checked screen by screen |
+| "spam fidelity passes until it is perfect" | 7 Fidelity pass | Opt-in: with a supplied reference, write `opted_in` to `.forgegui-fidelity`. One consented pass already loops compare, fix the biggest gaps, compare again; another pass is a new request after the report, not a standing order |
+
+Still open, asked in the same round, most consequential first: **features** (question 3, the genre
+checklist with the named game's set already ticked, because "exactly like X" names the game, not
+its screens), **players** (question 4), and **interface tone** (question 2) only when no attached
+image shows the HUD or a menu. That is two or three questions, inside the ceiling; spend and the
+fidelity pass are settled and are not asked again.
+
+Fewer images than the prompt asks for, or images that cover only part of the game (GUI but no
+world, world but no sky), are still a supplied reference: use them, do not ask for more, and let
+the uncovered surfaces fall to interface tone and the style words. The fidelity pass measures only
+what the reference shows; the brief says which surfaces that is, so a GUI-only reference does not
+imply a world likeness claim.
+
+### With nothing attached, or the placeholder still in the quotes
+
+There is no likeness claim yet, only a vague prompt. "Exactly like", "1 to 1 perfect" and "like
+the references" cannot be read as a target, because nothing can be compared; read them as the
+finish (polished, checked screen by screen) and as spend authorization, and treat the reference as
+the first open question. Round one is how a vague prompt gets built up to the full shape above:
+probe for what is missing, then construct the brief from the answers.
+
+- **Question 1 first, in the shape the placeholder stands for:** the game idea or link, and the
+  four shots (a wide shot of the play area, one with the HUD visible, a title or menu screen, a sky
+  or VFX moment). Say why in one sentence: without them, likeness can only be guessed, not
+  measured. If the prompt names no game or genre at all, the idea is part of this question, because
+  the feature checklist (question 3) cannot be offered until a genre exists.
+- **Then the rest of the round:** features, players, and interface tone (nothing attached shows
+  the HUD). Spend is settled: the prompt authorizes it and uncapped is the default. That is four,
+  inside the ceiling; ask them in one round, not two.
+- **Do not write `.forgegui-fidelity` yet.** The prompt opts in, the reference is pending. Write
+  `opted_in` when the reference arrives in the answer; a "none" answer settles the pass as
+  inapplicable (question 7).
+- **Construct the brief from the answers.** The brief after round one is the completed prompt: the
+  game and its reference from question 1, features from question 3, players from question 4, and
+  spend (authorized, no cap), finish and fidelity pass as the prompt settled them. Record each
+  slot in `decisions` with its source (`by: "user"` for the prompt's own phrases and the answers,
+  `by: "defaults"` for accepted recommendations), then play it back. A likeness claim appears in
+  the brief only once a reference is in hand.
+- **If the user declines a reference,** build to the style words, record
+  `"reference": { "supplied": false }`, make no likeness claim and report no likeness percentage
+  (`reference-capture.md`). The user asked for a polished build and gets one, measured against the
+  brief rather than against a game.
+
+Either way this is an opening prompt for a directory with no `forgegui-project.json`. On an
+existing project the same text is a later round: a line that explicitly changes a recorded decision
+supersedes it, and only an ambiguous contradiction earns a question.
+
 ## Later rounds: the start of a prompt
 
 Before acting on each new user message, read it against what is already decided and apply the rule
@@ -78,7 +151,8 @@ Ask when the prompt:
   and ask for a reference if there still is none. A second guess costs a rebuild; the question costs
   a line.
 - **Is a wholesale redo.** "Redo everything": what must survive, what is the single biggest miss?
-- **Needs more paid generation than was authorized.** Say the new number and what it buys.
+- **Needs more paid generation than a cap the user set.** Say the new number and what it buys. With
+  no cap, which is the default, there is nothing to ask: keep building.
 - **Ambiguously contradicts an earlier decision.** Clarify only what is ambiguous. An explicit change supersedes the prior decision immediately; record it and proceed.
 
 Do not ask when the prompt is a bug report, a specified tweak ("make the buttons flat dark bars"),
@@ -88,7 +162,7 @@ project, in any wording.
 
 ## Record the answers
 
-Write answers to `decisions` in `forgegui-project.json` (see `project-manifest.md`). Record each resolved answer with its topic, date and source. When the user accepts "defaults", store the concrete recommendation they accepted (including the numeric paid-generation ceiling, explicit spending authorization, and selected/excluded features for the relevant topics), with `by: "defaults"`; never store only the word "defaults" or invent an unoffered recommendation. Append changes to preserve history; the latest entry in array order for a topic supersedes earlier entries. An explicit user change is the new decision: record it with `by: "user"` and proceed without redundant confirmation. Ask only when the change is ambiguous. A later session, a resumed job,
+Write answers to `decisions` in `forgegui-project.json` (see `project-manifest.md`). Record each resolved answer with its topic, date and source. When the user accepts "defaults", store the concrete recommendation they accepted (including explicit spending authorization with any cap the user set, and selected/excluded features for the relevant topics), with `by: "defaults"`; never store only the word "defaults" or invent an unoffered recommendation. Append changes to preserve history; the latest entry in array order for a topic supersedes earlier entries. An explicit user change is the new decision: record it with `by: "user"` and proceed without redundant confirmation. Ask only when the change is ambiguous. A later session, a resumed job,
 or a context compaction then has the decision without the conversation. Read `decisions` at the
 start of every prompt, before deciding whether to ask anything.
 
@@ -96,4 +170,5 @@ start of every prompt, before deciding whether to ask anything.
 
 Play back a brief of three to five lines: what you will build, what is explicitly out, the
 reference and interface tone, and the planned generation count. The brief is notice, not a second
-gate, when spend was authorized and the plan fits it.
+gate, when spend was authorized; spend is uncapped by default, so only a cap the user set and the
+plan exceeds turns it into a question.

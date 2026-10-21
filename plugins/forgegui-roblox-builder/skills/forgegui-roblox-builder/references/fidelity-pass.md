@@ -29,4 +29,4 @@ Before finishing, compare the result against the reference again, identify the b
 
 Test the full gameplay loop and make sure the polish pass does not break existing mechanics
 
-Spend only inside the generation count the user already approved; if the pass needs more, say the number and wait. When the pass is verified, write `done` to `.forgegui-fidelity` and report what changed. The user can stop this at any time by putting `off` in that file.
+Generation is uncapped by default, so spend what the pass needs; only when the user set a cap in `decisions` does the pass stay inside it, and if it then needs more, say the number and wait. When the pass is verified, write `done` to `.forgegui-fidelity` and report what changed. The user can stop this at any time by putting `off` in that file.

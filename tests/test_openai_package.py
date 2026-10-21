@@ -258,7 +258,7 @@ class OpenAIPackageTests(unittest.TestCase):
     def test_runtime_boundaries_and_safety_are_in_skill(self):
         skill = self.files[f'skills/{package.NAME}/SKILL.md'].decode()
         for required in ('Remote-only ChatGPT or Codex', 'Studio-capable Codex',
-                         'Do not apply the mandatory Studio preflight', 'numeric ceiling',
+                         'Do not apply the mandatory Studio preflight', 'uncapped by default',
                          'outcome_unknown', 'request_id', 'tenant', 'pinned',
                          'downloadable artifact', 'Never claim Studio edits', 'There is no Stop hook',
                          'OAuth readiness', 'Legacy publication is replay-only'):

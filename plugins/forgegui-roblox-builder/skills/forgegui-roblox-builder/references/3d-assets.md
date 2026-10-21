@@ -60,15 +60,17 @@ Generate a small kit and place it many times:
   set, 10-30 kit props, 1-3 landmarks, and 2-5 surface materials (one generated
   colour tile each) plus a ground-patch template for each material that needs
   close-up relief. Size the kit to the scene: these ranges describe typical
-  builds and are not a cap. State the count and ask for the budget if it isn't
-  already authorised. These are asset counts, not paid-operation totals.
-- Count the whole pipeline against the approved paid-call ceiling: base models,
-  separately generated moving parts, any generated reference images, remeshes,
-  rigging, animations, and permitted retries. For example, five weapons plus five
-  magazines and ten remeshes require 20 paid calls, not ten. Reserve planned
-  follow-up calls before starting; if actual geometry or scope requires more than
-  the remaining allowance, obtain approval for the increased total first. Report
-  credit cost as unknown unless billing evidence supplies it.
+  builds and are not a cap. State the count; spend is uncapped by default, so
+  ask only if paid generation isn't already authorised, never for a budget.
+  These are asset counts, not paid-operation totals.
+- Count the whole pipeline in the plan: base models, separately generated
+  moving parts, any generated reference images, remeshes, rigging, animations,
+  and permitted retries. For example, five weapons plus five magazines and ten
+  remeshes are 20 paid calls, not ten. Spend is uncapped by default; only when
+  the user set a cap do you reserve planned follow-up calls inside it before
+  starting and obtain approval for an increased total when actual geometry or
+  scope needs more. Report credit cost as unknown unless billing evidence
+  supplies it.
 - Generate the surface materials early, right after the style card: every prop
   is judged against the ground it stands on, and `showcase-flow.md` orders the
   spend the same way.
@@ -159,8 +161,8 @@ For direct delivery, inspect actual per-mesh geometry and file size against the
 chosen import route's current limits and the scene budget. For published
 delivery, inspect geometry after insertion in Studio; report unavailable
 measurements rather than assuming compliance or waiting for hidden files.
-Remesh only when needed and within the
-approved paid-call allowance. Use `generation_remesh_3d`
+Remesh only when needed, inside any cap
+the user set. Use `generation_remesh_3d`
 (`source_job_id`, `target_polycount`, `topology`); it kept all three texture maps
 in testing and took about 20 seconds. Keep `topology:
 "triangle"` (the default) so the target reads as a triangle count. Starting
@@ -235,7 +237,7 @@ Establish the route when you plan the kit, not after generating (SKILL.md §4):
    the user to import them in one sitting with Studio's 3D Importer (File >
    Import 3D). Then find the imported MeshParts in the place and continue. This is slower but fully valid. **Don't fall back to building the
    asset from parts because the import needs a manual step.** Ask the user to
-   accept the handoff, batch it, and keep generating within the approved ceiling.
+   accept the handoff, batch it, and keep generating (inside the user's cap, if one was set).
 
 If publishing is disabled, absent from the deployed schema, or targets the wrong
 owner, select a verified alternative above. If none is available and the user has
@@ -315,7 +317,7 @@ three texture maps on 6 of 6. This does not establish current endpoint defaults
 or justify remeshing every model. Use ForgeGUI preparation measurements when
 available, or inspect actual per-mesh geometry in the source or Studio, against
 the intended import limits and scene budget. Request paid remeshing only when
-those measurements show a need and the user has authorized the cost. If
+those measurements show a need and paid generation is authorized. If
 measurements are unavailable, report the gap rather than remeshing speculatively.
 
 **Scale in that kit.** The imported models had a longest side of about 1 stud.

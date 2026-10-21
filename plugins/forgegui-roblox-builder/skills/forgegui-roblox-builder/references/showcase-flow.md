@@ -98,7 +98,8 @@ Pick the guards from what the grey-box proved worked; write the threshold beside
 runs in the evidence rather than deleting outliers.
 
 Decision point: the pass costs about twice a plain polish pass and can spend more generations; intake asks
-about it because the user, not the agent, sets that ceiling.
+about it because the user, not the agent, decides whether it runs. Its spend is uncapped by default and
+bounded only by a cap the user set.
 
 ## Worked example: arena sports game
 

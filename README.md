@@ -31,18 +31,10 @@ Invoke the workflow with the namespaced skill shown by Claude Code, for example:
 /mcp:forgegui-roblox-builder Build a small prop, checking Studio import support before paid generation.
 ```
 
-To start a game without the intake questions, open a fresh project directory with a prompt that answers every intake slot, one per line. Claude records each line as your decision, plays back a short brief and starts building. Attach the references and replace the angle-bracket placeholders; a placeholder left in is the one question Claude will ask. The line-by-line reasons are in [the intake reference](plugins/forgegui-roblox-builder/skills/forgegui-roblox-builder/references/intake.md#a-complete-opening-prompt).
+To start a game, open a fresh project directory with the prompt below: put the game idea (and a link, if helpful) in the quotes and attach at least four reference images covering builds and GUI. Claude reads it as your decisions on the reference, the finish and the fidelity pass, then asks only the intake questions it leaves open (how many generations, which features, players, and the interface tone when no attached image shows the HUD), plays back a short brief and starts building. How each phrase is read is in [the intake reference](plugins/forgegui-roblox-builder/skills/forgegui-roblox-builder/references/intake.md#the-opening-prompt).
 
 ```text
-/mcp:forgegui-roblox-builder Build a Roblox game that matches the attached references as closely as possible.
-
-Reference: <game name and link>. Attached: at least four screenshots (a wide shot, a ground-level shot, the HUD, mid-action), or a clip or link I own, covering build style, VFX, skybox and GUI. Match them in palette, scale, HUD layout and effects.
-Interface tone: <restrained and flat | ornate and stylised>; menus like <game>.
-Features: <the items you want from the genre checklist, e.g. title screen with my character, lobby, HUD with minimap and kill feed, progression, bots, admin panel, mobile layout>. Anything not listed is out.
-Players: <solo against bots | multiplayer | multiplayer with bots filling empty slots>.
-Spend: paid generation authorized, up to <N> generations. If you need more, tell me the number and wait.
-Finish: polished build, checked screen by screen.
-Fidelity pass: yes, against the attached references. After the report I may ask for another.
+/mcp:forgegui-roblox-builder I want you to make the game exactly like "<put the exact game idea and game link if helpful here, and provide minimum 4 image references for builds and GUI if you want a specific style>", no cap on generations, do as much as needed on all ends to make it exactly like the references I provided in VFX, build style, skybox, and GUI style down to the tiniest detail, take as long as you need. Spam fidelity passes until it is perfect, triple-A style quality like the references. Search up as many pictures and videos as needed to make everything 1 to 1 perfect for the game, so get the references.
 ```
 
 Enable the separate official Roblox Studio MCP server with the exact Quick Connect steps in [SETUP.md](./SETUP.md), then restart the session. This package does not configure Studio.

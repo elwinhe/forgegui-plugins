@@ -62,54 +62,39 @@ players of that genre take for granted.
 Anything unticked is **out**, and you say so in the brief, so its absence later is a decision the
 user made rather than something you forgot.
 
-## A complete opening prompt
+## The opening prompt
 
-A request can settle every round-one slot itself. When it does, there is nothing left to ask: skip
-round one, record each line in `decisions` with `by: "user"`, play back the brief and build. This
-template is the shape that does it, one line per slot:
+Users who want a maximal-fidelity build open with the prompt below; it is the starter prompt in the
+root README and the Codex guide. It is written in the user's words rather than one line per slot,
+and it does not skip round one. Read it against the question bank, record what it settles in
+`decisions` with `by: "user"`, and ask only the questions it leaves open.
 
 ```text
-Build a Roblox game that matches the attached references as closely as possible.
-
-Reference: <game name and link>. Attached: at least four screenshots (a wide shot, a ground-level shot, the HUD, mid-action), or a clip or link I own, covering build style, VFX, skybox and GUI. Match them in palette, scale, HUD layout and effects.
-Interface tone: <restrained and flat | ornate and stylised>; menus like <game>.
-Features: <the items you want from the genre checklist, e.g. title screen with my character, lobby, HUD with minimap and kill feed, progression, bots, admin panel, mobile layout>. Anything not listed is out.
-Players: <solo against bots | multiplayer | multiplayer with bots filling empty slots>.
-Spend: paid generation authorized, up to <N> generations. If you need more, tell me the number and wait.
-Finish: polished build, checked screen by screen.
-Fidelity pass: yes, against the attached references. After the report I may ask for another.
+I want you to make the game exactly like "<put the exact game idea and game link if helpful here, and provide minimum 4 image references for builds and GUI if you want a specific style>", no cap on generations, do as much as needed on all ends to make it exactly like the references I provided in VFX, build style, skybox, and GUI style down to the tiniest detail, take as long as you need. Spam fidelity passes until it is perfect, triple-A style quality like the references. Search up as many pictures and videos as needed to make everything 1 to 1 perfect for the game, so get the references.
 ```
 
-| Line | Slot | What it settles |
+Read each phrase as the slot it belongs to, and take the slot's rule rather than the literal
+instruction:
+
+| Phrase | Slot | Reading |
 | --- | --- | --- |
-| Reference | 1 | A supplied reference, so the likeness claim can be measured (`reference-capture.md`). "I own" is the entitlement statement `scripts/reference_frames.py` needs before it fetches a link. The four shots named are the ones the fidelity pass compares against |
-| Interface tone | 2 | The restrained-or-ornate choice and a named game, so the stock gold-rim prompts are not the default |
-| Features | 3 | The checklist as an explicit list; "anything not listed is out" is the exclusion the brief would otherwise have to state |
-| Players | 4 | Server architecture |
-| Spend | 5 | Paid generation authorized and a numeric ceiling. The second sentence is the escalation path from `fidelity-pass.md`: say the number and wait |
-| Finish | 6 | Polished build, verified screen by screen |
-| Fidelity pass | 7 | Opt-in with a supplied reference: write `opted_in` to `.forgegui-fidelity`. Consent is per session, so "ask for another" after the report is how a second pass is requested |
+| "exactly like <game>", images attached | 1 Reference | Supplied. The attached images are the reference the likeness claim is measured against and the stills the fidelity pass compares (`reference-capture.md`). Run `scripts/reference_frames.py` on a linked clip only after the user confirms they own it |
+| "exactly like <game>", nothing attached | 1 Reference | A likeness claim that cannot be measured. Ask question 1 for screenshots or a clip the user owns; if they decline, build to the style words, record `"reference": { "supplied": false }` and make no likeness claim |
+| "search up as many pictures and videos as needed" | 1 Reference | Not an instruction to fetch footage: the builder never goes looking (`reference-capture.md`). It points at the images the user attached |
+| "no cap on generations" | 5 Spend | Paid generation authorized, no number. The ledger needs a numeric ceiling, so ask question 5 for it. Recommend the full build (one generation per distinct object, the surface materials, planned follow-ups) plus headroom for the fidelity pass: the user has said they would rather spend than stop. A pass that needs more still states the number and waits |
+| "down to the tiniest detail", "take as long as you need", "triple-A quality" | 6 Finish | Polished build, checked screen by screen |
+| "spam fidelity passes until it is perfect" | 7 Fidelity pass | Opt-in: with a supplied reference, write `opted_in` to `.forgegui-fidelity`. One consented pass already loops compare, fix the biggest gaps, compare again; another pass is a new request after the report, not a standing order |
 
-Users who want a maximal-fidelity build often write the same intent in a looser form: "make it
-exactly like X, no cap on generations, spam fidelity passes until it is perfect, search up as many
-pictures and videos as you need". Read each phrase as the slot it belongs to, and take the template's
-wording rather than the literal instruction:
+Still open, asked in the same round, most consequential first: **features** (question 3, the genre
+checklist with the named game's set already ticked, because "exactly like X" names the game, not
+its screens), **players** (question 4), the **spend number** (question 5), and **interface tone**
+(question 2) only when no attached image shows the HUD or a menu. That is three or four questions,
+inside the ceiling; the fidelity pass is settled and is not asked again.
 
-- **"No cap on generations"** is a spend answer without a number. The ledger needs a numeric
-  ceiling; a pass that needs more states the number and waits. Ask question 5 for the number.
-- **"Spam fidelity passes until perfect"** is a fidelity-pass opt-in. One consented pass already
-  loops compare, fix the biggest gaps, compare again; another pass is a new request after the
-  report, not a standing order.
-- **"Search up pictures and videos"** is a reference answer with nothing supplied. The builder never
-  goes looking for footage. Ask question 1 for a clip, screenshots or a link the user owns.
-- **"Exactly like X"** with nothing attached is a likeness claim that cannot be measured. Without a
-  supplied reference, build to the style words, record `"reference": { "supplied": false }` and
-  make no likeness claim.
-
-A placeholder left in angle brackets, or a line that is missing, is an open slot: ask that question
-and only that one. The template is an opening prompt for a directory with no `forgegui-project.json`.
-On an existing project the same text is a later round: a line that explicitly changes a recorded
-decision supersedes it, and only an ambiguous contradiction earns a question.
+A placeholder left in the quotes is an open reference: ask question 1 and read the rest of the
+prompt as above. This is an opening prompt for a directory with no `forgegui-project.json`. On an
+existing project the same text is a later round: a line that explicitly changes a recorded decision
+supersedes it, and only an ambiguous contradiction earns a question.
 
 ## Later rounds: the start of a prompt
 

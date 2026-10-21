@@ -32,7 +32,7 @@ numbered format in `SKILL.md`. Every question carries likely options and your re
 
 | # | Question | Ask it when | Why it earns a slot |
 | --- | --- | --- | --- |
-| 1 | **Reference.** A game, a video, screenshots to match? | No reference was given | Decides the look more than any adjective. Prefer extracting frames from supplied videos or links with `scripts/reference_frames.py` (see `reference-capture.md`); ask for screenshots only if extraction is unavailable or fails. Retain the selected capture path in the ledger |
+| 1 | **Reference.** A game, a video, screenshots to match? For a whole game, ask for four shots: a wide shot of the play area or build, one with the HUD visible, a title or menu screen, and a sky or VFX moment | No reference was given, or the prompt names a game or an idea with nothing attached | Decides the look more than any adjective, and it is the one slot the builder cannot fill itself: references come from the user (`reference-capture.md`). Prefer extracting frames from supplied videos or links with `scripts/reference_frames.py`; ask for screenshots only if extraction is unavailable or fails. Retain the selected capture path in the ledger |
 | 2 | **Interface tone.** Restrained and flat (hairline edges, one accent colour, lots of air), or ornate and stylised (rims, crests, glow)? Name a game whose menus they like | The genre does not settle it | The stock panel and button prompts produce ornate gold rims. On a grounded game that is what users call "AI-looking", and it costs a full regeneration to undo |
 | 3 | **What is in the game.** Offer a checklist for the genre rather than an open question (below) | The request names a genre, not a feature list | Users assume features. A checklist turns an assumption into a decision in one reply |
 | 4 | **Players.** Solo against bots, multiplayer, or multiplayer with bots filling empty slots? | Not stated | Changes the server architecture, not just content |
@@ -73,13 +73,17 @@ and it does not skip round one. Read it against the question bank, record what i
 I want you to make the game exactly like "<put the exact game idea and game link if helpful here, and provide minimum 4 image references for builds and GUI if you want a specific style>", no cap on generations, do as much as needed on all ends to make it exactly like the references I provided in VFX, build style, skybox, and GUI style down to the tiniest detail, take as long as you need. Spam fidelity passes until it is perfect, triple-A style quality like the references. Search up as many pictures and videos as needed to make everything 1 to 1 perfect for the game, so get the references.
 ```
 
+The prompt makes a likeness claim, and a likeness claim exists only when there is something to
+compare against. So the reading splits on one fact: **were references attached?**
+
+### With references attached
+
 Read each phrase as the slot it belongs to, and take the slot's rule rather than the literal
 instruction:
 
 | Phrase | Slot | Reading |
 | --- | --- | --- |
-| "exactly like <game>", images attached | 1 Reference | Supplied. The attached images are the reference the likeness claim is measured against and the stills the fidelity pass compares (`reference-capture.md`). Run `scripts/reference_frames.py` on a linked clip only after the user confirms they own it |
-| "exactly like <game>", nothing attached | 1 Reference | A likeness claim that cannot be measured. Ask question 1 for screenshots or a clip the user owns; if they decline, build to the style words, record `"reference": { "supplied": false }` and make no likeness claim |
+| "exactly like <game>" | 1 Reference | Supplied. The attached images are the reference the likeness claim is measured against and the stills the fidelity pass compares (`reference-capture.md`). Run `scripts/reference_frames.py` on a linked clip only after the user confirms they own it |
 | "search up as many pictures and videos as needed" | 1 Reference | Not an instruction to fetch footage: the builder never goes looking (`reference-capture.md`). It points at the images the user attached |
 | "no cap on generations" | 5 Spend | Paid generation authorized, no number. The ledger needs a numeric ceiling, so ask question 5 for it. Recommend the full build (one generation per distinct object, the surface materials, planned follow-ups) plus headroom for the fidelity pass: the user has said they would rather spend than stop. A pass that needs more still states the number and waits |
 | "down to the tiniest detail", "take as long as you need", "triple-A quality" | 6 Finish | Polished build, checked screen by screen |
@@ -91,8 +95,42 @@ its screens), **players** (question 4), the **spend number** (question 5), and *
 (question 2) only when no attached image shows the HUD or a menu. That is three or four questions,
 inside the ceiling; the fidelity pass is settled and is not asked again.
 
-A placeholder left in the quotes is an open reference: ask question 1 and read the rest of the
-prompt as above. This is an opening prompt for a directory with no `forgegui-project.json`. On an
+Fewer images than the prompt asks for, or images that cover only part of the game (GUI but no
+world, world but no sky), are still a supplied reference: use them, do not ask for more, and let
+the uncovered surfaces fall to interface tone and the style words. The fidelity pass measures only
+what the reference shows; the brief says which surfaces that is, so a GUI-only reference does not
+imply a world likeness claim.
+
+### With nothing attached, or the placeholder still in the quotes
+
+There is no likeness claim yet, only a vague prompt. "Exactly like", "1 to 1 perfect" and "like
+the references" cannot be read as a target, because nothing can be compared; read them as the
+finish (polished, checked screen by screen) and as spend authorization, and treat the reference as
+the first open question. Round one is how a vague prompt gets built up to the full shape above:
+probe for what is missing, then construct the brief from the answers.
+
+- **Question 1 first, in the shape the placeholder stands for:** the game idea or link, and the
+  four shots (a wide shot of the play area, one with the HUD visible, a title or menu screen, a sky
+  or VFX moment). Say why in one sentence: without them, likeness can only be guessed, not
+  measured. If the prompt names no game or genre at all, the idea is part of this question, because
+  the feature checklist (question 3) cannot be offered until a genre exists.
+- **Then the rest of the round:** features, players, the spend number, and interface tone (nothing
+  attached shows the HUD). That is five, at the ceiling; ask them in one round, not two.
+- **Do not write `.forgegui-fidelity` yet.** The prompt opts in, the reference is pending. Write
+  `opted_in` when the reference arrives in the answer; a "none" answer settles the pass as
+  inapplicable (question 7).
+- **Construct the brief from the answers.** The brief after round one is the completed prompt: the
+  game and its reference from question 1, features from question 3, players from question 4, the
+  spend number from question 5, finish and fidelity pass as the prompt settled them. Record each
+  slot in `decisions` with its source (`by: "user"` for the prompt's own phrases and the answers,
+  `by: "defaults"` for accepted recommendations), then play it back. A likeness claim appears in
+  the brief only once a reference is in hand.
+- **If the user declines a reference,** build to the style words, record
+  `"reference": { "supplied": false }`, make no likeness claim and report no likeness percentage
+  (`reference-capture.md`). The user asked for a polished build and gets one, measured against the
+  brief rather than against a game.
+
+Either way this is an opening prompt for a directory with no `forgegui-project.json`. On an
 existing project the same text is a later round: a line that explicitly changes a recorded decision
 supersedes it, and only an ambiguous contradiction earns a question.
 

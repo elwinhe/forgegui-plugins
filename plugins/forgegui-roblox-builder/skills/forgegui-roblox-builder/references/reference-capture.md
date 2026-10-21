@@ -9,7 +9,7 @@ handing it over for this build — the script downloads what it is pointed at an
 ## Getting a reference
 
 1. **Use what the user attached or linked.** A clip, a link, screenshots, stills. Run `scripts/reference_frames.py` on a video; use images as they are.
-2. **If nothing was supplied, ask for one.** A short clip, a handful of screenshots, or a link is enough. Say why in one sentence: without it, likeness cannot be measured, only guessed.
+2. **If nothing was supplied, ask for one.** A short clip, a handful of screenshots, or a link is enough; for a whole game, ask for four shots (a wide shot of the play area, one with the HUD visible, a title or menu screen, a sky or VFX moment), which are the frames the fidelity pass will compare. Say why in one sentence: without it, likeness cannot be measured, only guessed. A likeness claim is not read into the prompt or written into the brief until the reference is in hand.
 3. **If the user declines or is not available to ask,** build to the style words in the request. Record it in `forgegui-project.json` as `"reference": { "supplied": false }`, make no likeness claim, and do not report a likeness percentage anywhere in the report.
 
 ## From frames to numbers

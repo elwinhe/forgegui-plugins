@@ -16,7 +16,7 @@ For separate legacy local use, Open Cloud is an **explicitly chosen route**, aft
 It is not a publishing-connection fallback or a response to a ForgeGUI failure. The Python implementation below is
 also the sole implementation behind the compatibility shell entry point.
 
-For the connection workflow, follow [publishing connections](publishing-connections.md): Roblox publishing keys go only through authenticated ForgeGUI settings, never agent chat, MCP arguments, commands or the ledger. Discover/select safe connection identity before paid work. Never use this local helper to configure a connection or recover a failed/ambiguous ForgeGUI publication. The remaining sections document the retained, separate legacy uploader; they do not authorize agent credential handling for connections.
+For the connection workflow, follow [publishing connections](publishing-connections.md): Roblox publishing credentials (Roblox sign-in, or a legacy key) stay in authenticated ForgeGUI settings, never agent chat, MCP arguments, commands or the ledger. Discover/select safe connection identity before paid work. Never use this local helper to configure a connection or recover a failed/ambiguous ForgeGUI publication. The remaining sections document the retained, separate legacy uploader; they do not authorize agent credential handling for connections.
 
 ## Credentials and destination (legacy local users only)
 

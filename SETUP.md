@@ -64,7 +64,7 @@ Uninstall or disable this bundle, start a new client session, and restore the re
 
 ## Publishing connections and generated audio
 
-Roblox publishing keys go only through authenticated ForgeGUI settings, never agent chat, MCP arguments, commands or the ledger. Do not configure them as the ForgeGUI account key. Connection setup, rotation and disconnect belong in settings; do not request a key to repair a failed publication.
+Personal publishing connections come from signing in with Roblox in ForgeGUI (Settings or `/forge-mcp`) and approving asset access; ForgeGUI no longer accepts new Roblox publishing keys, and an existing key connection keeps working until the same Roblox user signs in. Roblox credentials stay in ForgeGUI, never agent chat, MCP arguments, commands or the ledger. Do not configure them as the ForgeGUI account key. Connecting, reconnecting and disconnecting belong in settings; do not request a key to repair a failed publication.
 
 Follow [publishing connections](plugins/forgegui-roblox-builder/skills/forgegui-roblox-builder/references/publishing-connections.md) for `publication_connections_list` (`publication:read`) and selectors. Use them only when live advertised and usable for the selected creator and asset type. No implicit shared-group fallback or creator changes are permitted. This package does not deploy the feature; request parity is checked against contract 1.9.0; hosted acceptance remains pending.
 

@@ -77,7 +77,9 @@ class PublishingConnectionsGuidanceTests(unittest.TestCase):
         for rule in ("publication_connections_list` (`publication:read`)",
                      "generation:write` plus `publication:write", "strictly less than 420",
                      "Never republish integrated outputs", "Never add new defaults",
-                     "most restrictive action", "No raw keys", "OAuth is unavailable",
+                     "most restrictive action", "No raw keys", "ForgeGUI accepts no new publishing keys",
+                     "`replaced_by_oauth`", "group OAuth (`oauth_group`) is unavailable",
+                     "Accounts linked before that consent must reconnect once",
                      "Preserve intentional holes/openings", "not_performed"):
             self.assertIn(rule, GUIDE)
 

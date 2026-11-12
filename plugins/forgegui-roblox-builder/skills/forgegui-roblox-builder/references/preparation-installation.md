@@ -107,9 +107,9 @@ When live supported, use `destination: {platform: roblox, connection_id: <select
 The legacy shape `destination: {platform: roblox, creator: configured_shared_group}` is replay-only for previously accepted work; never use it for a new publication.
 These selectors form a strict union: never combine them, supply arbitrary creator
 overrides, or fall back to the shared group after failure. Confirm creator and
-target-experience access before spending. Roblox publishing keys go only through
-authenticated ForgeGUI settings, never chat, MCP, commands or the ledger.
-No OAuth or whole-bundle publication is implied. Generated MP3 music/SFX can
+target-experience access before spending. Roblox publishing credentials (Roblox
+sign-in, or a legacy key) stay in authenticated ForgeGUI settings, never chat,
+MCP, commands or the ledger. No whole-bundle publication is implied. Generated MP3 music/SFX can
 use the separate Audio route only when live advertised and usable; follow
 [audio publication](audio-publication.md). Audio is not a preparation variant.
 

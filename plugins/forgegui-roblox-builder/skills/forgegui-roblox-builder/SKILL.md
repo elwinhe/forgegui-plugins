@@ -87,7 +87,7 @@ Rules:
 
 ## 4. Check the import route before generating
 
-Before publication-dependent paid work, follow [publishing connections](references/publishing-connections.md): discover connections when live advertised, resolve the user-selected creator, check active status, asset type, route usability and scopes, and retain safe identity in ledger v2. Direct delivery needs no connection. Never infer a selection or fall back to the shared group on failure. Roblox publishing keys go only through authenticated ForgeGUI settings, never agent chat, MCP arguments, commands or the ledger. Final connection export parity is pending; do not advertise unavailable routes.
+Before publication-dependent paid work, follow [publishing connections](references/publishing-connections.md): discover connections when live advertised, resolve the user-selected creator, check active status, asset type, route usability and scopes, and retain safe identity in ledger v2. Direct delivery needs no connection. Never infer a selection or fall back to the shared group on failure. Roblox publishing credentials (Roblox sign-in, or a legacy key) stay in authenticated ForgeGUI settings, never agent chat, MCP arguments, commands or the ledger. Final connection export parity is pending; do not advertise unavailable routes.
 
 Read `references/preparation-installation.md` for the #606 server preparation and standalone publication workflow. Call `asset_capabilities` and verify account usability. Prefer server preparation for supported GLB inspection/transforms and image alpha/resize operations, then publish the prepared member. Keep measured metadata, baked transforms and caller-authored installation intent separate. Do not repeat completed processing locally.
 

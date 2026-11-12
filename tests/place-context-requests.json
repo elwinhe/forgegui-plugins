@@ -144,6 +144,23 @@
       "arguments": {
         "publication_id": "00000000-0000-4000-8000-000000000001"
       }
+    },
+    {
+      "tool": "run_create",
+      "arguments": {
+        "request_id": "local-only",
+        "name": "Local build",
+        "local_place_id": "12345678-1234-4234-8234-123456789abc"
+      }
+    },
+    {
+      "tool": "run_create",
+      "arguments": {
+        "request_id": "local-published",
+        "name": "Published build",
+        "local_place_id": "12345678-1234-4234-8234-123456789abc",
+        "intended_place_id": "18446744073709551615"
+      }
     }
   ]
 }

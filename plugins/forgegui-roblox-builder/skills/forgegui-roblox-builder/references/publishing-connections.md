@@ -28,13 +28,21 @@ capabilities before using a connection tool or field.
    are separate checks. Preserve the selected identity and exact non-secret
    request in [ledger v2](project-manifest.md) before submission.
 
-Roblox publishing keys go only through authenticated ForgeGUI settings. Never
-request, receive, echo or store them in agent chat, MCP arguments, commands,
+A Personal connection comes from Roblox sign-in: the user links or reconnects
+their Roblox account in ForgeGUI (Settings or `/forge-mcp`) and approves asset
+read/write, and the list then shows an `auth_type: "oauth"` connection for that
+Roblox user. Accounts linked before that consent must reconnect once.
+ForgeGUI accepts no new publishing keys. An existing `api_key` connection keeps
+working until the same Roblox user signs in; it then lists as `disabled` with
+`replaced_by_oauth`, and new work selects the active OAuth connection. OAuth
+publishes only as the signed-in user; group OAuth (`oauth_group`) is unavailable.
+Roblox credentials stay in authenticated ForgeGUI settings. Never request,
+receive, echo or store keys or tokens in agent chat, MCP arguments, commands,
 ledger, URLs or logs. The plugin consumes safe connection metadata only; it
-does not introspect keys or choose credential slots. Rotation/disconnect also
-belong in settings. The ForgeGUI account key configured in the client's masked
-field is a separate credential. OAuth is unavailable for this release; account
-linking is not publication authorization. Do not advertise unavailable routes.
+does not introspect credentials or choose credential slots. Reconnect and
+disconnect also belong in settings. The ForgeGUI account key configured in the
+client's masked field is a separate credential. Account linking alone is not
+publication authorization. Do not advertise unavailable routes.
 
 Direct/omitted delivery requires no connection and never publishes. For work
 requiring Roblox publication, missing discovery or selector support means the
@@ -157,9 +165,10 @@ Developers working in the plugin repository run `tests/test_publishing_connectio
 Set `FORGEGUI_BACKEND_CONTRACT` to the exact backend export to check its hash
 and every pinned tool definition. Staging still requires dedicated user/group
 credentials, actual uploads and recovery, followed by Studio insertion/playback
-verification. Personal and group publication, rotation during pending work,
-disconnect and interrupted-worker recovery remain unverified in hosted acceptance.
+verification. A personal OAuth Model publication passed on staging on November
+12, 2026. Group publication, reconnect during pending work, disconnect and
+interrupted-worker recovery remain unverified in hosted acceptance.
 All unknown quota owners still share one bucket, the default global upload limit
-is two, and a bucket-level 429 can pause that shared bucket. User-supplied keys
+is two, and a bucket-level 429 can pause that shared bucket. User connections
 change ownership, not independent publishing capacity.
 Installation of this package does not enable the backend gates.

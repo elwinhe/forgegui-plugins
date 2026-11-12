@@ -56,7 +56,7 @@ For a ready Audio publication, verify its asset type, creator, moderation and ta
 
 In the intended experience, check loading errors, duration and actual audible playback. For spatial effects, move toward and away from the emitter; for loops, listen across the seam. A property such as `IsPlaying` alone is not audible verification. Record the instance path, source artifact, generation/publication IDs, creator and checks in ledger v2; append playback checks to the owned run as caller-reported evidence using `preparation-installation.md`. Leave unperformed checks marked `not_performed` and do not upgrade server verification flags.
 
-If the selected destination cannot serve the intended experience, stop and explain the access blocker. Never fall back to the shared group or change creator on failure. OAuth remains unavailable for this release. The local Open Cloud helper is retained for separate legacy use, not connection setup or recovery of an ambiguous ForgeGUI submission; do not collect Roblox keys for this workflow.
+If the selected destination cannot serve the intended experience, stop and explain the access blocker. Never fall back to the shared group or change creator on failure. Personal connections come from Roblox sign-in in ForgeGUI settings; group OAuth is unavailable. The local Open Cloud helper is retained for separate legacy use, not connection setup or recovery of an ambiguous ForgeGUI submission; do not collect Roblox keys for this workflow.
 
 ## Sound-effect input contract
 

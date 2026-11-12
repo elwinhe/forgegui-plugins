@@ -181,7 +181,7 @@ tested upload route (SKILL.md §4); check the current limits for your route.
 
 ## Getting it into Studio
 
-Before paid work, follow [publishing connections](publishing-connections.md) for live discovery, explicit intended-creator selection, active status/type/route/scopes and safe ledger identity. Proposed selectors await final export parity. Direct delivery needs no connection; no creator change or shared-group fallback is allowed on failure. Roblox publishing keys go only through authenticated ForgeGUI settings, never agent chat, MCP arguments, commands or the ledger.
+Before paid work, follow [publishing connections](publishing-connections.md) for live discovery, explicit intended-creator selection, active status/type/route/scopes and safe ledger identity. Proposed selectors await final export parity. Direct delivery needs no connection; no creator change or shared-group fallback is allowed on failure. Roblox publishing credentials (Roblox sign-in, or a legacy key) stay in authenticated ForgeGUI settings, never agent chat, MCP arguments, commands or the ledger.
 
 For the preferred inspect/transform-before-publication path, follow
 `preparation-installation.md`: generate/reuse a direct artifact, call

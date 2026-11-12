@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.9.7 — production
+
+- Publishing guidance now matches Roblox sign-in publishing on ForgeGUI production (FOR-1092, gitreposit #1207): a Personal connection comes from linking or reconnecting the Roblox account in ForgeGUI (Settings or `/forge-mcp`) and approving asset read/write, and lists as `auth_type: "oauth"`. Accounts linked before that consent must reconnect once. ForgeGUI accepts no new publishing keys. An existing `api_key` connection keeps working until the same Roblox user signs in; it then lists as `disabled` with `replaced_by_oauth`, and new work selects the active OAuth connection. Group OAuth (`oauth_group`) is unavailable. Before this change `references/publishing-connections.md` and `references/audio-publication.md` said OAuth was unavailable, which contradicts the live `asset_capabilities` report.
+- Credential wording in `SETUP.md`, both READMEs, `SKILL.md` and the 3D, audio, upload and preparation references now says Roblox publishing credentials (Roblox sign-in, or a legacy key) stay in authenticated ForgeGUI settings. The rule that they never appear in agent chat, MCP arguments, commands or the ledger is unchanged.
+- Guidance only: no scripts, MCP endpoint or tool contract changes. Request examples stay pinned to backend contract 1.9.0 (`3cc98a44`). The OpenAI staging preview keeps its `1.9.0-beta.1` label.
+
 ## 1.9.6 — production
 
 - The starter prompt in the root README, the Codex guide and `references/intake.md` is now the maximal-fidelity prompt in the user's own words ("make the game exactly like …, no cap on generations, … spam fidelity passes until it is perfect …", with at least four reference images attached), and round one is kept: the skill reads the prompt against the question bank, records what it settles with `by: "user"` (the reference when images are attached, the finish, the fidelity-pass opt-in and spend authorization) and asks only what it leaves open (features, players, and interface tone when no attached image shows the HUD). Before this change the published prompt was a slot-by-slot template that skipped round one (FOR-748).

@@ -2,7 +2,7 @@
 
 This workflow supports integrated generation-time publication and standalone Audio `artifact_publish`. Discover each route independently; standalone Audio support alone does not establish integrated delivery support. Check live tool schemas and `asset_capabilities` before planning dependent work. The package version and this document do not prove deployment, provider entitlement, Roblox moderation or playback.
 
-First follow [publishing connections](publishing-connections.md) for live discovery, user-selected creator, usable route/type/scopes and safe ledger identity before paid work. Its selectors match pinned contract 1.9.0; do not infer deployment. Roblox publishing keys go only through authenticated ForgeGUI settings, never agent chat, MCP arguments, commands or the ledger.
+First follow [publishing connections](publishing-connections.md) for live discovery, user-selected creator, usable route/type/scopes and safe ledger identity before paid work. Its selectors match pinned contract 1.9.0; do not infer deployment. Roblox publishing credentials (Roblox sign-in, or a legacy key) stay in authenticated ForgeGUI settings, never agent chat, MCP arguments, commands or the ledger.
 
 ## Generate or reuse
 
